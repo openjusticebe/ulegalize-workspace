@@ -1,0 +1,1 @@
+ALTER TABLE `t_calendar_event` ADD `contact_id` INT NULL AFTER `user_id`, ADD `location` VARCHAR(200) NULL AFTER `contact_id`;

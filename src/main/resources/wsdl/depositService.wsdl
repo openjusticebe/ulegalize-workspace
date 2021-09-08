@@ -1,0 +1,362 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:tns="http://common.dpa.services/deposit/v01/ws"
+                  xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/"
+                  xmlns:pricemsg="http://common.dpa.services/deposit/price/v01/messages"
+                  xmlns:glmsg="http://common.dpa.services/global/v01/messages"
+                  xmlns:filemsg="http://common.dpa.services/deposit/file/v01/messages"
+                  xmlns:depmsg="http://common.dpa.services/deposit/v01/messages"
+                  xmlns:depconsmsg="http://common.dpa.services/deposit/consult/v01/messages"
+                  xmlns:clabmsg="http://common.dpa.services/addressbook/external/consult/lawyer/v01/messages"
+                  xmlns:ccabmsg="http://common.dpa.services/addressbook/external/consult/court/v01/messages"
+                  xmlns="http://www.w3.org/2001/XMLSchema" name="dpaDeposit"
+                  targetNamespace="http://common.dpa.services/deposit/v01/ws">
+    <wsdl:types>
+        <schema xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:tns="http://common.dpa.services/deposit/v01/ws"
+                xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/"
+                xmlns:pricemsg="http://common.dpa.services/deposit/price/v01/messages"
+                xmlns:glmsg="http://common.dpa.services/global/v01/messages"
+                xmlns:filemsg="http://common.dpa.services/deposit/file/v01/messages"
+                xmlns:depmsg="http://common.dpa.services/deposit/v01/messages"
+                xmlns:depconsmsg="http://common.dpa.services/deposit/consult/v01/messages"
+                xmlns:clabmsg="http://common.dpa.services/addressbook/external/consult/lawyer/v01/messages"
+                xmlns:ccabmsg="http://common.dpa.services/addressbook/external/consult/court/v01/messages"
+                xmlns="http://www.w3.org/2001/XMLSchema">
+
+            <import namespace="http://common.dpa.services/deposit/v01/messages"
+                    schemaLocation="https://cs.acc.dp-a.be/api/ws/depositService?xsd=../xsd/deposit_messages.xsd"/>
+
+            <import namespace="http://common.dpa.services/deposit/consult/v01/messages"
+                    schemaLocation="https://cs.acc.dp-a.be/api/ws/depositService?xsd=../xsd/deposit_consult_messages.xsd"/>
+
+
+            <import namespace="http://common.dpa.services/deposit/price/v01/messages"
+                    schemaLocation="https://cs.acc.dp-a.be/api/ws/depositService?xsd=../xsd/deposit_price_messages.xsd"/>
+
+            <import namespace="http://common.dpa.services/deposit/file/v01/messages"
+                    schemaLocation="https://cs.acc.dp-a.be/api/ws/depositService?xsd=../xsd/deposit_file_messages.xsd"/>
+
+            <import namespace="http://common.dpa.services/global/v01/messages"
+                    schemaLocation="https://cs.acc.dp-a.be/api/ws/depositService?xsd=../xsd/core/global_messages.xsd"/>
+
+
+            <import namespace="http://common.dpa.services/addressbook/external/consult/court/v01/messages"
+                    schemaLocation="https://cs.acc.dp-a.be/api/ws/depositService?xsd=../xsd/cab/external/consult_court_addressbook_messages.xsd"/>
+
+            <import namespace="http://common.dpa.services/addressbook/external/consult/lawyer/v01/messages"
+                    schemaLocation="https://cs.acc.dp-a.be/api/ws/depositService?xsd=../xsd/cab/external/consult_lawyer_addressbook_messages.xsd"/>
+
+        </schema>
+    </wsdl:types>
+    <wsdl:message name="pingRequest">
+        <wsdl:part element="glmsg:Ping" name="part1">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="getCourtChannelInfoRequest">
+        <wsdl:part element="depconsmsg:getCourtChannelInfoRequest" name="part1">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="depositRequest">
+        <wsdl:part element="depmsg:DepositRequest" name="part1">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="fileDeleteRequest">
+        <wsdl:part element="filemsg:FileDeleteRequest" name="part1">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="CourtNotFoundFault">
+        <wsdl:part element="ccabmsg:CourtNotFoundFault" name="error">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="getCourtChannelInfoResponse">
+        <wsdl:part element="depconsmsg:getCourtChannelInfoResponse" name="part1">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="depositResponse">
+        <wsdl:part element="depmsg:DepositResponse" name="part1">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="priceRequest">
+        <wsdl:part element="pricemsg:PriceRequest" name="part1">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="LawyerNotFoundFault">
+        <wsdl:part element="clabmsg:LawyerNotFoundFault" name="error">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="priceResponse">
+        <wsdl:part element="pricemsg:PriceResponse" name="part1">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="price1Fault">
+        <wsdl:part element="pricemsg:Price1Fault" name="error">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="getThirdPartyChannelInfoRequest">
+        <wsdl:part element="depconsmsg:getThirdPartyChannelInfoRequest" name="part1">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="pingFault">
+        <wsdl:part name="error" type="glmsg:GeneralFault">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="getLawyerChannelInfoResponse">
+        <wsdl:part element="depconsmsg:getLawyerChannelInfoResponse" name="part1">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="getLawyerChannelInfoRequest">
+        <wsdl:part element="depconsmsg:getLawyerChannelInfoRequest" name="part1">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="fileDeleteResponse">
+        <wsdl:part element="filemsg:FileDeleteResponse" name="part1">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="isUserAllowedToDepositResponse">
+        <wsdl:part element="depconsmsg:isUserAllowedToDepositResponse" name="part1">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="fileUploadResponse">
+        <wsdl:part element="filemsg:FileUploadResponse" name="part1">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="getDocTypesRequest">
+        <wsdl:part element="depmsg:getDocTypesRequest" name="part1">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="pingResponse">
+        <wsdl:part element="glmsg:Pong" name="part1">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="getDocTypesResponse">
+        <wsdl:part element="depmsg:getDocTypesResponse" name="part1">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="fileUploadRequest">
+        <wsdl:part element="filemsg:FileUploadRequest" name="part1">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="isUserAllowedToDepositRequest">
+        <wsdl:part element="depconsmsg:isUserAllowedToDepositRequest" name="part1">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="fileUpload1Fault">
+        <wsdl:part element="filemsg:FileUpload1Fault" name="error">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="getThirdPartyChannelInfoResponse">
+        <wsdl:part element="depconsmsg:getThirdPartyChannelInfoResponse" name="part1">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="LanguageNotFoundFault">
+        <wsdl:part element="ccabmsg:LanguageNotFoundFault" name="error">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="fileDelete1Fault">
+        <wsdl:part element="filemsg:FileDelete1Fault" name="error">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="deposit1Fault">
+        <wsdl:part element="depmsg:Deposit1Fault" name="error">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:portType name="DepositPort">
+        <wsdl:operation name="deposit">
+            <wsdl:input message="tns:depositRequest" name="inputDeposit">
+            </wsdl:input>
+            <wsdl:output message="tns:depositResponse" name="outputDeposit">
+            </wsdl:output>
+            <wsdl:fault message="tns:deposit1Fault" name="faultDeposit">
+            </wsdl:fault>
+        </wsdl:operation>
+        <wsdl:operation name="fileUpload">
+            <wsdl:input message="tns:fileUploadRequest" name="inputFileUpload">
+            </wsdl:input>
+            <wsdl:output message="tns:fileUploadResponse" name="outputFileUpload">
+            </wsdl:output>
+            <wsdl:fault message="tns:fileUpload1Fault" name="faultFileUpload">
+            </wsdl:fault>
+        </wsdl:operation>
+        <wsdl:operation name="fileDelete">
+            <wsdl:input message="tns:fileDeleteRequest" name="inputFileDelete">
+            </wsdl:input>
+            <wsdl:output message="tns:fileDeleteResponse" name="outputFileDelete">
+            </wsdl:output>
+            <wsdl:fault message="tns:fileDelete1Fault" name="faultFileDelete">
+            </wsdl:fault>
+        </wsdl:operation>
+        <wsdl:operation name="getDocTypes">
+            <wsdl:input message="tns:getDocTypesRequest" name="inputGetDocTypes">
+            </wsdl:input>
+            <wsdl:output message="tns:getDocTypesResponse" name="outputGetDocTypes">
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="calculatePrice">
+            <wsdl:input message="tns:priceRequest" name="inputCalculatePrice">
+            </wsdl:input>
+            <wsdl:output message="tns:priceResponse" name="outputCalculatePrice">
+            </wsdl:output>
+            <wsdl:fault message="tns:price1Fault" name="faultCalculatePrice">
+            </wsdl:fault>
+        </wsdl:operation>
+        <wsdl:operation name="getLawyerChannelInfo">
+            <wsdl:input message="tns:getLawyerChannelInfoRequest" name="inputGetLawyerChannelInfo">
+            </wsdl:input>
+            <wsdl:output message="tns:getLawyerChannelInfoResponse" name="outputGetLawyerChannelInfo">
+            </wsdl:output>
+            <wsdl:fault message="tns:LawyerNotFoundFault" name="faultLawyerNotFoundFault">
+            </wsdl:fault>
+        </wsdl:operation>
+        <wsdl:operation name="getCourtChannelInfo">
+            <wsdl:input message="tns:getCourtChannelInfoRequest" name="inputGetCourtChannelInfo">
+            </wsdl:input>
+            <wsdl:output message="tns:getCourtChannelInfoResponse" name="outputGetCourtChannelInfo">
+            </wsdl:output>
+            <wsdl:fault message="tns:CourtNotFoundFault" name="faultCourtNotFoundFault">
+            </wsdl:fault>
+            <wsdl:fault message="tns:LanguageNotFoundFault" name="faultLanguageNotFound">
+            </wsdl:fault>
+        </wsdl:operation>
+        <wsdl:operation name="getThirdPartyChannelInfo">
+            <wsdl:input message="tns:getThirdPartyChannelInfoRequest" name="inputGetThirdPartyChannelInfo">
+            </wsdl:input>
+            <wsdl:output message="tns:getThirdPartyChannelInfoResponse" name="outputGetThirdPartyChannelInfo">
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="isUserAllowedToDeposit">
+            <wsdl:input message="tns:isUserAllowedToDepositRequest" name="inputIsUserAllowedToDeposit">
+            </wsdl:input>
+            <wsdl:output message="tns:isUserAllowedToDepositResponse" name="outputIsUserAllowedToDeposit">
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="ping">
+            <wsdl:input message="tns:pingRequest" name="inputPing">
+            </wsdl:input>
+            <wsdl:output message="tns:pingResponse" name="outputPing">
+            </wsdl:output>
+            <wsdl:fault message="tns:pingFault" name="faultPing">
+            </wsdl:fault>
+        </wsdl:operation>
+    </wsdl:portType>
+    <wsdl:binding name="depositServiceSoap12" type="tns:DepositPort">
+        <soap12:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+        <wsdl:operation name="deposit">
+            <soap12:operation soapAction="deposit"/>
+            <wsdl:input name="inputDeposit">
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output name="outputDeposit">
+                <soap12:body use="literal"/>
+            </wsdl:output>
+            <wsdl:fault name="faultDeposit">
+                <soap12:fault name="fault" use="literal"/>
+            </wsdl:fault>
+        </wsdl:operation>
+        <wsdl:operation name="fileUpload">
+            <soap12:operation soapAction="fileUpload"/>
+            <wsdl:input name="inputFileUpload">
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output name="outputFileUpload">
+                <soap12:body use="literal"/>
+            </wsdl:output>
+            <wsdl:fault name="faultFileUpload">
+                <soap12:fault name="fault" use="literal"/>
+            </wsdl:fault>
+        </wsdl:operation>
+        <wsdl:operation name="fileDelete">
+            <soap12:operation soapAction="fileDelete"/>
+            <wsdl:input name="inputFileDelete">
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output name="outputFileDelete">
+                <soap12:body use="literal"/>
+            </wsdl:output>
+            <wsdl:fault name="faultFileDelete">
+                <soap12:fault name="fault" use="literal"/>
+            </wsdl:fault>
+        </wsdl:operation>
+        <wsdl:operation name="getDocTypes">
+            <soap12:operation soapAction="getDocTypes"/>
+            <wsdl:input name="inputGetDocTypes">
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output name="outputGetDocTypes">
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="calculatePrice">
+            <soap12:operation soapAction="calculatePrice"/>
+            <wsdl:input name="inputCalculatePrice">
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output name="outputCalculatePrice">
+                <soap12:body use="literal"/>
+            </wsdl:output>
+            <wsdl:fault name="faultCalculatePrice">
+                <soap12:fault name="fault" use="literal"/>
+            </wsdl:fault>
+        </wsdl:operation>
+        <wsdl:operation name="getLawyerChannelInfo">
+            <soap12:operation soapAction="getLawyerChannelInfo"/>
+            <wsdl:input name="inputGetLawyerChannelInfo">
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output name="outputGetLawyerChannelInfo">
+                <soap12:body use="literal"/>
+            </wsdl:output>
+            <wsdl:fault name="faultLawyerNotFoundFault">
+                <soap12:fault name="fault" use="literal"/>
+            </wsdl:fault>
+        </wsdl:operation>
+        <wsdl:operation name="getCourtChannelInfo">
+            <soap12:operation soapAction="getCourtChannelInfo"/>
+            <wsdl:input name="inputGetCourtChannelInfo">
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output name="outputGetCourtChannelInfo">
+                <soap12:body use="literal"/>
+            </wsdl:output>
+            <wsdl:fault name="faultCourtNotFoundFault">
+                <soap12:fault name="fault" use="literal"/>
+            </wsdl:fault>
+            <wsdl:fault name="faultLanguageNotFound">
+                <soap12:fault name="fault" use="literal"/>
+            </wsdl:fault>
+        </wsdl:operation>
+        <wsdl:operation name="getThirdPartyChannelInfo">
+            <soap12:operation soapAction="getThirdPartyChannelInfo"/>
+            <wsdl:input name="inputGetThirdPartyChannelInfo">
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output name="outputGetThirdPartyChannelInfo">
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="isUserAllowedToDeposit">
+            <soap12:operation soapAction="isUserAllowedToDeposit"/>
+            <wsdl:input name="inputIsUserAllowedToDeposit">
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output name="outputIsUserAllowedToDeposit">
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="ping">
+            <soap12:operation soapAction="ping"/>
+            <wsdl:input name="inputPing">
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output name="outputPing">
+                <soap12:body use="literal"/>
+            </wsdl:output>
+            <wsdl:fault name="faultPing">
+                <soap12:fault name="fault" use="literal"/>
+            </wsdl:fault>
+        </wsdl:operation>
+    </wsdl:binding>
+    <wsdl:service name="DepositService">
+        <wsdl:port binding="tns:depositServiceSoap12" name="DepositPortTypeBindingPort">
+            <soap12:address location="https://cs.acc.dp-a.be/api/ws/depositService"/>
+        </wsdl:port>
+    </wsdl:service>
+</wsdl:definitions>

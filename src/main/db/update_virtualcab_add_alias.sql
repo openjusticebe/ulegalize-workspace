@@ -1,0 +1,1 @@
+ALTER TABLE `t_virtualcab` ADD `alias` varchar(30) NULL AFTER `abbreviation`;

@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+                  xmlns:tns="http://common.dpa.services/message/box/v01/ws"
+                  xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/"
+                  xmlns:glmsg="http://common.dpa.services/global/v01/messages"
+                  xmlns:boxmsg="http://common.dpa.services/message/box/v01/messages"
+                  xmlns="http://www.w3.org/2001/XMLSchema" name="dpaBox"
+                  targetNamespace="http://common.dpa.services/message/box/v01/ws">
+    <wsdl:types>
+        <schema xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:tns="http://common.dpa.services/message/box/v01/ws"
+                xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/"
+                xmlns:glmsg="http://common.dpa.services/global/v01/messages"
+                xmlns:boxmsg="http://common.dpa.services/message/box/v01/messages"
+                xmlns="http://www.w3.org/2001/XMLSchema">
+
+            <import namespace="http://common.dpa.services/message/box/v01/messages"
+                    schemaLocation="https://cs.acc.dp-a.be/api/ws/boxService?xsd=../xsd/box_messages.xsd"/>
+
+            <import namespace="http://common.dpa.services/global/v01/messages"
+                    schemaLocation="https://cs.acc.dp-a.be/api/ws/boxService?xsd=../xsd/core/global_messages.xsd"/>
+
+        </schema>
+    </wsdl:types>
+    <wsdl:message name="getDocumentRequest">
+        <wsdl:part element="boxmsg:getDocumentRequest" name="part1">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="getBoxesRequest">
+        <wsdl:part element="boxmsg:getBoxesRequest" name="part1">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="pingFault">
+        <wsdl:part name="error" type="glmsg:GeneralFault">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="getMessageByIdResponse">
+        <wsdl:part element="boxmsg:getMessageByIdResponse" name="part1">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="getMessageByIdRequest">
+        <wsdl:part element="boxmsg:getMessageByIdRequest" name="part1">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="getCaseDocumentsRequest">
+        <wsdl:part element="boxmsg:getCaseDocumentsRequest" name="part1">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="getCasesRequest">
+        <wsdl:part element="boxmsg:getCasesRequest" name="part1">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="getMessageSummariesResponse">
+        <wsdl:part element="boxmsg:getMessageSummariesResponse" name="part1">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="pingResponse">
+        <wsdl:part element="glmsg:Pong" name="part1">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="getCaseDocumentsResponse">
+        <wsdl:part element="boxmsg:getCaseDocumentsResponse" name="part1">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="pingRequest">
+        <wsdl:part element="glmsg:Ping" name="part1">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="getMessageSummariesRequest">
+        <wsdl:part element="boxmsg:getMessageSummariesRequest" name="part1">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="getBoxesResponse">
+        <wsdl:part element="boxmsg:getBoxesResponse" name="part1">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="getDocumentResponse">
+        <wsdl:part element="boxmsg:getDocumentResponse" name="part1">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="getCasesResponse">
+        <wsdl:part element="boxmsg:getCasesResponse" name="part1">
+        </wsdl:part>
+    </wsdl:message>
+    <wsdl:portType name="BoxPort">
+        <wsdl:operation name="getBoxes">
+            <wsdl:input message="tns:getBoxesRequest" name="inputGetBoxes">
+            </wsdl:input>
+            <wsdl:output message="tns:getBoxesResponse" name="outputGetBoxes">
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="getMessageSummaries">
+            <wsdl:input message="tns:getMessageSummariesRequest" name="inputGetMessageSummaries">
+            </wsdl:input>
+            <wsdl:output message="tns:getMessageSummariesResponse" name="outputGetMessageSummaries">
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="getMessageById">
+            <wsdl:input message="tns:getMessageByIdRequest" name="inputGetMessageById">
+            </wsdl:input>
+            <wsdl:output message="tns:getMessageByIdResponse" name="outputGetMessageById">
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="getDocument">
+            <wsdl:input message="tns:getDocumentRequest" name="inputGetDocument">
+            </wsdl:input>
+            <wsdl:output message="tns:getDocumentResponse" name="outputGetDocument">
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="getCases">
+            <wsdl:input message="tns:getCasesRequest" name="inputGetCases">
+            </wsdl:input>
+            <wsdl:output message="tns:getCasesResponse" name="outputGetCases">
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="getCaseDocuments">
+            <wsdl:input message="tns:getCaseDocumentsRequest" name="inputGetCaseDocuments">
+            </wsdl:input>
+            <wsdl:output message="tns:getCaseDocumentsResponse" name="outputGetCaseDocuments">
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="ping">
+            <wsdl:input message="tns:pingRequest" name="inputPing">
+            </wsdl:input>
+            <wsdl:output message="tns:pingResponse" name="outputPing">
+            </wsdl:output>
+            <wsdl:fault message="tns:pingFault" name="faultPing">
+            </wsdl:fault>
+        </wsdl:operation>
+    </wsdl:portType>
+    <wsdl:binding name="boxServiceSoap12" type="tns:BoxPort">
+        <soap12:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+        <wsdl:operation name="getBoxes">
+            <soap12:operation soapAction="getBoxes"/>
+            <wsdl:input name="inputGetBoxes">
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output name="outputGetBoxes">
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="getMessageSummaries">
+            <soap12:operation soapAction="getMessageSummaries"/>
+            <wsdl:input name="inputGetMessageSummaries">
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output name="outputGetMessageSummaries">
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="getMessageById">
+            <soap12:operation soapAction="getMessageById"/>
+            <wsdl:input name="inputGetMessageById">
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output name="outputGetMessageById">
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="getDocument">
+            <soap12:operation soapAction="getDocument"/>
+            <wsdl:input name="inputGetDocument">
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output name="outputGetDocument">
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="getCases">
+            <soap12:operation soapAction="getCases"/>
+            <wsdl:input name="inputGetCases">
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output name="outputGetCases">
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="getCaseDocuments">
+            <soap12:operation soapAction="getCaseDocuments"/>
+            <wsdl:input name="inputGetCaseDocuments">
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output name="outputGetCaseDocuments">
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="ping">
+            <soap12:operation soapAction="ping"/>
+            <wsdl:input name="inputPing">
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output name="outputPing">
+                <soap12:body use="literal"/>
+            </wsdl:output>
+            <wsdl:fault name="faultPing">
+                <soap12:fault name="fault" use="literal"/>
+            </wsdl:fault>
+        </wsdl:operation>
+    </wsdl:binding>
+    <wsdl:service name="BoxService">
+        <wsdl:port binding="tns:boxServiceSoap12" name="BoxPortTypeBindingPort">
+            <soap12:address location="https://cs.acc.dp-a.be/api/ws/boxService"/>
+        </wsdl:port>
+    </wsdl:service>
+</wsdl:definitions>

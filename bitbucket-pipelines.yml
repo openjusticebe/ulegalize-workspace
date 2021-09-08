@@ -1,0 +1,27 @@
+image: openjdk:12
+
+clone:
+  depth: full              # SonarCloud scanner needs the full history to assign issues properly
+
+definitions:
+  caches:
+    gradle: ~/.gradle/caches  # Caching SonarCloud artifacts will speed up your build
+  steps:
+    - step: &test-build
+        name: test unit and build
+        caches:
+          - gradle
+        script:
+          - ./gradlew build
+        artifacts:
+          - build/libs/**
+
+pipelines:                 # More info here: https://confluence.atlassian.com/bitbucket/configure-bitbucket-pipelines-yml-792298910.html
+  branches:
+    master:
+      - step: *test-build
+    test:
+      - step: *test-build
+    pull-requests:
+    '**':
+      - step: *test-build

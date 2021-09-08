@@ -1,0 +1,1 @@
+ALTER TABLE `t_virtualcab_users` ADD `is_public` INT NOT NULL DEFAULT '0' AFTER `is_active`;
