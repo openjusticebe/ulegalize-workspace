@@ -100,11 +100,10 @@ wadl2java -p com.ulegalize.lawfirm.model.dpa  https://cs.acc.dp-a.be/api/rest/de
 
 #### token
 
-curl --include --cookie "dpatoken=AQIC5wM2LY4Sfcz4lJmBVqb2gfopWFXVYNxDBjk_54lH3U0.*
-AAJTSQACMDEAAlNLABQtMjI2NjcwNTUxNTQ1Nzk3MDEzNwACUzEAAA..*" --header 'softwarekey:220568D250C5B0D5' --header '
+curl --include --cookie "dpatoken=AQI..." --header 'softwarekey:220...' --header '
 Accept-Language:en' --header 'Accept:application/json' --header 'Content-Type:
 application/json' https://cs.dp-a.be/api/rest/user/
-curl --include --cookie "dpatoken=ZvY7Xkyd43x4wdSG" --header 'softwarekey:220568D250C5B0D5' --header 'Accept-Language:
+curl --include --cookie "dpatoken=Zv..." --header 'softwarekey:220568D250C5B0D5' --header 'Accept-Language:
 en' --header 'Accept:application/json' --header 'Content-Type: application/json' https://cs.dp-a.be/api/rest/user/
 
 #### process
@@ -115,9 +114,9 @@ https://idp.acc.dp-a.be/oam/oauth2/authorize?response_type=code&client_id=ZvY7Xk
 
 curl --location --request POST 'https://idp.acc.dp-a.be/oam/oauth2/access_token' \
 --header 'Content-Type: application/x-www-form-urlencoded' \
---header 'Authorization: Basic Zm9ybGV4Om54NUdNsdfsdfSjR3FmcVY=' \
+--header 'Authorization: Basic Zm...' \
 --header 'Cookie: SERVERID=hello1' \
---data-urlencode 'client_id=ZvY7Xkyd43x4wdSG' \
+--data-urlencode 'client_id=ZvY...' \
 --data-urlencode 'redirect_uri=http://localhost:3000/dp' \
 --data-urlencode 'grant_type=authorization_code' \
 --data-urlencode 'code=code received at localhost'
