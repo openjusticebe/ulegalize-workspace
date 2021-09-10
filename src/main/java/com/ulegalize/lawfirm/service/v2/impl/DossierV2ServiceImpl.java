@@ -546,6 +546,10 @@ public class DossierV2ServiceImpl implements DossierV2Service {
             log.warn("No open date dossier {}", dossierDTO.getOpenDossier());
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No open date dossier");
         }
+        if (dossierDTO.getType() == null) {
+            log.warn("Type of dossier {} is not found", dossierDTO.getType());
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Type of dossier is not found");
+        }
         // cabinet must have a client and adverse
         if (!dossierDTO.getType().equals(EnumDossierType.MD)) {
             log.debug("Rule {} adverse client {} ", dossierDTO.getType(), dossierDTO.getIdAdverseClient());
@@ -565,10 +569,6 @@ public class DossierV2ServiceImpl implements DossierV2Service {
             }
         }
 
-        if (dossierDTO.getType() == null) {
-            log.warn("Type of dossier {} is not found", dossierDTO.getType());
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Type of dossier is not found");
-        }
     }
 
     @Override

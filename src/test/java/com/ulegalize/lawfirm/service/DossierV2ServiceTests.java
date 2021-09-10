@@ -8,11 +8,11 @@ import com.ulegalize.lawfirm.EntityTest;
 import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.converter.EntityToDossierConverter;
 import com.ulegalize.lawfirm.model.entity.*;
-import com.ulegalize.lawfirm.repository.DossierContactRepository;
 import com.ulegalize.lawfirm.repository.TDossierRightsRepository;
 import com.ulegalize.lawfirm.service.v2.DossierV2Service;
 import com.ulegalize.security.EnumRights;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -42,26 +42,37 @@ public class DossierV2ServiceTests extends EntityTest {
     private TDossierRightsRepository dossierRightsRepository;
     @Autowired
     private EntityToDossierConverter entityToDossierConverter;
-    @Autowired
-    private DossierContactRepository dossierContactRepository;
+    private LawfirmEntity lawfirm;
+
+    @Before
+    public void setupAuthenticate() {
+        lawfirm = createLawfirm();
+        Long userId = lawfirm.getLawfirmUsers().get(0).getUser().getId();
+        String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
+        String usermail = lawfirm.getLawfirmUsers().get(0).getUser().getEmail();
+        LawfirmToken lawfirmToken = new LawfirmToken(userId, usermail, usermail, lawfirm.getVckey(), null, true, new ArrayList<>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "");
+
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+    }
 
     @Test
     public void test_A_getAffairesByVcUserIdAndSearchCriteria_numDossier_67() {
-        LawfirmEntity lawfirmEntity = createLawfirm();
         String email = "my@gmail.com";
-        String fullname = lawfirmEntity.getLawfirmUsers().get(0).getUser().getFullname();
-        String vcKey = lawfirmEntity.getVckey();
-        Long userId = lawfirmEntity.getLawfirmUsers().get(0).getUser().getId();
+        String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
+        String vcKey = lawfirm.getVckey();
+        Long userId = lawfirm.getLawfirmUsers().get(0).getUser().getId();
 
         LawfirmToken lawfirmToken = new LawfirmToken(userId, email, email, vcKey, null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "");
 
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        TDossiers dossier = createDossier(lawfirmEntity, EnumVCOwner.OWNER_VC);
+        TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
 
         String searchCriteria = "67";
-        Long vcUserId = lawfirmEntity.getLawfirmUsers().get(0).getUser().getId();
+        Long vcUserId = lawfirm.getLawfirmUsers().get(0).getUser().getId();
 
         List<ItemLongDto> itemLongDtos = dossierV2Service.getAffairesByVcUserIdAndSearchCriteria(
                 vcKey, vcUserId, searchCriteria);
@@ -74,21 +85,20 @@ public class DossierV2ServiceTests extends EntityTest {
 
     @Test
     public void test_B_getAffairesByVcUserIdAndSearchCriteria_yearDossier_2020() {
-        LawfirmEntity lawfirmEntity = createLawfirm();
         String email = "my@gmail.com";
-        String fullname = lawfirmEntity.getLawfirmUsers().get(0).getUser().getFullname();
-        String vcKey = lawfirmEntity.getVckey();
-        Long userId = lawfirmEntity.getLawfirmUsers().get(0).getUser().getId();
+        String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
+        String vcKey = lawfirm.getVckey();
+        Long userId = lawfirm.getLawfirmUsers().get(0).getUser().getId();
 
         LawfirmToken lawfirmToken = new LawfirmToken(userId, email, email, vcKey, null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "");
 
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        TDossiers dossier = createDossier(lawfirmEntity, EnumVCOwner.OWNER_VC);
+        TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
 
         String searchCriteria = String.valueOf(LocalDate.now().getYear());
-        Long vcUserId = lawfirmEntity.getLawfirmUsers().get(0).getUser().getId();
+        Long vcUserId = lawfirm.getLawfirmUsers().get(0).getUser().getId();
 
         List<ItemLongDto> itemLongDtos = dossierV2Service.getAffairesByVcUserIdAndSearchCriteria(
                 vcKey, vcUserId, searchCriteria);
@@ -102,12 +112,11 @@ public class DossierV2ServiceTests extends EntityTest {
     @Test
     public void test_C_getAllAffaires_zero() {
 
-        LawfirmEntity lawfirmEntity = createLawfirm();
-        TDossiers dossier = createDossier(lawfirmEntity, EnumVCOwner.OWNER_VC);
+        TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
 
-        String vcKey = lawfirmEntity.getVckey();
+        String vcKey = lawfirm.getVckey();
         String searchCriteria = String.valueOf(LocalDate.now().getYear());
-        Long userId = lawfirmEntity.getLawfirmUsers().get(0).getUser().getId();
+        Long userId = lawfirm.getLawfirmUsers().get(0).getUser().getId();
         boolean searchArchived = false;
         Page<DossierDTO> allAffaires = dossierV2Service.getAllAffaires(10, 0, userId, vcKey, List.of(EnumVCOwner.OWNER_VC), "", null, null, false, null, searchArchived);
 
@@ -119,13 +128,12 @@ public class DossierV2ServiceTests extends EntityTest {
     @Test
     public void test_D_getAllAffaires_notZero() {
 
-        LawfirmEntity lawfirmEntity = createLawfirm();
-        TDossiers dossier = createDossier(lawfirmEntity, EnumVCOwner.OWNER_VC);
-        createTTimesheet(lawfirmEntity, dossier);
+        TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
+        createTTimesheet(lawfirm, dossier);
 
-        String vcKey = lawfirmEntity.getVckey();
+        String vcKey = lawfirm.getVckey();
         String searchCriteria = String.valueOf(LocalDate.now().getYear());
-        Long userId = lawfirmEntity.getLawfirmUsers().get(0).getUser().getId();
+        Long userId = lawfirm.getLawfirmUsers().get(0).getUser().getId();
         boolean searchArchived = false;
         Page<DossierDTO> allAffaires = dossierV2Service.getAllAffaires(10, 0, userId, vcKey, List.of(EnumVCOwner.OWNER_VC), "", null, null, true, null, searchArchived);
 
@@ -136,20 +144,19 @@ public class DossierV2ServiceTests extends EntityTest {
 
     @Test
     public void test_E_updateAffaire_client() {
-        LawfirmEntity lawfirmEntity = createLawfirm();
         String email = "my@gmail.com";
-        String fullname = lawfirmEntity.getLawfirmUsers().get(0).getUser().getFullname();
-        String vcKey = lawfirmEntity.getVckey();
-        Long userId = lawfirmEntity.getLawfirmUsers().get(0).getUser().getId();
+        String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
+        String vcKey = lawfirm.getVckey();
+        Long userId = lawfirm.getLawfirmUsers().get(0).getUser().getId();
 
-        LawfirmToken lawfirmToken = new LawfirmToken(userId, email, email, lawfirmEntity.getVckey(), null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "");
+        LawfirmToken lawfirmToken = new LawfirmToken(userId, email, email, lawfirm.getVckey(), null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "");
 
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        TDossiers dossier = createDossier(lawfirmEntity, EnumVCOwner.OWNER_VC);
+        TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
 
-        TClients newClient = createClient(lawfirmEntity);
+        TClients newClient = createClient(lawfirm);
 
         DossierDTO dossierDTO = entityToDossierConverter.apply(dossier, EnumLanguage.FR);
 
@@ -168,48 +175,42 @@ public class DossierV2ServiceTests extends EntityTest {
 
     @Test(expected = ResponseStatusException.class)
     public void test_F_updateAffaire_party_exception() {
-        LawfirmEntity lawfirmEntity = createLawfirm();
         String email = "my@gmail.com";
-        String fullname = lawfirmEntity.getLawfirmUsers().get(0).getUser().getFullname();
-        String vcKey = lawfirmEntity.getVckey();
-        Long userId = lawfirmEntity.getLawfirmUsers().get(0).getUser().getId();
+        String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
+        String vcKey = lawfirm.getVckey();
+        Long userId = lawfirm.getLawfirmUsers().get(0).getUser().getId();
 
-        LawfirmToken lawfirmToken = new LawfirmToken(userId, email, email, lawfirmEntity.getVckey(), null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "");
-
-        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-
-        TDossiers dossier = createDossier(lawfirmEntity, EnumVCOwner.OWNER_VC);
+        TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
         dossier.setDoss_type(EnumDossierType.MD.getDossType());
         testEntityManager.persist(dossier);
 
-        TClients newClient = createClient(lawfirmEntity);
+        TClients newClient = createClient(lawfirm);
 
         DossierDTO dossierDTO = entityToDossierConverter.apply(dossier, EnumLanguage.FR);
 
-        dossierDTO.setIdClient(newClient.getId_client());
+        // clientList is empty
+        dossierDTO.setClientList(new ArrayList<>());
 
         DossierDTO updateAffaire = dossierV2Service.updateAffaire(dossierDTO, userId, USER, vcKey);
     }
 
     @Test
     public void test_G_updateAffaire_party() {
-        LawfirmEntity lawfirmEntity = createLawfirm();
         String email = "my@gmail.com";
-        String fullname = lawfirmEntity.getLawfirmUsers().get(0).getUser().getFullname();
-        String vcKey = lawfirmEntity.getVckey();
-        Long userId = lawfirmEntity.getLawfirmUsers().get(0).getUser().getId();
+        String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
+        String vcKey = lawfirm.getVckey();
+        Long userId = lawfirm.getLawfirmUsers().get(0).getUser().getId();
 
-        LawfirmToken lawfirmToken = new LawfirmToken(userId, email, email, lawfirmEntity.getVckey(), null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "");
+        LawfirmToken lawfirmToken = new LawfirmToken(userId, email, email, lawfirm.getVckey(), null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "");
 
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        TDossiers dossier = createDossier(lawfirmEntity, EnumVCOwner.OWNER_VC);
+        TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
         dossier.setDoss_type(EnumDossierType.MD.getDossType());
         testEntityManager.persist(dossier);
 
-        TClients newClient = createClient(lawfirmEntity);
+        TClients newClient = createClient(lawfirm);
 
         DossierDTO dossierDTO = entityToDossierConverter.apply(dossier, EnumLanguage.FR);
 
@@ -228,20 +229,19 @@ public class DossierV2ServiceTests extends EntityTest {
 
     @Test
     public void test_H_addShareFolderUser_NotMd() {
-        LawfirmEntity lawfirmEntity = createLawfirm();
         String email = "my@gmail.com";
-        String fullname = lawfirmEntity.getLawfirmUsers().get(0).getUser().getFullname();
-        String vcKey = lawfirmEntity.getVckey();
-        Long userId = lawfirmEntity.getLawfirmUsers().get(0).getUser().getId();
+        String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
+        String vcKey = lawfirm.getVckey();
+        Long userId = lawfirm.getLawfirmUsers().get(0).getUser().getId();
 
-        LawfirmToken lawfirmToken = new LawfirmToken(userId, email, email, lawfirmEntity.getVckey(), null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "");
+        LawfirmToken lawfirmToken = new LawfirmToken(userId, email, email, lawfirm.getVckey(), null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "");
 
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        TDossiers dossier = createDossier(lawfirmEntity, EnumVCOwner.OWNER_VC);
+        TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
 
-        LawfirmUsers lawfirmUsers = createLawfirmUsers(lawfirmEntity, "new@gmail.com");
+        LawfirmUsers lawfirmUsers = createLawfirmUsers(lawfirm, "new@gmail.com");
         Long newUserId = lawfirmUsers.getUser().getId();
 
         ShareAffaireDTO shareAffaireDTO = new ShareAffaireDTO();
