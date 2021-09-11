@@ -12,7 +12,7 @@ import java.time.ZonedDateTime;
 import java.util.List;
 
 public interface InvoiceService {
-    public Page<InvoiceDTO> getAllInvoices(int limit, int offset, String vcKey, Integer searchEcheance, ZonedDateTime searchDate, String searchYearDossier, Long searchNumberDossier);
+    public Page<InvoiceDTO> getAllInvoices(int limit, int offset, String vcKey, Integer searchEcheance, ZonedDateTime searchDate, String searchYearDossier, Long searchNumberDossier, String searchClient);
 
     Page<InvoiceDTO> getAllInvoicesByDossierId(int limit, int offset, Long dossierId, String vcKey);
 

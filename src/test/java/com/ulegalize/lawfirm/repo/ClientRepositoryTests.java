@@ -83,7 +83,7 @@ public class ClientRepositoryTests extends EntityTest {
         TClients client = createClient(lawfirm);
 
         TUsers user = lawfirm.getLawfirmUsers().get(0).getUser();
-        Long itemStringDtos = clientRepository.countByUserIdOrVcKeyWithPagination(lawfirm.getVckey(), user.getId(), "");
+        Long itemStringDtos = clientRepository.countByUserIdOrVcKeyWithPagination(lawfirm.getVckey(), user.getId(), null);
         assertNotNull(itemStringDtos);
 
         assertEquals(Long.valueOf(1), itemStringDtos);

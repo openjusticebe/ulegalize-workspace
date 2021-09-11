@@ -87,7 +87,9 @@ public class InvoiceServiceImpl implements InvoiceService {
     }
 
     @Override
-    public Page<InvoiceDTO> getAllInvoices(int limit, int offset, String vcKey, Integer searchEcheance, ZonedDateTime searchDate, String searchYearDossier, Long searchNumberDossier) {
+    public Page<InvoiceDTO> getAllInvoices(int limit, int offset, String vcKey, Integer searchEcheance,
+                                           ZonedDateTime searchDate, String searchYearDossier,
+                                           Long searchNumberDossier, String searchClient) {
         log.debug("Get all Invoices with user {} limit {} and offset {}", vcKey, limit, offset);
 
         Sort.Order order = new Sort.Order(Sort.Direction.ASC, "idFactureType");
@@ -100,7 +102,7 @@ public class InvoiceServiceImpl implements InvoiceService {
         if (searchDate != null) {
             allInvoices = facturesRepository.findAllByDateWithPagination(vcKey, searchEcheance, searchDate, searchYearDossier, number, pageable);
         } else {
-            allInvoices = facturesRepository.findAllWithPagination(vcKey, searchEcheance, searchYearDossier, number, pageable);
+            allInvoices = facturesRepository.findAllWithPagination(vcKey, searchEcheance, searchYearDossier, number, searchClient, pageable);
 
         }
         List<InvoiceDTO> invoiceDTOList = !CollectionUtils.isEmpty(allInvoices.getContent()) ? entityToInvoiceConverter.convertToList(allInvoices.getContent()) : new ArrayList<>();

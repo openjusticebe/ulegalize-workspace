@@ -43,8 +43,9 @@ public interface ClientRepository extends JpaRepository<TClients, Long> {
             " join client.virtualcabClientList vcc " +
             " join vcc.lawfirm lawfirm " +
             " where (lawfirm.vckey in :vcKey or client.user_id = :userId) " +
-            " and (client.f_nom like %:searchCriteria% " +
-            " or client.f_prenom like %:searchCriteria% or client.f_company like %:searchCriteria%)")
+            " and (client.f_nom like COALESCE(CONCAT('%', :searchCriteria, '%'), '%') " +
+            " or client.f_prenom like COALESCE(CONCAT('%', :searchCriteria, '%'), '%')" +
+            "  or client.f_company like COALESCE(CONCAT('%', :searchCriteria, '%'), '%'))")
     Long countByUserIdOrVcKeyWithPagination(String vcKey, Long userId, String searchCriteria);
 
     @Query(value = "SELECT d from TClients d " +

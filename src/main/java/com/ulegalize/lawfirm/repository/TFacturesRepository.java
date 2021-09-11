@@ -17,19 +17,27 @@ public interface TFacturesRepository extends JpaRepository<TFactures, Long>, Jpa
     Optional<TFactures> findByIdFactureAndVcKey(Long factureId, String vcKey);
 
     @Query(value = "SELECT d from TFactures d " +
+            " join d.tClients client " +
             " left join d.tDossiers doss " +
             " where d.vcKey = :vcKey " +
             " and d.idEcheance like COALESCE(:searchEcheance, '%') " +
             " and doss.year_doss like COALESCE(CONCAT(:searchYearDossier, '%'), '%') " +
             " and doss.num_doss like COALESCE(CONCAT(:searchNumberDossier, '%'), '%') " +
+            " and (client.f_nom like COALESCE(CONCAT('%', :searchClient, '%'), '%' ) " +
+            " or client.f_prenom like COALESCE(CONCAT('%', :searchClient, '%'), '%' )" +
+            " or client.f_company like COALESCE(CONCAT('%', :searchClient, '%'), '%' ) )" +
             " order by d.valid asc, d.idFacture desc",
             countQuery = "SELECT count(d) from TFactures d" +
+                    " join d.tClients client " +
                     " left join d.tDossiers doss " +
                     " where d.vcKey = :vcKey " +
                     " and d.idEcheance like COALESCE(:searchEcheance, '%') " +
                     " and doss.year_doss like COALESCE(CONCAT(:searchYearDossier, '%'), '%') " +
-                    " and doss.num_doss like COALESCE(CONCAT(:searchNumberDossier, '%'), '%') ")
-    Page<TFactures> findAllWithPagination(String vcKey, Integer searchEcheance, String searchYearDossier, Long searchNumberDossier, Pageable pageable);
+                    " and doss.num_doss like COALESCE(CONCAT(:searchNumberDossier, '%'), '%') " +
+                    " and (client.f_nom like COALESCE(CONCAT('%', :searchClient, '%'), '%' ) " +
+                    " or client.f_prenom like COALESCE(CONCAT('%', :searchClient, '%'), '%' )" +
+                    " or client.f_company like COALESCE(CONCAT('%', :searchClient, '%'), '%' ) )")
+    Page<TFactures> findAllWithPagination(String vcKey, Integer searchEcheance, String searchYearDossier, Long searchNumberDossier, String searchClient, Pageable pageable);
 
     @Query(value = "SELECT d from TFactures d " +
             " left join d.tDossiers doss " +

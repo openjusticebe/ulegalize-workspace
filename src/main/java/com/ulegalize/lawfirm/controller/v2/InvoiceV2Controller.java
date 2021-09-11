@@ -54,6 +54,7 @@ public class InvoiceV2Controller {
                                                         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) ZonedDateTime searchDate,
                                                         @RequestParam(required = false) String searchYearDossier,
                                                         @RequestParam(required = false) Long searchNumberDossier,
+                                                        @RequestParam(required = false) String searchClient,
                                                         @RequestParam(required = false) String vcKey
     ) {
         log.debug("getInvoices(offset: {} , limit {} and dossierId {}", offset, limit, dossierId);
@@ -66,7 +67,7 @@ public class InvoiceV2Controller {
             allInvoices = invoiceService.getAllInvoicesByDossierId(limit, offset, dossierId, lawfirmToken.getVcKey());
         } else {
             ZonedDateTime zonedDateTimeSearch = searchDate != null ? CalendarEventsUtil.convertToZoneDateTimeViaInstant(searchDate) : null;
-            allInvoices = invoiceService.getAllInvoices(limit, offset, lawfirmToken.getVcKey(), searchEcheance, zonedDateTimeSearch, searchYearDossier, searchNumberDossier);
+            allInvoices = invoiceService.getAllInvoices(limit, offset, lawfirmToken.getVcKey(), searchEcheance, zonedDateTimeSearch, searchYearDossier, searchNumberDossier, searchClient);
         }
 
         ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.ok();
