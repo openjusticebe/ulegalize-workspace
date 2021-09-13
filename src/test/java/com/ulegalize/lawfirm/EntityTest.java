@@ -636,4 +636,15 @@ public abstract class EntityTest extends ConfigureTest {
 
         return entity;
     }
+
+    protected VatCountry createVatCountry() {
+        VatCountry entity = new VatCountry();
+
+        entity.setVat(new BigDecimal("21"));
+        entity.setIsDefault(true);
+        entity.setIdCountryAlpha2("BE");
+        testEntityManager.persist(entity);
+
+        return entity;
+    }
 }

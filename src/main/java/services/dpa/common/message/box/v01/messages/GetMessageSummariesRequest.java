@@ -76,12 +76,12 @@ public class GetMessageSummariesRequest {
 
     @XmlElement(required = true)
     protected String boxId;
-    protected GetMessageSummariesRequest.UpdatedBetween updatedBetween;
+    protected UpdatedBetween updatedBetween;
     @XmlSchemaType(name = "string")
     protected Direction direction;
     protected MessageStatusList messageStatuses;
     protected ReceivedFrom receivedFrom;
-    protected GetMessageSummariesRequest.CaseReference caseReference;
+    protected CaseReference caseReference;
     protected String transactionId;
     @XmlAttribute(name = "languageCode")
     @XmlJavaTypeAdapter(CollapsedStringAdapter.class)
@@ -118,9 +118,9 @@ public class GetMessageSummariesRequest {
      * Gets the value of the updatedBetween property.
      *
      * @return possible object is
-     * {@link GetMessageSummariesRequest.UpdatedBetween }
+     * {@link UpdatedBetween }
      */
-    public GetMessageSummariesRequest.UpdatedBetween getUpdatedBetween() {
+    public UpdatedBetween getUpdatedBetween() {
         return updatedBetween;
     }
 
@@ -128,9 +128,9 @@ public class GetMessageSummariesRequest {
      * Sets the value of the updatedBetween property.
      *
      * @param value allowed object is
-     *              {@link GetMessageSummariesRequest.UpdatedBetween }
+     *              {@link UpdatedBetween }
      */
-    public void setUpdatedBetween(GetMessageSummariesRequest.UpdatedBetween value) {
+    public void setUpdatedBetween(UpdatedBetween value) {
         this.updatedBetween = value;
     }
 
@@ -198,9 +198,9 @@ public class GetMessageSummariesRequest {
      * Gets the value of the caseReference property.
      *
      * @return possible object is
-     * {@link GetMessageSummariesRequest.CaseReference }
+     * {@link CaseReference }
      */
-    public GetMessageSummariesRequest.CaseReference getCaseReference() {
+    public CaseReference getCaseReference() {
         return caseReference;
     }
 
@@ -208,9 +208,9 @@ public class GetMessageSummariesRequest {
      * Sets the value of the caseReference property.
      *
      * @param value allowed object is
-     *              {@link GetMessageSummariesRequest.CaseReference }
+     *              {@link CaseReference }
      */
-    public void setCaseReference(GetMessageSummariesRequest.CaseReference value) {
+    public void setCaseReference(CaseReference value) {
         this.caseReference = value;
     }
 

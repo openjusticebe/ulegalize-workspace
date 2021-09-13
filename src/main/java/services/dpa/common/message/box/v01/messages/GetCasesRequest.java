@@ -67,8 +67,8 @@ public class GetCasesRequest {
     @XmlElement(required = true)
     protected String boxId;
     protected String lawyerReference;
-    protected GetCasesRequest.UpdatedBetween updatedBetween;
-    protected GetCasesRequest.OpenedBetween openedBetween;
+    protected UpdatedBetween updatedBetween;
+    protected OpenedBetween openedBetween;
     @XmlAttribute(name = "languageCode")
     @XmlJavaTypeAdapter(CollapsedStringAdapter.class)
     @XmlSchemaType(name = "language")
@@ -124,9 +124,9 @@ public class GetCasesRequest {
      * Gets the value of the updatedBetween property.
      *
      * @return possible object is
-     * {@link GetCasesRequest.UpdatedBetween }
+     * {@link UpdatedBetween }
      */
-    public GetCasesRequest.UpdatedBetween getUpdatedBetween() {
+    public UpdatedBetween getUpdatedBetween() {
         return updatedBetween;
     }
 
@@ -134,9 +134,9 @@ public class GetCasesRequest {
      * Sets the value of the updatedBetween property.
      *
      * @param value allowed object is
-     *              {@link GetCasesRequest.UpdatedBetween }
+     *              {@link UpdatedBetween }
      */
-    public void setUpdatedBetween(GetCasesRequest.UpdatedBetween value) {
+    public void setUpdatedBetween(UpdatedBetween value) {
         this.updatedBetween = value;
     }
 
@@ -144,9 +144,9 @@ public class GetCasesRequest {
      * Gets the value of the openedBetween property.
      *
      * @return possible object is
-     * {@link GetCasesRequest.OpenedBetween }
+     * {@link OpenedBetween }
      */
-    public GetCasesRequest.OpenedBetween getOpenedBetween() {
+    public OpenedBetween getOpenedBetween() {
         return openedBetween;
     }
 
@@ -154,9 +154,9 @@ public class GetCasesRequest {
      * Sets the value of the openedBetween property.
      *
      * @param value allowed object is
-     *              {@link GetCasesRequest.OpenedBetween }
+     *              {@link OpenedBetween }
      */
-    public void setOpenedBetween(GetCasesRequest.OpenedBetween value) {
+    public void setOpenedBetween(OpenedBetween value) {
         this.openedBetween = value;
     }
 

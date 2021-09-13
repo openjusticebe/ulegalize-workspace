@@ -28,18 +28,18 @@ public class CalendarEventsUtil {
     }
 
     public static Date convertToDateViaInstant(LocalDateTime dateToConvert) {
-        return java.util.Date
+        return Date
                 .from(dateToConvert.atZone(ZoneId.systemDefault())
                         .toInstant());
     }
 
     public static Date convertToDateViaInstant(ZonedDateTime dateToConvert) {
-        return java.util.Date
+        return Date
                 .from(dateToConvert.toInstant());
     }
 
     public static Date convertZoneToDateViaInstant(ZonedDateTime dateToConvert) {
-        return java.util.Date
+        return Date
                 .from(dateToConvert.toInstant());
     }
 

@@ -20,9 +20,11 @@ import com.ulegalize.lawfirm.utils.Utils;
 import com.ulegalize.security.EnumRights;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -38,6 +40,9 @@ import java.util.Optional;
 @Transactional
 public class LawfirmV2ServiceImpl implements LawfirmV2Service {
 
+    @Value("${name-temporary-vckey}")
+    private String TEMP_VCKEY;
+
     private final LawfirmRepository lawfirmRepository;
     private final TUsersRepository tUsersRepository;
     private final TSequenceRepository tSequenceRepository;
@@ -52,7 +57,6 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
     private final LawfirmUserRepository lawfirmUserRepository;
     private final UserV2Service userV2Service;
     private final ILawfirmProducer lawfirmProducer;
-    private final LawfirmWebsiteRepository lawfirmWebsiteRepository;
     private final SearchService searchService;
 
     public LawfirmV2ServiceImpl(LawfirmRepository lawfirmRepository,
@@ -67,7 +71,7 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
                                 TSecurityGroupsRepository tSecurityGroupsRepository,
                                 TDossierRightsRepository tDossierRightsRepository, LawfirmUserRepository lawfirmUserRepository,
                                 UserV2Service userV2Service, ILawfirmProducer lawfirmProducer,
-                                LawfirmWebsiteRepository lawfirmWebsiteRepository, SearchService searchService) {
+                                SearchService searchService) {
         this.lawfirmRepository = lawfirmRepository;
         this.tUsersRepository = tUsersRepository;
         this.tSequenceRepository = tSequenceRepository;
@@ -82,13 +86,11 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
         this.lawfirmUserRepository = lawfirmUserRepository;
         this.userV2Service = userV2Service;
         this.lawfirmProducer = lawfirmProducer;
-        this.lawfirmWebsiteRepository = lawfirmWebsiteRepository;
         this.searchService = searchService;
     }
 
 
     @Override
-//    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public String createTempVc(String userEmail, String clientFrom) throws ResponseStatusException {
         log.info("Entering createTempVc {}", userEmail);
         Optional<TSequences> tSequences = tSequenceRepository.maxSequenceById(EnumSequenceType.TEMP_VC);
@@ -103,7 +105,7 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
             // save the new sequence for the next vc
             tSequenceRepository.save(tSequences.get());
 
-            String tempVc = "ULEGAL" + sequenceNumber;
+            String tempVc = TEMP_VCKEY + sequenceNumber;
             // create the new vc
             createSingleVcKey(userEmail, tempVc, clientFrom, false, EnumLanguage.FR, "BE");
 
@@ -177,6 +179,7 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
     }
 
     @Override
+    @Transactional(propagation = Propagation.REQUIRED, noRollbackFor = NumberFormatException.class)
     public ProfileDTO updateTempVcKey(LawfirmToken userProfile, DefaultLawfirmDTO defaultLawfirmDTO) {
         log.debug("Entering updateTempVcKey old vckey {} , new vckey {}", userProfile, defaultLawfirmDTO);
 
@@ -195,8 +198,14 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
         }
 
         if (defaultLawfirmDTO.getLawfirmDTO() == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Lawfirm must be filled inr");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Lawfirm must be filled in");
         }
+
+        if (defaultLawfirmDTO.getVcKey() == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Lawfirm must be filled in");
+        }
+
+        defaultLawfirmDTO.setVcKey(defaultLawfirmDTO.getVcKey().toUpperCase());
 
         // default value
         List<ItemVatDTO> itemVatDTOList;
@@ -233,6 +242,34 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
 
             if (tUsersOptional.isEmpty()) {
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Something wrong with this user");
+            }
+
+            // check if the new vckey exist
+            Optional<LawfirmEntity> optionalLawfirm = lawfirmRepository.findLawfirmByVckey(defaultLawfirmDTO.getVcKey());
+
+            if (optionalLawfirm.isPresent()) {
+                log.warn("Lawfirm with the name {} already exists", defaultLawfirmDTO.getVcKey());
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Lawfirm with the name " + defaultLawfirmDTO.getVcKey() + " already exists");
+            }
+
+            // verify TEMP_VCKEY is in the new name
+            if (defaultLawfirmDTO.getVcKey().contains(TEMP_VCKEY)) {
+                // check the number after ULEGAL
+                String restvalue = defaultLawfirmDTO.getVcKey().replace(TEMP_VCKEY, "");
+                String restOriginalVcKey = userProfile.getVcKey().replace(TEMP_VCKEY, "");
+
+                try {
+                    int numberRestValue = Integer.parseInt(restvalue);
+                    int numberRestOriginal = Integer.parseInt(restOriginalVcKey);
+
+                    // restValue cannot be > restoOriginalVcKey
+                    if (numberRestValue > numberRestOriginal) {
+                        log.warn("Lawfirm with the name {} cannot have a sequence number {} > the original temp number {}", defaultLawfirmDTO.getVcKey(), numberRestValue, numberRestOriginal);
+                        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Lawfirm with the name " + defaultLawfirmDTO.getVcKey() + " cannot have a sequence number " + numberRestValue + " > the original temp number " + numberRestOriginal);
+                    }
+                } catch (NumberFormatException ex) {
+                    log.warn("Value are not number, everything it's ok");
+                }
             }
 
             tUsersOptional.get().setLanguage(enumLanguage.getShortCode());

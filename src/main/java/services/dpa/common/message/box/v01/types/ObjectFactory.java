@@ -252,17 +252,17 @@ public class ObjectFactory {
     }
 
     /**
-     * Create an instance of {@link services.dpa.common.message.box.v01.types.MessageSummary.CaseReference }
+     * Create an instance of {@link MessageSummary.CaseReference }
      */
-    public services.dpa.common.message.box.v01.types.MessageSummary.CaseReference createMessageSummaryCaseReference() {
-        return new services.dpa.common.message.box.v01.types.MessageSummary.CaseReference();
+    public MessageSummary.CaseReference createMessageSummaryCaseReference() {
+        return new MessageSummary.CaseReference();
     }
 
     /**
-     * Create an instance of {@link services.dpa.common.message.box.v01.types.Message.CaseReference }
+     * Create an instance of {@link Message.CaseReference }
      */
-    public services.dpa.common.message.box.v01.types.Message.CaseReference createMessageCaseReference() {
-        return new services.dpa.common.message.box.v01.types.Message.CaseReference();
+    public Message.CaseReference createMessageCaseReference() {
+        return new Message.CaseReference();
     }
 
 }
