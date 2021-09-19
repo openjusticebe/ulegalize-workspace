@@ -1,6 +1,10 @@
 ## Getting started
+First you can read the accessible documentation
+https://ulegalize.atlassian.net/wiki/spaces/UC/pages/793378817/Open+source
 
-### V2
+Don't hesitate to create PR in order to change something in the project
+
+### Workspace
 
 change `gradle.properties` version  
 commit your change add a new tag and push all
