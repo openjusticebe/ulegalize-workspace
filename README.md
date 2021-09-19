@@ -1,4 +1,4 @@
-## Getting started
+## Getting started  [![Workspace CI](https://github.com/openjusticebe/ulegalize-workspace/actions/workflows/runOnGitHub.yml/badge.svg?branch=master)](https://github.com/openjusticebe/ulegalize-workspace/actions/workflows/runOnGitHub.yml)
 First you can read the accessible documentation
 https://ulegalize.atlassian.net/wiki/spaces/UC/pages/793378817/Open+source
 
