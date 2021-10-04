@@ -15,7 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 
 @Transactional
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
@@ -86,63 +87,4 @@ public class TfraisrRepositoryTests extends EntityTest {
         assertThat(tFrais.getMontantht().negate(), Matchers.comparesEqualTo(countAllJusticeByVcKey));
     }
 
-    @Test
-    public void test_D_countAllByIdDossAndVcKeyAndDebours() {
-        LawfirmEntity lawfirm = createLawfirm();
-
-        TFrais tFrais = createTFrais(lawfirm);
-        tFrais.getRefPoste().setFraisProcedure(true);
-
-        testEntityManager.persist(tFrais.getRefPoste());
-
-        Long countAllJusticeByVcKey = tFraisRepository.countAllByIdDossAndVcKeyAndDebours(tFrais.getIdDoss(), lawfirm.getVckey());
-
-        assertNotNull(countAllJusticeByVcKey);
-        assertEquals(countAllJusticeByVcKey, Long.valueOf(1));
-    }
-
-    @Test
-    public void test_E_countAllByIdDossAndVcKeyAndDebours_notFound() {
-        LawfirmEntity lawfirm = createLawfirm();
-
-        TFrais tFrais = createTFrais(lawfirm);
-        tFrais.getRefPoste().setFraisCollaboration(true);
-
-        testEntityManager.persist(tFrais.getRefPoste());
-
-        Long countAllJusticeByVcKey = tFraisRepository.countAllByIdDossAndVcKeyAndDebours(tFrais.getIdDoss(), lawfirm.getVckey());
-
-        assertNotNull(countAllJusticeByVcKey);
-        assertEquals(countAllJusticeByVcKey, Long.valueOf(0));
-    }
-
-    @Test
-    public void test_F_countAllByIdDossAndVcKeyAndFraisCollaboration() {
-        LawfirmEntity lawfirm = createLawfirm();
-
-        TFrais tFrais = createTFrais(lawfirm);
-        tFrais.getRefPoste().setFraisCollaboration(true);
-
-        testEntityManager.persist(tFrais.getRefPoste());
-
-        Long countAllJusticeByVcKey = tFraisRepository.countAllByIdDossAndVcKeyAndFraisCollaboration(tFrais.getIdDoss(), lawfirm.getVckey());
-
-        assertNotNull(countAllJusticeByVcKey);
-        assertEquals(countAllJusticeByVcKey, Long.valueOf(1));
-    }
-
-    @Test
-    public void test_G_countAllByIdDossAndVcKeyAndFraisCollaboration_notFound() {
-        LawfirmEntity lawfirm = createLawfirm();
-
-        TFrais tFrais = createTFrais(lawfirm);
-        tFrais.getRefPoste().setHonoraires(true);
-
-        testEntityManager.persist(tFrais.getRefPoste());
-
-        Long countAllJusticeByVcKey = tFraisRepository.countAllByIdDossAndVcKeyAndDebours(tFrais.getIdDoss(), lawfirm.getVckey());
-
-        assertNotNull(countAllJusticeByVcKey);
-        assertEquals(countAllJusticeByVcKey, Long.valueOf(0));
-    }
 }
