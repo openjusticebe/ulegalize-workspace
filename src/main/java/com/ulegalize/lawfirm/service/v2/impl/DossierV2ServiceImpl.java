@@ -131,7 +131,7 @@ public class DossierV2ServiceImpl implements DossierV2Service {
     @Override
     public Page<DossierDTO> getAllAffaires(int limit, int offset, Long userId, String vcKey, List<EnumVCOwner> enumVCOwner,
                                            String searchCriteriaClient, String searchCriteriaYear, Long searchCriteriaNumber, Boolean searchCriteriaBalance, String searchCriteriaInitiale, Boolean searchArchived) {
-        log.debug("Get all Affaires with limit {} and offset {}", limit, offset);
+        log.debug("Get all Affaires with limit {} and offset {} , user id {} and vckey {}", limit, offset, userId, vcKey);
         Optional<LawfirmUsers> lawfirmUsers = lawfirmUserRepository.findLawfirmUsersByVcKeyAndUserId(vcKey, userId);
 
         if (lawfirmUsers.isPresent()) {
@@ -144,18 +144,20 @@ public class DossierV2ServiceImpl implements DossierV2Service {
             Long numberDossier = searchCriteriaNumber != null && searchCriteriaNumber == 0 ? null : searchCriteriaNumber;
 
             searchCriteriaClient = searchCriteriaClient != null && !searchCriteriaClient.isEmpty() ? searchCriteriaClient : "%";
+
+
             Pageable pageable = new OffsetBasedPageRequest(limit, offset, Sort.by(Sort.Direction.DESC, "id_doss"));
+
             Page<IDossierDTO> tDossiersList = null;
             String initiales = searchCriteriaInitiale != null && !searchCriteriaInitiale.isEmpty() ? searchCriteriaInitiale.toUpperCase() : "%";
             List<Integer> integers = enumVCOwner.stream().map(EnumVCOwner::getId).collect(Collectors.toList());
 
+            log.debug("Search based on owner {} , client {}, year {}, number {}, initiale {}, balance {} and archived {}", integers,
+                    searchCriteriaClient, searchCriteriaYear, numberDossier, initiales, searchCriteriaBalance, searchArchived);
+
             tDossiersList = dossierRepository.findByVcUserIdAllWithPagination(lawfirmUsers.get().getId(), integers,
                     searchCriteriaClient, searchCriteriaYear, numberDossier, initiales, searchCriteriaBalance, searchArchived,
                     pageable);
-            log.debug("Result for both year , num and client");
-
-            log.debug("Result affaire list check the balance");
-
 
             Optional<EnumVCOwner> enumVCOwner2 = enumVCOwner.stream().filter(enumVCOwner1 -> enumVCOwner1.equals(EnumVCOwner.NOT_SAME_VC)).findFirst();
 
@@ -174,6 +176,9 @@ public class DossierV2ServiceImpl implements DossierV2Service {
 
                 return dossierDTO;
             }).collect(Collectors.toList());
+
+            log.debug("Result affaire list total {}", tDossiersList.getTotalElements());
+
             return new PageImpl<>(dossierDTOS, Pageable.unpaged(), tDossiersList.getTotalElements());
         }
 
@@ -864,7 +869,7 @@ public class DossierV2ServiceImpl implements DossierV2Service {
                 log.debug("Email {} to be sent", email);
                 Optional<TUsers> usersOptional = tUsersRepository.findByEmail(email);
                 String language = usersOptional.get().getLanguage() != null ? usersOptional.get().getLanguage().toLowerCase() : EnumLanguage.FR.getShortCode();
-                mailService.sendMail(EnumMailTemplate.MAILSHAREDFOLDERUSERTEMPLATE, EmailUtils.prepareContextForSharedFolderUser(email, DossiersUtils.getDossierLabelItem(dossiersOptional.get().getYear_doss(), dossiersOptional.get().getNum_doss()), usersOptional.get().getFullname(), lawfirmToken.getVcKey(), lawfirmToken.getClientFrom()), language);
+                mailService.sendMailWithoutMeetingAndIcs(EnumMailTemplate.MAILSHAREDFOLDERUSERTEMPLATE, EmailUtils.prepareContextForSharedFolderUser(email, DossiersUtils.getDossierLabelItem(dossiersOptional.get().getYear_doss(), dossiersOptional.get().getNum_doss()), usersOptional.get().getFullname(), lawfirmToken.getVcKey(), lawfirmToken.getClientFrom()), language);
             });
         }
     }

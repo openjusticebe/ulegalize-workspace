@@ -125,9 +125,6 @@ public class AuthenticationFilter extends OncePerRequestFilter {
                     String email = decodedJWT.getClaim(lawfirmUrl + "email") != null ? decodedJWT.getClaim(lawfirmUrl + "email").asString() : "";
                     String clientFrom = decodedJWT.getClaim(lawfirmUrl + "client") != null ? decodedJWT.getClaim(lawfirmUrl + "client").asString() : "workspace";
 
-                    log.info("user connected email : {}", decodedJWT.getClaim(lawfirmUrl + "email").asString());
-                    log.info("user connected user id : {}", authUserId);
-
                     AppMetadata appMetadata = decodedJWT.getClaim(lawfirmUrl + "app_metadata").as(AppMetadata.class);
                     log.info("new user (signup submitted : {}", appMetadata.getSignedup_submitted());
 
@@ -146,12 +143,12 @@ public class AuthenticationFilter extends OncePerRequestFilter {
                             || request.getRequestURI().equalsIgnoreCase("/v2/lawfirm/switch")
                             || request.getRequestURI().equalsIgnoreCase("/v2/login/light/user")
                             || (request.getMethod().equalsIgnoreCase("POST") && request.getRequestURI().equalsIgnoreCase("/v2/lawfirm"))) {
-                        log.debug("Unauthorized path {}", request.getRequestURI());
+                        log.debug("user connected email : {}, user id {} . Unauthorized path {}", email, authUserId, request.getRequestURI());
                         // except for the lawfirm list
                         userProfile = securityGroupService.getSimpleUserProfile(email, decodedJWT.getToken());
 
                     } else {
-                        log.debug("Authorized path {}", request.getRequestURI());
+                        log.debug("user connected email : {}, user id {} . Authorized path {}", email, authUserId, request.getRequestURI());
                         userProfile = securityGroupService.getUserProfile(email, decodedJWT.getToken(), true);
                     }
                     userProfile.setClientFrom(clientFrom);

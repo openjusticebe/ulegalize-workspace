@@ -281,7 +281,14 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
             newLawfirm.setName(defaultLawfirmDTO.getVcKey());
             newLawfirm.setAlias(defaultLawfirmDTO.getVcKey().toLowerCase());
             newLawfirm.setCouthoraire(entityOptional.get().getCouthoraire());
-            newLawfirm.setEmail(defaultLawfirmDTO.getLawfirmDTO().getEmail());
+            // check if the email has been fill in
+            if (defaultLawfirmDTO.getLawfirmDTO().getEmail() != null) {
+                newLawfirm.setEmail(defaultLawfirmDTO.getLawfirmDTO().getEmail().toLowerCase());
+            } else {
+                newLawfirm.setEmail(entityOptional.get().getEmail());
+            }
+            log.debug("New lawfirm email {}", newLawfirm.getEmail());
+
             newLawfirm.setCity(entityOptional.get().getCity());
             newLawfirm.setCountryCode(countryCode);
             newLawfirm.setCurrency(currency);
@@ -528,7 +535,7 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
 
         // NOT EXIST -> new user
         if (usersOptional.isEmpty()) {
-            user = userV2Service.createUsers(userEmail, clientFrom);
+            user = userV2Service.createUsers(userEmail, clientFrom, EnumLanguage.FR);
 
             log.debug("user created");
         } else {

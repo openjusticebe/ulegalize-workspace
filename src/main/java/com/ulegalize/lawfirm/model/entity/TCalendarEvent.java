@@ -83,6 +83,11 @@ public class TCalendarEvent extends BaseEntity {
     @Setter
     private Date end;
 
+    @Column(name = "room_name")
+    @Getter
+    @Setter
+    private String roomName;
+
     @OneToMany(mappedBy = "tCalendarEvent", cascade = CascadeType.ALL, orphanRemoval = true)
     @Getter
     @Setter

@@ -22,6 +22,7 @@ import com.ulegalize.lawfirm.utils.CalendarEventsUtil;
 import com.ulegalize.lawfirm.utils.EmailUtils;
 import com.ulegalize.mail.transparency.EnumMailTemplate;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -30,6 +31,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
@@ -117,12 +119,12 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         Optional<LawfirmEntity> lawfirm = lawfirmRepository.findById(lawfirmToken.getVcKey().toUpperCase());
-        if (!lawfirm.isPresent()) {
+        if (lawfirm.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Lawfirm with key: {" + lawfirmToken.getVcKey() + "} not found.");
         }
 
         Optional<TCalendarEvent> eventEntityOptional = calendarEventRepository.findById(eventId);
-        if (!eventEntityOptional.isPresent()) {
+        if (eventEntityOptional.isEmpty()) {
             log.warn("Event id {} not found ", eventId);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Event not found");
         }
@@ -130,6 +132,10 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
             String email = eventEntityOptional.get().getContact() != null ? eventEntityOptional.get().getContact().getF_email() : "";
             log.warn("event {} Client email {} not found ", eventEntityOptional.get().getId(), email);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Client email not found ");
+        }
+        if (eventEntityOptional.get().getTUsers() == null && eventEntityOptional.get().getVcKey() == null) {
+            log.warn("event {} user nor vckey found ", eventEntityOptional.get().getId());
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "event {} user nor vckey found");
         }
 
         // remove permanence at this date and for this user
@@ -163,11 +169,30 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
             createCasLawfirm(lawfirmCalendarEventDTO, lawfirmToken);
 
             String language = lawyer.getUser().getLanguage() != null ? lawyer.getUser().getLanguage().toLowerCase() : EnumLanguage.FR.getShortCode();
+
+            // mail to contact
             mailService.sendMail(EnumMailTemplate.MAILAPPOINTMENTCONFIRMEDTEMPLATE,
-                    EmailUtils.prepareContextForAppointmentConfirmedEmail(language, savedEvent, lawyer, portalUrl, lawfirmToken.getClientFrom()),
+                    EmailUtils.prepareContextForAppointmentConfirmedEmail(language, savedEvent.getContact().getF_email(), savedEvent, lawyer, portalUrl, lawfirmToken.getClientFrom()),
                     language,
                     CalendarEventsUtil.convertToZoneDateTimeViaInstant(savedEvent.getStart()),
-                    CalendarEventsUtil.convertToZoneDateTimeViaInstant(savedEvent.getEnd()));
+                    CalendarEventsUtil.convertToZoneDateTimeViaInstant(savedEvent.getEnd())
+                    , true, false, eventEntity.getRoomName());
+
+            // mail to mediator
+            String emailTo;
+            if (eventEntityOptional.get().getTUsers() != null) {
+                emailTo = eventEntityOptional.get().getTUsers().getEmail();
+            } else {
+                Optional<LawfirmDTO> lawfirmDTOOptional = lawfirmRepository.findLawfirmDTOByVckey(savedEvent.getVcKey());
+
+                emailTo = lawfirmDTOOptional.get().getEmail();
+            }
+            mailService.sendMail(EnumMailTemplate.MAILAPPOINTMENTCONFIRMEDTEMPLATE,
+                    EmailUtils.prepareContextForAppointmentConfirmedEmail(language, emailTo, savedEvent, lawyer, portalUrl, lawfirmToken.getClientFrom()),
+                    language,
+                    CalendarEventsUtil.convertToZoneDateTimeViaInstant(savedEvent.getStart()),
+                    CalendarEventsUtil.convertToZoneDateTimeViaInstant(savedEvent.getEnd())
+                    , true, true, eventEntity.getRoomName());
         }
         return lawfirmCalendarEventDTO;
     }
@@ -189,7 +214,7 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         Optional<TCalendarEvent> eventEntityOptional = calendarEventRepository.findById(eventId);
-        if (!eventEntityOptional.isPresent()) {
+        if (eventEntityOptional.isEmpty()) {
             log.warn("Event id {} not found ", eventId);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Event not found");
         }
@@ -203,7 +228,7 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
     @Override
     public Long deleteEvent(Long eventId) {
         Optional<TCalendarEvent> eventEntityOptional = calendarEventRepository.findById(eventId);
-        if (!eventEntityOptional.isPresent()) {
+        if (eventEntityOptional.isEmpty()) {
             log.warn("Event id {} not found ", eventId);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Event not found");
         }
@@ -248,7 +273,7 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
         log.debug("newLawyerAppointment(lawyer alias : {}", lawyerAlias);
         Optional<TUsers> userOptional = userRepository.findPublicUserByAliasPublic(lawyerAlias);
 
-        if (!userOptional.isPresent()) {
+        if (userOptional.isEmpty()) {
             throw new LawfirmBusinessException("No lawyer found for this alias");
         }
 
@@ -345,8 +370,8 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
 
         if (!activeProfile.equalsIgnoreCase("integrationtest") && lawfirmUsers.isPresent()) {
             String language = userOptional.get().getLanguage() != null ? userOptional.get().getLanguage().toLowerCase() : EnumLanguage.FR.getShortCode();
-            mailService.sendMail(EnumMailTemplate.MAILAPPOINTMENTREGISTEREDTEMPLATE, EmailUtils.prepareContextForRegisteredAppointmentEmail(language, appointment, appointmentEvent.getEventType(), lawfirmUsers.get(), portalUrl, "workspace"), language);
-            mailService.sendMail(EnumMailTemplate.MAILNEWAPPOINTMENTREQUESTTEMPLATE, EmailUtils.prepareContextForNewAppointmentEmail(language, appointment, appointmentEvent.getEventType(), lawfirmUsers.get(), portalUrl, "workspace"), language);
+            mailService.sendMailWithoutMeetingAndIcs(EnumMailTemplate.MAILAPPOINTMENTREGISTEREDTEMPLATE, EmailUtils.prepareContextForRegisteredAppointmentEmail(language, appointment, appointmentEvent.getEventType(), lawfirmUsers.get(), portalUrl, "workspace"), language);
+            mailService.sendMailWithoutMeetingAndIcs(EnumMailTemplate.MAILNEWAPPOINTMENTREQUESTTEMPLATE, EmailUtils.prepareContextForNewAppointmentEmail(language, appointment, appointmentEvent.getEventType(), lawfirmUsers.get(), portalUrl, "workspace"), language);
         }
         Long userId = event.getTUsers() != null ? event.getTUsers().getId() : null;
 
@@ -471,6 +496,7 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
         if (!calendarCreated) {
             log.debug("calendar new event");
             entity = calendarToEntityConverter.apply(calendarEvent, new TCalendarEvent());
+
             entity.setCreationUser(username);
         }
 
@@ -492,6 +518,21 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
         entity.setUpdateUser(username);
         entity.setApproved(approved); //all events created here are obviously approved
 
+        if (!calendarCreated) {
+            log.debug("Room name starting");
+
+            String roomName = entity.getTUsers() != null ? String.valueOf(entity.getTUsers().getId()) : entity.getVcKey();
+
+            // if iit's null generate a room at random
+            if (roomName == null) {
+                log.debug("room generated automatically ");
+                roomName = RandomStringUtils.randomAlphabetic(8);
+            }
+            log.debug("room name generated {} ", roomName);
+
+            entity.setRoomName(roomName);
+        }
+
         log.debug("Calendar Participants starting");
 
         // remove duplicate email
@@ -505,7 +546,7 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
         List<String> emailRemoved = new ArrayList<>();
 
         // First in the DB list
-        if (entity.getTCalendarParticipants() != null && !entity.getTCalendarParticipants().isEmpty()) {
+        if (!CollectionUtils.isEmpty(entity.getTCalendarParticipants())) {
             for (TCalendarParticipants calendarParticipants : entity.getTCalendarParticipants()) {
                 // list from UI (user selected)
                 boolean participantFoundInUI = participantEmailList.stream().anyMatch(email -> email.equalsIgnoreCase(calendarParticipants.getUserEmail()));
@@ -582,19 +623,29 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
             emailContact = savedEvent.getTUsers().getEmail();
         }
 
+        boolean roomAttached = calendarEvent.getEventType().equals(EnumCalendarEventType.RDV);
+
+//        // send notification to the lawyer
+        mailService.sendMail(EnumMailTemplate.MAILAPPOINTMENT_ADDED_NOTIFICATION,
+                EmailUtils.prepareContextNotificationEmail(language, savedEvent, emailContact, phoneContact, portalUrl, emailContact, clientFrom),
+                language,
+                startDate,
+                endDate, roomAttached, true, savedEvent.getRoomName());
+
+
         for (String email : emailAdded) {
             // send notification to the participants
             mailService.sendMail(EnumMailTemplate.MAILAPPOINTMENT_ADDED_NOTIFICATION,
                     EmailUtils.prepareContextNotificationEmail(language, savedEvent, emailContact, phoneContact, portalUrl, email, clientFrom),
                     language,
                     startDate,
-                    endDate);
+                    endDate, roomAttached, false, savedEvent.getRoomName());
         }
         log.debug("start Notification cancel email {}", emailRemoved);
 
         for (String email : emailRemoved) {
             // send notification to the participants
-            mailService.sendMail(EnumMailTemplate.MAILAPPOINTMENT_CANCEL_NOTIFICATION,
+            mailService.sendMailWithoutMeeting(EnumMailTemplate.MAILAPPOINTMENT_CANCEL_NOTIFICATION,
                     EmailUtils.prepareContextNotificationEmail(language, savedEvent, emailContact, phoneContact, portalUrl, email, clientFrom),
                     language,
                     startDate,

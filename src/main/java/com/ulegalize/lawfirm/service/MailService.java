@@ -21,11 +21,31 @@ public class MailService {
     @Autowired
     private IMailProducer mailProducer;
 
-    public void sendMail(EnumMailTemplate type, Map<String, Object> context, String language) {
-        sendMail(type, context, language, null, null);
+    /**
+     * no visio / meeting attachement and no ics attached
+     *
+     * @param type
+     * @param context
+     * @param language
+     */
+    public void sendMailWithoutMeetingAndIcs(EnumMailTemplate type, Map<String, Object> context, String language) {
+        sendMail(type, context, language, null, null, false, false, null);
     }
 
-    public void sendMail(EnumMailTemplate type, Map<String, Object> context, String language, ZonedDateTime start, ZonedDateTime end) {
+    /**
+     * no meeting
+     *
+     * @param type
+     * @param context
+     * @param language
+     * @param start
+     * @param end
+     */
+    public void sendMailWithoutMeeting(EnumMailTemplate type, Map<String, Object> context, String language, ZonedDateTime start, ZonedDateTime end) {
+        sendMail(type, context, language, start, end, false, false, null);
+    }
+
+    public void sendMail(EnumMailTemplate type, Map<String, Object> context, String language, ZonedDateTime start, ZonedDateTime end, boolean roomAttached, boolean isModerator, String roomName) {
         if (activeProfile.equalsIgnoreCase("integrationtest")
 //				|| activeProfile.equalsIgnoreCase("dev")
                 || activeProfile.equalsIgnoreCase("devDocker")) {
@@ -67,14 +87,15 @@ public class MailService {
             default:
                 break;
         }
-        sendMail(organizer, location, start, end, type, enumLanguage,
+        sendMailWithoutMeetingAndIcs(organizer, location, start, end, type, enumLanguage,
                 type.getName() + language,
                 subject,
-                context);
+                context,
+                roomAttached, isModerator, roomName);
 
     }
 
-    private void sendMail(String organizer, String location, ZonedDateTime start, ZonedDateTime end, EnumMailTemplate enumMailTemplate, EnumLanguage enumLanguage, String template, String subject, Map<String, Object> context) {
-        mailProducer.sendEmail(organizer, location, start, end, enumMailTemplate, enumLanguage, template, subject, context);
+    private void sendMailWithoutMeetingAndIcs(String organizer, String location, ZonedDateTime start, ZonedDateTime end, EnumMailTemplate enumMailTemplate, EnumLanguage enumLanguage, String template, String subject, Map<String, Object> context, boolean roomAttached, boolean isModerator, String roomName) {
+        mailProducer.sendEmail(organizer, location, start, end, enumMailTemplate, enumLanguage, template, subject, context, roomAttached, isModerator, roomName );
     }
 }

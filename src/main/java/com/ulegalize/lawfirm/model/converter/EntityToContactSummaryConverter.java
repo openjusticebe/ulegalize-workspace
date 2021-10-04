@@ -53,7 +53,7 @@ public class EntityToContactSummaryConverter implements SuperConverter<TClients,
             contactSummary.setFullName(fullname);
         } else {
             //company or collegue
-            contactSummary.setFullName(entity.getF_company());
+            contactSummary.setFullName(entity.getF_company() != null ? entity.getF_company() : "");
         }
 
         return contactSummary;

@@ -11,6 +11,8 @@ import com.ulegalize.lawfirm.model.enumeration.EnumTType;
 import com.ulegalize.lawfirm.repository.*;
 import com.ulegalize.lawfirm.service.ComptaService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
@@ -68,14 +70,14 @@ public class ComptaServiceImpl implements ComptaService {
     }
 
     @Override
-    public List<ComptaDTO> getAllComptaByDossierId(int limit, int offset, Long dossierId, String vcKey,
+    public Page<ComptaDTO> getAllComptaByDossierId(int limit, int offset, Long dossierId, String vcKey,
                                                    Boolean isDebours, Boolean isFraiCollaboration, Boolean honoraire, Boolean tiers) {
         log.debug("Get all Compta with user {} limit {} and offset {} and dossierId {}", vcKey, limit, offset, dossierId);
 
         Sort.Order order = new Sort.Order(Sort.Direction.ASC, "idPoste");
         Sort.Order order2 = new Sort.Order(Sort.Direction.DESC, "idFrais");
         Pageable pageable = new OffsetBasedPageRequest(limit, offset, Sort.by(order, order2));
-        List<TFrais> allCompta;
+        Page<TFrais> allCompta;
 
         if (isDebours != null && isDebours) {
             allCompta = tFraisRepository.findByDossierIAndDeboursdWithPagination(dossierId, vcKey, pageable);
@@ -93,47 +95,27 @@ public class ComptaServiceImpl implements ComptaService {
             allCompta = tFraisRepository.findByDossierIdWithPagination(dossierId, vcKey, pageable);
         }
 
+        List<ComptaDTO> comptaDTOList = entityToComptaDTOConverter.convertToList(allCompta.getContent());
 
-        return entityToComptaDTOConverter.convertToList(allCompta);
+        return new PageImpl<>(comptaDTOList, Pageable.unpaged(), allCompta.getTotalElements());
     }
 
     @Override
-    public List<ComptaDTO> getAllCompta(int limit, int offset, String vcKey) {
+    public Page<ComptaDTO> getAllCompta(int limit, int offset, String vcKey, String searchCriteriaClient, String searchCriteriaYear, Long searchCriteriaNumber, String searchCriteriaPoste) {
         log.debug("Get all Compta with user {} limit {} and offset {}", vcKey, limit, offset);
 
-        Sort.Order order = new Sort.Order(Sort.Direction.ASC, "idPoste");
-        Sort.Order order2 = new Sort.Order(Sort.Direction.DESC, "idFrais");
+        Sort.Order order = new Sort.Order(Sort.Direction.ASC, "id_poste");
+        Sort.Order order2 = new Sort.Order(Sort.Direction.DESC, "id_frais");
         Pageable pageable = new OffsetBasedPageRequest(limit, offset, Sort.by(order, order2));
-        List<TFrais> allCompta = tFraisRepository.findAllWithPagination(vcKey, pageable);
+        String year = searchCriteriaYear != null ? searchCriteriaYear : "";
+        String client = searchCriteriaClient != null && !searchCriteriaClient.isEmpty() ? searchCriteriaClient : "";
+        String poste = searchCriteriaPoste != null && !searchCriteriaPoste.isEmpty() ? searchCriteriaPoste : "%";
 
-        return entityToComptaDTOConverter.convertToList(allCompta);
-    }
+        Page<TFrais> allCompta = tFraisRepository.findAllWithPagination(vcKey, client, year, searchCriteriaNumber, poste, pageable);
 
-    @Override
-    public Long countAllComptaByVcKey(Long dossierId, String vcKey, Boolean isDebours, Boolean isFraiCollaboration, Boolean honoraire, Boolean tiers) {
-        log.debug("countAllComptaByVcKey vckey {}", vcKey);
+        List<ComptaDTO> comptaDTOList = entityToComptaDTOConverter.convertToList(allCompta.getContent());
 
-        if (isDebours != null && isDebours) {
-            return tFraisRepository.countAllByIdDossAndVcKeyAndDebours(dossierId, vcKey);
-
-        } else if (isFraiCollaboration != null && isFraiCollaboration) {
-            return tFraisRepository.countAllByIdDossAndVcKeyAndFraisCollaboration(dossierId, vcKey);
-
-        } else if (honoraire != null && honoraire) {
-            return tFraisRepository.countAllByIdDossAndVcKeyAndHonoraire(dossierId, vcKey);
-
-        } else if (tiers != null && tiers) {
-            return tFraisRepository.countAllByIdDossAndVcKeyAndTiers(dossierId, vcKey);
-
-        } else {
-            return tFraisRepository.countAllByIdDossAndVcKey(dossierId, vcKey);
-        }
-
-    }
-
-    @Override
-    public Long countAllCompta(String vcKey) {
-        return tFraisRepository.countAllByVcKey(vcKey);
+        return new PageImpl<>(comptaDTOList, Pageable.unpaged(), allCompta.getTotalElements());
     }
 
     @Override
@@ -145,7 +127,7 @@ public class ComptaServiceImpl implements ComptaService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Compta is not filled in");
         }
         Optional<TFrais> tFraisOptional = tFraisRepository.findByIdFraisAndVcKey(comptaDTO.getId(), vcKey);
-        if (!tFraisOptional.isPresent()) {
+        if (tFraisOptional.isEmpty()) {
             log.warn("Compta does not exist {}", comptaDTO.getId());
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Compta does not exist");
         }
