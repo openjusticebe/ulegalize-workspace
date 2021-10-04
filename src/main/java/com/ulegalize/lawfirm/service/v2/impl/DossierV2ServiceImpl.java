@@ -641,13 +641,9 @@ public class DossierV2ServiceImpl implements DossierV2Service {
         return resultList.stream()
                 .map(dossier -> {
                             if (dossier.getVckeyOwner() != null && !dossier.getVckeyOwner().equalsIgnoreCase(vcKey)) {
-                                return new ItemLongDto(dossier.getId(),
-                                        DossiersUtils.getDossierLabel(dossier.getYear().toString(), dossier.getNum(), dossier.getVckeyOwner()));
+                                return new ItemLongDto(dossier.getId(), dossier.getLabel(), dossier.getVckeyOwner());
                             } else {
-                                String labelClient = dossier.getLastnameClient() + "/" + dossier.getAdverseLastnameClient(); //2019 / 0012 blahaz/azklk
-
-                                return new ItemLongDto(dossier.getId(),
-                                        DossiersUtils.getDossierLabelItem(dossier.getYear().toString(), dossier.getNum()) + " " + labelClient);
+                                return new ItemLongDto(dossier.getId(), dossier.getLabel());
                             }
 
                         }

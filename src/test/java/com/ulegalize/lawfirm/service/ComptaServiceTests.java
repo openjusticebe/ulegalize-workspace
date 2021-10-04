@@ -10,11 +10,11 @@ import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -93,10 +93,10 @@ public class ComptaServiceTests extends EntityTest {
 
         testEntityManager.persist(tFrais.getRefPoste());
 
-        List<ComptaDTO> compta = comptaService.getAllComptaByDossierId(5, 0, tFrais.getIdDoss(), lawfirm.getVckey(), true, null, null, null);
+        Page<ComptaDTO> compta = comptaService.getAllComptaByDossierId(5, 0, tFrais.getIdDoss(), lawfirm.getVckey(), true, null, null, null);
 
         assertNotNull(compta);
-        assertTrue(compta.size() > 0);
+        assertTrue(compta.getTotalElements() > 0);
     }
 
     @Test
@@ -108,10 +108,10 @@ public class ComptaServiceTests extends EntityTest {
 
         testEntityManager.persist(tFrais.getRefPoste());
 
-        List<ComptaDTO> compta = comptaService.getAllComptaByDossierId(5, 0, tFrais.getIdDoss(), lawfirm.getVckey(), true, null, null, null);
+        Page<ComptaDTO> compta = comptaService.getAllComptaByDossierId(5, 0, tFrais.getIdDoss(), lawfirm.getVckey(), true, null, null, null);
 
         assertNotNull(compta);
-        assertEquals(0, compta.size());
+        assertEquals(0, compta.getTotalElements());
     }
 
     @Test
@@ -123,10 +123,10 @@ public class ComptaServiceTests extends EntityTest {
 
         testEntityManager.persist(tFrais.getRefPoste());
 
-        List<ComptaDTO> compta = comptaService.getAllComptaByDossierId(5, 0, tFrais.getIdDoss(), lawfirm.getVckey(), null, true, null, null);
+        Page<ComptaDTO> compta = comptaService.getAllComptaByDossierId(5, 0, tFrais.getIdDoss(), lawfirm.getVckey(), null, true, null, null);
 
         assertNotNull(compta);
-        assertTrue(compta.size() > 0);
+        assertTrue(compta.getTotalElements() > 0);
     }
 
     @Test
@@ -138,9 +138,9 @@ public class ComptaServiceTests extends EntityTest {
 
         testEntityManager.persist(tFrais.getRefPoste());
 
-        List<ComptaDTO> compta = comptaService.getAllComptaByDossierId(5, 0, tFrais.getIdDoss(), lawfirm.getVckey(), null, true, null, null);
+        Page<ComptaDTO> compta = comptaService.getAllComptaByDossierId(5, 0, tFrais.getIdDoss(), lawfirm.getVckey(), null, true, null, null);
 
         assertNotNull(compta);
-        assertEquals(0, compta.size());
+        assertEquals(0, compta.getTotalElements());
     }
 }

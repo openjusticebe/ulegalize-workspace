@@ -1,9 +1,6 @@
 package com.ulegalize.lawfirm.model.converter;
 
-import com.ulegalize.dto.DossierDTO;
-import com.ulegalize.dto.ItemClientDto;
-import com.ulegalize.dto.ItemLongDto;
-import com.ulegalize.dto.ItemStringDto;
+import com.ulegalize.dto.*;
 import com.ulegalize.enumeration.EnumDossierContactType;
 import com.ulegalize.enumeration.EnumDossierType;
 import com.ulegalize.enumeration.EnumLanguage;
@@ -95,9 +92,13 @@ public class EntityToDossierConverter implements SuperTriConverter<TDossiers, En
                     String email = dossierContact.getClients().getF_email();
                     return new ItemClientDto(dossierContact.getClients().getId_client(), fullname, email, EnumDossierContactType.PARTY);
                 }).collect(Collectors.toList()));
+                clientName = dossierDTO.getClientList().stream().map(Item::getLabel).collect(Collectors.joining(", "));
+                int maxLength = Math.min(clientName.length(), 45);
 
-                dossierDTO.setLabel(DossiersUtils.getDossierLabelItem(dossier.getYear_doss(), dossier.getNum_doss())
-                ); //2019 / 0012
+                clientName = clientName.substring(0, maxLength);
+
+                dossierDTO.setLabel(DossiersUtils.getDossierLabelItem(dossier.getYear_doss(), dossier.getNum_doss()) + " " + clientName
+                ); //2019 / 0012 parties
 
             }
 
