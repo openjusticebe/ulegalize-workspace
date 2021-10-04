@@ -44,12 +44,27 @@ public class UserServiceTests extends EntityTest {
 
         TUsers user = lawfirm.getLawfirmUsers().get(0).getUser();
         assertNotEquals(user.getLanguage(), EnumLanguage.EN.getShortCode());
+        EnumLanguage language = EnumLanguage.fromshortCode(user.getLanguage());
 
-        TUsers users = userV2Service.createUsers("j2@j.com", "workspace");
+        TUsers users = userV2Service.createUsers("j2@j.com", "workspace", language);
 
         TUsers tUsers = testEntityManager.find(TUsers.class, users.getId());
         assertEquals(tUsers.getEmail(), "j2@j.com");
         assertNotEquals(tUsers.getIdUser(), "ulegal");
+
+    }
+
+    @Test
+    public void test_C_createUser_fullname() {
+
+        LawfirmEntity lawfirm = createLawfirm();
+
+        TUsers user = lawfirm.getLawfirmUsers().get(0).getUser();
+        assertNotEquals(user.getLanguage(), EnumLanguage.EN.getShortCode());
+        EnumLanguage language = EnumLanguage.fromshortCode(user.getLanguage());
+
+        TUsers users = userV2Service.createUsers("j2@j.com", "workspace", language);
+        assertEquals(users.getFullname(), "j2");
 
     }
 }

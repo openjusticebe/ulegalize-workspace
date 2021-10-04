@@ -93,7 +93,7 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
 
         Optional<LawyerDTO> usersOptional = tUsersRepository.findDTOByEmail(email);
 
-        if (!usersOptional.isPresent()) {
+        if (usersOptional.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is unknown");
         }
         String vcKey = "";
@@ -216,8 +216,9 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
         Optional<TUsers> usersOptional = tUsersRepository.findByEmail(securityGroupUserDTO.getEmail().toLowerCase().trim());
 
         // NOT EXIST -> new user
-        if (!usersOptional.isPresent()) {
-            user = userV2Service.createUsers(securityGroupUserDTO.getEmail(), lawfirmToken.getClientFrom());
+        if (usersOptional.isEmpty()) {
+            EnumLanguage language = EnumLanguage.fromshortCode(lawfirmToken.getLanguage());
+            user = userV2Service.createUsers(securityGroupUserDTO.getEmail(), lawfirmToken.getClientFrom(), language);
 
             log.debug("user created");
         } else {
@@ -312,7 +313,7 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
         }
         String language = lawfirmUsers.getUser().getLanguage() != null ? lawfirmUsers.getUser().getLanguage().toLowerCase() : EnumLanguage.FR.getShortCode();
 
-        mailService.sendMail(EnumMailTemplate.MAILSHAREDUSERSECURITYTEMPLATE,
+        mailService.sendMailWithoutMeetingAndIcs(EnumMailTemplate.MAILSHAREDUSERSECURITYTEMPLATE,
                 EmailUtils.prepareContextForSharedUserSecurity(
                         lawfirmUsers.getUser().getEmail(),
                         lawfirmToken.getVcKey(),

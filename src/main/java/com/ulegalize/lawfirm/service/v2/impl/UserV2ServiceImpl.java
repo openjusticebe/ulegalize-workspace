@@ -7,6 +7,7 @@ import com.ulegalize.lawfirm.repository.TUsersRepository;
 import com.ulegalize.lawfirm.repository.VirtualRepository;
 import com.ulegalize.lawfirm.service.v2.UserV2Service;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -52,10 +53,11 @@ public class UserV2ServiceImpl implements UserV2Service {
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
-    public TUsers createUsers(String userEmail, String clientFrom) {
+    public TUsers createUsers(String userEmail, String clientFrom, EnumLanguage language) {
         TUsers user = new TUsers();
         user.setEmail(userEmail);
-        user.setFullname(" ");
+        String fullname = StringUtils.substringBefore(userEmail, "@");
+        user.setFullname(fullname);
         user.setAvatar(new byte[0]);
         user.setInitiales("");
         // temporary

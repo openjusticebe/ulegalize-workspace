@@ -94,7 +94,7 @@ public interface DossierRepository extends JpaRepository<TDossiers, Long> {
             " or tclients3_.f_prenom like CONCAT('%', ?3, '%') or tclients3_.f_nom like CONCAT('%', ?3, '%') " +
             " or tclients4_.f_prenom like CONCAT('%', ?3, '%') or tclients4_.f_nom like CONCAT('%', ?3, '%') " +
             ") " +
-            "   and (tdossiers0_.year_doss like COALESCE(CONCAT(?4, '%'), '%') and tdossiers0_.num_doss like COALESCE(CONCAT(?5, '%'), '%')) " +
+            "   and (tdossiers0_.year_doss like COALESCE(CONCAT('%', ?4, '%'), '%') and tdossiers0_.num_doss like COALESCE(CONCAT(?5, '%'), '%')) " +
             " and users.initiales like CONCAT('%', ?6, '%')" +
             "  and (case when ?7 = 1 then round(ifnull(presta.cout,0), 2)+ ifnull(fraisadmin.cout,0)+ ifnull(fraisProcedure.cout,0)+ ifnull(fraisCollaboration.cout,0) + ifnull(honoraire.cout,0) <> 0 " +
             " when ?7 = 0 then round(ifnull(presta.cout,0), 2)+ ifnull(fraisadmin.cout,0)+ ifnull(fraisProcedure.cout,0)+ ifnull(fraisCollaboration.cout,0)+ ifnull(honoraire.cout,0) =0 else 1=1 end)" +
@@ -174,7 +174,7 @@ public interface DossierRepository extends JpaRepository<TDossiers, Long> {
                     " or tclients3_.f_prenom like CONCAT('%', ?3, '%') or tclients3_.f_nom like CONCAT('%', ?3, '%') " +
                     " or tclients4_.f_prenom like CONCAT('%', ?3, '%') or tclients4_.f_nom like CONCAT('%', ?3, '%') " +
                     ") " +
-                    "   and (tdossiers0_.year_doss like COALESCE(CONCAT(?4, '%'), '%') and tdossiers0_.num_doss like COALESCE(CONCAT(?5, '%'), '%')) " +
+                    "   and (tdossiers0_.year_doss like COALESCE(CONCAT('%',?4, '%'), '%') and tdossiers0_.num_doss like COALESCE(CONCAT(?5, '%'), '%')) " +
                     " and users.initiales like CONCAT('%', ?6, '%')" +
                     "  and (case when ?7 = 1 then round(ifnull(presta.cout,0), 2)+ ifnull(fraisadmin.cout,0)+ ifnull(fraisProcedure.cout,0)+ ifnull(fraisCollaboration.cout,0) + ifnull(honoraire.cout,0) <> 0 " +
                     " when ?7 = 0 then round(ifnull(presta.cout,0), 2)+ ifnull(fraisadmin.cout,0)+ ifnull(fraisProcedure.cout,0)+ ifnull(fraisCollaboration.cout,0)+ ifnull(honoraire.cout,0) =0 else 1=1 end)" +
