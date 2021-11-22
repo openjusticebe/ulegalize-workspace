@@ -90,7 +90,7 @@ public class ClientV2ServiceImpl implements ClientV2Service {
         log.debug("getCientById clientId {} and vcKey {} user id {}", clientId, lawfirmToken.getVcKey(), lawfirmToken.getUserId());
         Optional<TClients> clientsOptional = clientRepository.findById_clientAndUserIdOrVcKey(clientId, lawfirmToken.getVcKey(), lawfirmToken.getUserId());
 
-        if (!clientsOptional.isPresent()) {
+        if (clientsOptional.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "client is not found");
         }
         return entityToContactSummaryConverter.apply(clientsOptional.get());

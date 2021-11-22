@@ -8,6 +8,7 @@ import com.ulegalize.enumeration.*;
 import com.ulegalize.lawfirm.kafka.producer.payment.ILawfirmProducer;
 import com.ulegalize.lawfirm.model.DefaultLawfirmDTO;
 import com.ulegalize.lawfirm.model.LawfirmToken;
+import com.ulegalize.lawfirm.model.converter.EntityToLawfirmPublicConverter;
 import com.ulegalize.lawfirm.model.entity.*;
 import com.ulegalize.lawfirm.model.enumeration.EnumSequenceType;
 import com.ulegalize.lawfirm.model.enumeration.EnumValid;
@@ -57,6 +58,7 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
     private final LawfirmUserRepository lawfirmUserRepository;
     private final UserV2Service userV2Service;
     private final ILawfirmProducer lawfirmProducer;
+    private final EntityToLawfirmPublicConverter entityToLawfirmPublicConverter;
     private final SearchService searchService;
 
     public LawfirmV2ServiceImpl(LawfirmRepository lawfirmRepository,
@@ -71,7 +73,7 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
                                 TSecurityGroupsRepository tSecurityGroupsRepository,
                                 TDossierRightsRepository tDossierRightsRepository, LawfirmUserRepository lawfirmUserRepository,
                                 UserV2Service userV2Service, ILawfirmProducer lawfirmProducer,
-                                SearchService searchService) {
+                                EntityToLawfirmPublicConverter entityToLawfirmPublicConverter, SearchService searchService) {
         this.lawfirmRepository = lawfirmRepository;
         this.tUsersRepository = tUsersRepository;
         this.tSequenceRepository = tSequenceRepository;
@@ -86,6 +88,7 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
         this.lawfirmUserRepository = lawfirmUserRepository;
         this.userV2Service = userV2Service;
         this.lawfirmProducer = lawfirmProducer;
+        this.entityToLawfirmPublicConverter = entityToLawfirmPublicConverter;
         this.searchService = searchService;
     }
 
@@ -167,6 +170,11 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
 
             lawfirmUserRepository.save(lawfirmUsers.get());
         }
+        // send to payment module the info for invoice
+        LawfirmDTO lawfirmDTO = entityToLawfirmPublicConverter.apply(lawfirmEntityOptional.get(), false);
+        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        lawfirmProducer.updateLawfirm(lawfirmDTO, lawfirmToken);
 
         return new ProfileDTO(usersOptional.get().getId(), usersOptional.get().getFullname(), usersOptional.get().getEmail(),
                 "", lawfirmEntityOptional.get().getVckey(),
@@ -412,7 +420,7 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
 
         Optional<LawfirmDTO> lawfirmDTOOptional = lawfirmRepository.findLawfirmDTOByVckey(vckey);
 
-        if (!lawfirmDTOOptional.isPresent()) {
+        if (lawfirmDTOOptional.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "lawfirm is not found");
         }
 
@@ -426,7 +434,7 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Optional<LawfirmEntity> lawfirmEntityOptional = lawfirmRepository.findLawfirmByVckey(lawfirmToken.getVcKey());
 
-        if (!lawfirmEntityOptional.isPresent()) {
+        if (lawfirmEntityOptional.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "lawfirm is not found");
         }
 

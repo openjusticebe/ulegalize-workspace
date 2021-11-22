@@ -4,9 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ulegalize.enumeration.DriveType;
 import com.ulegalize.enumeration.EnumLanguage;
 import com.ulegalize.enumeration.EnumRefCurrency;
+import com.ulegalize.enumeration.EnumVCOwner;
 import com.ulegalize.lawfirm.EntityTest;
 import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.entity.LawfirmEntity;
+import com.ulegalize.lawfirm.model.entity.TDossiers;
 import com.ulegalize.lawfirm.model.entity.TFrais;
 import com.ulegalize.security.EnumRights;
 import org.junit.Before;
@@ -64,12 +66,13 @@ public class ComptaV2ControllerTests extends EntityTest {
     @Test
     public void test_A_getComptaById() throws Exception {
 
-        TFrais tFrais = createTFrais(lawfirm);
+        TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
+        TFrais tFrais = createTFrais(lawfirm, dossier);
 
         mvc.perform(get("/v2/compta")
-                .with(authentication(authentication))
-                .contentType(MediaType.APPLICATION_JSON)
-                .param("fraisId", String.valueOf(tFrais.getIdFrais())))
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .param("fraisId", String.valueOf(tFrais.getIdFrais())))
                 .andExpect(jsonPath("$.id", equalTo(tFrais.getIdFrais().intValue())))
                 .andExpect(status().isOk());
     }
@@ -78,8 +81,9 @@ public class ComptaV2ControllerTests extends EntityTest {
     public void test_B_getGrids() throws Exception {
         lawfirmToken.getEnumRights().add(EnumRights.ADMINISTRATEUR);
         authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
+        TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
 
-        TFrais tFrais = createTFrais(lawfirm);
+        TFrais tFrais = createTFrais(lawfirm, dossier);
         mvc.perform(get("/v2/compta/grids")
                 .with(authentication(authentication))
                 .contentType(MediaType.APPLICATION_JSON))
@@ -90,8 +94,9 @@ public class ComptaV2ControllerTests extends EntityTest {
     @Test
     public void test_C_getGrids() throws Exception {
         lawfirmToken.setEnumRights(new ArrayList<>());
+        TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
 
-        TFrais tFrais = createTFrais(lawfirm);
+        TFrais tFrais = createTFrais(lawfirm, dossier);
         mvc.perform(get("/v2/compta/grids")
                 .with(authentication(authentication))
                 .contentType(MediaType.APPLICATION_JSON))
@@ -100,14 +105,15 @@ public class ComptaV2ControllerTests extends EntityTest {
 
     @Test
     public void test_D_getDefaultCompta() throws Exception {
-        TFrais tFrais = createTFrais(lawfirm);
+        TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
+        TFrais tFrais = createTFrais(lawfirm, dossier);
 
         lawfirmToken.setEnumRights(new ArrayList<>());
         authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
 
         mvc.perform(get("/v2/compta/default")
-                .with(authentication(authentication))
-                .contentType(MediaType.APPLICATION_JSON))
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.vcKey", equalTo(lawfirmToken.getVcKey())))
                 .andExpect(status().isOk());
     }
@@ -116,8 +122,9 @@ public class ComptaV2ControllerTests extends EntityTest {
     public void test_E_createcompta_throwError() throws Exception {
         lawfirmToken.setEnumRights(new ArrayList<>());
         authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
+        TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
 
-        TFrais tFrais = createTFrais(lawfirm);
+        TFrais tFrais = createTFrais(lawfirm, dossier);
         mvc.perform(post("/v2/compta")
                 .with(authentication(authentication))
                 .contentType(MediaType.APPLICATION_JSON))

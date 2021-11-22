@@ -17,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
@@ -321,7 +322,7 @@ public class DriveV2Controller {
         log.debug("Entering shareObject({})", shareFileDTO);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         log.debug("shareObject by (vckey: {}, user id: {})", lawfirmToken.getVcKey(), lawfirmToken.getUserId());
-        if (shareFileDTO.getUsersItem() == null || shareFileDTO.getUsersItem().isEmpty()) {
+        if (CollectionUtils.isEmpty(shareFileDTO.getUsersItem())) {
             log.warn("user item is empty");
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "user item is empty");
         }

@@ -41,13 +41,7 @@ public class PrestationV2Controller {
             prestationSummaryList = prestationService.getAllPrestations(limit, offset, lawfirmToken.getUserId(), lawfirmToken.getVcKey());
         }
 
-        ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.ok();
-        if (vcKey != null && vcKey.equalsIgnoreCase(lawfirmToken.getVcKey())) {
-            responseBuilder
-                    .cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS));
-        }
-        return responseBuilder
-                .body(prestationSummaryList);
+        return ResponseEntity.ok().body(prestationSummaryList);
     }
 
     @GetMapping(value = "/default")

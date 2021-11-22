@@ -20,23 +20,6 @@ public class VirtualRepositoryImpl implements VirtualRepository {
     }
 
     @Override
-    public void setupVc(String tempVcKey, Long userId) {
-        log.info("Entering setupVc {} and {}", tempVcKey, userId);
-
-        EntityManager em = getEntityManager();
-        StoredProcedureQuery storedProcedure = em.createStoredProcedureQuery("proctrans_createvc");
-// set parameters
-        storedProcedure.registerStoredProcedureParameter("cabname", String.class, ParameterMode.IN);
-        storedProcedure.registerStoredProcedureParameter("userid", Long.class, ParameterMode.IN);
-        storedProcedure.setParameter("cabname", tempVcKey);
-        storedProcedure.setParameter("userid", userId);
-// execute SP
-        storedProcedure.execute();
-
-        getEntityManager().flush();
-    }
-
-    @Override
     public void deleteUser(Long userId) {
         log.info("Entering repo deleteUser{}", userId);
 

@@ -61,6 +61,17 @@ public class SearchV2Controller {
                 .body(searchService.getUsers(search));
     }
 
+    @GetMapping(path = "/contact")
+    public ResponseEntity<List<ItemStringDto>> getContact(@RequestParam(required = false) String search) {
+        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        log.debug("getCientByVcKey( for vckey {} and search {}", lawfirmToken.getVcKey(), search);
+
+        return ResponseEntity
+                .ok()
+                .body(searchService.getCientByVcKey(search));
+    }
+
     @GetMapping(path = "/matieres")
     public ResponseEntity<List<ItemDto>> getMatieres() {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();

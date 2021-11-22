@@ -3,7 +3,6 @@ package com.ulegalize.lawfirm.model.converter;
 import com.ulegalize.dto.LawfirmDTO;
 import com.ulegalize.dto.LawyerDTO;
 import com.ulegalize.lawfirm.model.entity.LawfirmEntity;
-import com.ulegalize.lawfirm.repository.CalendarEventRepository;
 import com.ulegalize.lawfirm.utils.SuperTriConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -15,8 +14,6 @@ public class EntityToLawfirmPublicConverter implements SuperTriConverter<Lawfirm
 
   @Autowired
   EntityToUserConverter entityToUserConverter;
-  @Autowired
-  private CalendarEventRepository calendarEventRepository;
 
   @Override
   public LawfirmDTO apply(LawfirmEntity entity, Boolean wihtCalendarEvents) {

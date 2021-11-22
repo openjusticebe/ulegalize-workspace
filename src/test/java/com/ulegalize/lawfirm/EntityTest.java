@@ -243,13 +243,13 @@ public abstract class EntityTest extends ConfigureTest {
         return calendarEvent;
     }
 
-    protected TFrais createTFrais(LawfirmEntity lawfirm) {
-        TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
+    protected TFrais createTFrais(LawfirmEntity lawfirm, TDossiers dossier) {
         TClients client = createClient(lawfirm);
 
         TFrais tFrais = new TFrais();
         tFrais.setIdClient(client.getId_client());
         tFrais.setIdDoss(dossier.getIdDoss());
+        tFrais.setTDossiers(dossier);
         tFrais.setVcKey(lawfirm.getVckey());
         RefCompte refCompte = createRefCompte(lawfirm);
         tFrais.setIdCompte(refCompte.getIdCompte());
@@ -274,9 +274,7 @@ public abstract class EntityTest extends ConfigureTest {
         return tFrais;
     }
 
-    protected TDebour createTDebour(LawfirmEntity lawfirm) {
-        TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
-
+    protected TDebour createTDebour(LawfirmEntity lawfirm, TDossiers dossier) {
         TDebour tDebour = new TDebour();
         tDebour.setUnit(4);
         tDebour.setIdDoss(dossier.getIdDoss());
@@ -321,7 +319,9 @@ public abstract class EntityTest extends ConfigureTest {
 
     protected TGrid createGrids() {
         TGrid tGrid = new TGrid();
-        tGrid.setID(150);
+        Random rn = new Random();
+        int answer = rn.nextInt(10000000);
+        tGrid.setID(answer);
         tGrid.setDESCRIPTION("new test grid");
         tGrid.setCreDate(LocalDateTime.now());
         tGrid.setCreUser(USER);
@@ -552,12 +552,39 @@ public abstract class EntityTest extends ConfigureTest {
 
         createTFactureDetails(tFactures, virtualcabVat);
 
+        // prestation
         TTimesheet tTimesheet = createTTimesheet(lawfirm, tDossiers);
         TFactureTimesheet tFactureTimesheet = new TFactureTimesheet();
         tFactureTimesheet.setTsId(tTimesheet.getIdTs());
         tFactureTimesheet.setCreUser(USER);
         tFactures.addTFactureTimesheet(tFactureTimesheet);
         tFactureTimesheet.setTFactures(tFactures);
+
+        // frais admin
+        TDebour tDebour = createTDebour(lawfirm, tDossiers);
+        FactureFraisAdmin factureFraisAdmin = new FactureFraisAdmin();
+        factureFraisAdmin.setDeboursId(tDebour.getIdDebour());
+        factureFraisAdmin.setCreUser(USER);
+        tFactures.addFactureFraisAdmin(factureFraisAdmin);
+        factureFraisAdmin.setTFactures(tFactures);
+
+        // debours
+        TFrais tFrais = createTFrais(lawfirm, tDossiers);
+        FactureFraisDebours factureFraisDebours = new FactureFraisDebours();
+        factureFraisDebours.setFraisId(tFrais.getIdFrais());
+        factureFraisDebours.setTFrais(tFrais);
+        factureFraisDebours.setCreUser(USER);
+        tFactures.addFactureFraisDebours(factureFraisDebours);
+        factureFraisDebours.setTFactures(tFactures);
+
+        // frais collaborat
+        TFrais tFraisColl = createTFrais(lawfirm, tDossiers);
+        FactureFraisCollaboration factureFraisDeboursColla = new FactureFraisCollaboration();
+        factureFraisDeboursColla.setFraisId(tFraisColl.getIdFrais());
+        factureFraisDeboursColla.setTFrais(tFraisColl);
+        factureFraisDeboursColla.setCreUser(USER);
+        tFactures.addFactureFraisColl(factureFraisDeboursColla);
+        factureFraisDeboursColla.setTFactures(tFactures);
 
         testEntityManager.persist(tFactures);
 

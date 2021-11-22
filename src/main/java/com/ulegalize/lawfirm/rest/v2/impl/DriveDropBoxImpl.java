@@ -1,6 +1,6 @@
 package com.ulegalize.lawfirm.rest.v2.impl;
 
-import com.ulegalize.dto.ItemDto;
+import com.ulegalize.dto.ItemStringDto;
 import com.ulegalize.dto.ObjectResponseDTO;
 import com.ulegalize.dto.RequestDropbox;
 import com.ulegalize.dto.ShareFileDTO;
@@ -326,7 +326,7 @@ public class DriveDropBoxImpl implements DriveApi {
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.add("Authorization", "Bearer " + lawfirmToken.getToken());
 
-            shareFileDTO.setShared_with(shareFileDTO.getUsersItem().stream().map(ItemDto::getLabel).collect(Collectors.toList()));
+            shareFileDTO.setShared_with(shareFileDTO.getUsersItem().stream().map(ItemStringDto::getValue).collect(Collectors.toList()));
             HttpEntity<ShareFileDTO> requestEntity = new HttpEntity<>(shareFileDTO, headers);
 
             ResponseEntity<Boolean> result = restTemplate.exchange(DRIVE_DROPBOX_URL + "v2/dropbox/share", HttpMethod.POST, requestEntity, Boolean.class);

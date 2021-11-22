@@ -4,10 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ulegalize.enumeration.DriveType;
 import com.ulegalize.enumeration.EnumLanguage;
 import com.ulegalize.enumeration.EnumRefCurrency;
+import com.ulegalize.enumeration.EnumVCOwner;
 import com.ulegalize.lawfirm.EntityTest;
 import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.entity.LawfirmEntity;
 import com.ulegalize.lawfirm.model.entity.TDebour;
+import com.ulegalize.lawfirm.model.entity.TDossiers;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -64,11 +66,12 @@ public class FraisV2ControllerTest extends EntityTest {
     @WithMockUser(value = "spring")
     @Test
     public void test_A_deleteFrais() throws Exception {
-        TDebour tDebour = createTDebour(lawfirm);
+        TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
+        TDebour tDebour = createTDebour(lawfirm, dossier);
 
         mvc.perform(delete("/v2/frais/" + tDebour.getIdDebour())
-                .with(authentication(authentication))
-                .contentType(MediaType.APPLICATION_JSON))
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$", is(tDebour.getIdDebour().intValue())))
                 .andExpect(status().isOk());
 

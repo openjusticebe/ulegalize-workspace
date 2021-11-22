@@ -19,7 +19,7 @@ public interface TDossierRightsRepository extends JpaRepository<TDossierRights, 
     Long countByDossierIdAndVcOwnerAndvcUserId(Long id_doss, Long vcUserId);
 
     @Query(value = "SELECT new com.ulegalize.dto.ShareAffaireDTO(" +
-            "vcu.id, u.id, vcu.lawfirm.vckey, dr.vcOwner, u.email, u.fullname, dr.creDate" +
+            "vcu.id, dr.dossierId, u.id, vcu.lawfirm.vckey, dr.vcOwner, u.email, u.fullname, dr.creDate" +
             ") " +
             " from TDossierRights dr" +
             " join dr.lawfirmUsers vcu " +

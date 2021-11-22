@@ -81,7 +81,6 @@ public class ComptaV2Controller {
                                      @RequestParam(required = false) Long searchCriteriaNumber,
                                      @RequestParam(required = false) String searchCriteriaPoste
     ) {
-        log.debug("getCompta(offset: {} , limit {} and dossierId {} , debours {}, frais collaboration {}", offset, limit, dossierId, isDebours, isFraiCollaboration);
         log.debug("getCompta(offset: {} , limit {} and dossierId {} , debours {}, frais collaboration {}, honoraire {}, tiers {})", offset, limit, dossierId, isDebours, isFraiCollaboration, honoraire, tiers);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 

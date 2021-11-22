@@ -179,6 +179,34 @@ public class TFactures implements Serializable {
         tFactureTimesheet.setTFactures(this);
     }
 
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY, mappedBy = "tFactures")
+    @Getter
+    @Setter
+    private List<FactureFraisAdmin> fraisAdminList = new ArrayList<>();
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY, mappedBy = "tFactures")
+    @Getter
+    @Setter
+    private List<FactureFraisDebours> fraisDeboursList = new ArrayList<>();
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY, mappedBy = "tFactures")
+    @Getter
+    @Setter
+    private List<FactureFraisCollaboration> fraisCollaborationArrayList = new ArrayList<>();
+
+    public void addFactureFraisAdmin(FactureFraisAdmin factureFraisAdmin) {
+        this.fraisAdminList.add(factureFraisAdmin);
+        factureFraisAdmin.setTFactures(this);
+    }
+
+    public void addFactureFraisDebours(FactureFraisDebours factureFraisDebours) {
+        this.fraisDeboursList.add(factureFraisDebours);
+        factureFraisDebours.setTFactures(this);
+    }
+
+    public void addFactureFraisColl(FactureFraisCollaboration factureFraisDebours) {
+        this.fraisCollaborationArrayList.add(factureFraisDebours);
+        factureFraisDebours.setTFactures(this);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

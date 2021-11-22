@@ -54,12 +54,12 @@ public class ObjSharedV2ServiceImpl implements ObjSharedV2Service {
         log.debug("Entering shareObject  {}", shareFileDTO);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         long size = shareFileDTO.getSize() != null ? shareFileDTO.getSize() : 0L;
-        List<String> emails = shareFileDTO.getUsersItem().stream().map(Item::getLabel).collect(Collectors.toList());
+        List<String> emails = shareFileDTO.getUsersItem().stream().map(Item::getValue).collect(Collectors.toList());
         if (shareFileDTO.getShared_with() != null && !shareFileDTO.getShared_with().isEmpty()) {
             emails.addAll(shareFileDTO.getShared_with());
         }
         shareFolder(shareFileDTO.getObj(), lawfirmToken.getVcKey(), lawfirmToken.getUsername(), lawfirmToken.getUserId(), size, emails, shareFileDTO.getMsg(), shareFileDTO.getRight(), lawfirmToken.getClientFrom());
-        List<String> sendEmails = shareFileDTO.getUsersItem().stream().map(Item::getLabel).collect(Collectors.toList());
+        List<String> sendEmails = shareFileDTO.getUsersItem().stream().map(Item::getValue).collect(Collectors.toList());
 
         sendEmails.forEach(email -> {
             log.debug("Email {} to be sent", email);

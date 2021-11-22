@@ -26,19 +26,12 @@ public class ClientV2Controller {
 
     @RequestMapping(method = RequestMethod.GET, path = "")
     @ApiIgnore
-    public ResponseEntity<List<ContactSummary>> getAllContacts(@RequestParam(required = false) String searchCriteria,
-                                                               @RequestParam String vcKey) throws LawfirmBusinessException {
+    public ResponseEntity<List<ContactSummary>> getAllContacts(@RequestParam(required = false) String searchCriteria) throws LawfirmBusinessException {
         log.debug("Entering getAllContacts()");
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         log.debug("getAllContacts(vckey: {}, user id: {})", lawfirmToken.getVcKey(), lawfirmToken.getUserId());
 
-        ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.ok();
-        if (vcKey.equalsIgnoreCase(lawfirmToken.getVcKey())) {
-            responseBuilder
-                    .cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS));
-        }
-        return responseBuilder
-                .body(clientService.getAllCientByVcKey(searchCriteria));
+        return ResponseEntity.ok().body(clientService.getAllCientByVcKey(searchCriteria));
     }
 
     @RequestMapping(method = RequestMethod.GET, path = "/ids")

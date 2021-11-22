@@ -9,6 +9,7 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.Objects;
 
 @Table(name = "t_debour")
@@ -91,6 +92,11 @@ public class TDebour implements Serializable {
     @Getter
     @Setter
     private TMesureType tMesureType;
+
+    @OneToMany(mappedBy = "tDebour")
+    @Getter
+    @Setter
+    private List<FactureFraisAdmin> factureFraisAdmins;
 
     @Override
     public String toString() {

@@ -36,6 +36,10 @@ public class KafkaConfiguration {
     private String topicLawfirmName;
     @Value("${tpd.createShareCases-topic-name}")
     private String topicCreateShareCase;
+    @Value("${tpd.shareUserDossier-topic-name}")
+    private String topicShareUserDossier;
+    @Value("${tpd.attachAffaire-topic-name}")
+    private String topicAttachAffaire;
     @Value("${tpd.sendMail-topic-name}")
     private String sendMailTopic;
     @Value("${tpd.updateLawfirm-topic-name}")
@@ -95,6 +99,22 @@ public class KafkaConfiguration {
     @Bean
     public NewTopic createShareCaseTopic() {
         return TopicBuilder.name(topicCreateShareCase)
+                .partitions(1)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    public NewTopic shareUserDossierTopic() {
+        return TopicBuilder.name(topicShareUserDossier)
+                .partitions(1)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    public NewTopic attachAffaireTopic() {
+        return TopicBuilder.name(topicAttachAffaire)
                 .partitions(1)
                 .replicas(1)
                 .build();

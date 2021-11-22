@@ -1,5 +1,6 @@
 package com.ulegalize.lawfirm.repository;
 
+import com.ulegalize.dto.ComptaDTO;
 import com.ulegalize.lawfirm.model.entity.TFrais;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -8,6 +9,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 public interface TFraisRepository extends JpaRepository<TFrais, Long>, JpaSpecificationExecutor<TFrais> {
@@ -153,4 +155,57 @@ public interface TFraisRepository extends JpaRepository<TFrais, Long>, JpaSpecif
                     "and compt.accountTypeId = 2")
     Page<TFrais> findByDossierIdAndTiersWithPagination(Long dossierId, String vcKey, Pageable pageable);
 
+    @Query(value = "SELECT count(ts) from TFrais ts" +
+            " join ts.refPoste poste " +
+            " join ts.tDossiers d " +
+            " join d.dossierRightsList dr " +
+            " where ts.idFrais in ?1 " +
+            " and ts.idDoss = ?2" +
+            " and poste.fraisProcedure = true" +
+            " and dr.vcUserId = ?3")
+    Long countAllFraisDeboursByIdAndDossierId(List<Long> fraisId, Long dossierId, Long id);
+
+    @Query(value = "SELECT count(ts) from TFrais ts" +
+            " join ts.refPoste poste " +
+            " join ts.tDossiers d " +
+            " join d.dossierRightsList dr " +
+            " where ts.idFrais in ?1 " +
+            " and ts.idDoss = ?2" +
+            " and poste.fraisCollaboration = true" +
+            " and dr.vcUserId = ?3")
+    Long countAllFraisCollaByIdAndDossierId(List<Long> fraisId, Long dossierId, Long id);
+
+    @Query("select new com.ulegalize.dto.ComptaDTO(d.idFrais , " +
+            " d.vcKey, " +
+            " d.idPoste, poste.refPoste, " +
+            " d.montant, d.montantht, " +
+            " concat(client.f_nom, ' ', client.f_prenom), " +
+            "  ft.ID) " +
+            " from TFrais d" +
+            " join d.refPoste poste " +
+            " left join d.tDossiers dossier " +
+            " left join dossier.dossierRightsList dr " +
+            " left join d.tClients client " +
+            " left join d.factureFraisDeboursList ft on ft.tFactures.idFacture = ?1" +
+            " where dr.dossierId = ?2 " +
+            " and dr.vcUserId = ?3" +
+            " and poste.fraisProcedure = true")
+    List<ComptaDTO> findAllDeboursByInvoiceIdDossierId(Long invoiceId, Long dossierId, Long id);
+
+    @Query("select new com.ulegalize.dto.ComptaDTO(d.idFrais , " +
+            " d.vcKey, " +
+            " d.idPoste, poste.refPoste, " +
+            " d.montant, d.montantht, " +
+            " concat(client.f_nom, ' ', client.f_prenom), " +
+            "  ft.ID)" +
+            " from TFrais d" +
+            " join d.refPoste poste " +
+            " left join d.tDossiers dossier " +
+            " left join dossier.dossierRightsList dr " +
+            " left join d.tClients client " +
+            " left join d.factureFraisCollaborationList ft on ft.tFactures.idFacture = ?1" +
+            " where dr.dossierId = ?2 " +
+            " and dr.vcUserId = ?3" +
+            " and poste.fraisCollaboration = true")
+    List<ComptaDTO> findAllCollabByInvoiceIdDossierId(Long invoiceId, Long dossierId, Long id);
 }

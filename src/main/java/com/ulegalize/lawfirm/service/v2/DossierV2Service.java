@@ -13,6 +13,10 @@ public interface DossierV2Service {
 
     Long saveAffaire(DossierDTO dossierDTO, String vcKey);
 
+    Long saveAffaireAndCreateCase(DossierDTO dossierDTO, String vcKey);
+
+    Long saveAffaireAndAttachToCase(String caseId, DossierDTO dossierDTO, String vcKey);
+
     DossierDTO getDefaultDossier(String vcKey, Long userId);
 
     DossierDTO updateAffaire(DossierDTO dossierDTO, Long userId, String username, String vcKey);
@@ -32,4 +36,5 @@ public interface DossierV2Service {
     void switchDossierDigital(Long dossierId, Long userId, String vcKey);
 
     String inviteConseil(Long dossierId, ItemPartieDTO partieDTO);
+
 }
