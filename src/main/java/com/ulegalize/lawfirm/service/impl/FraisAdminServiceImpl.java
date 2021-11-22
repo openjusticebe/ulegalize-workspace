@@ -162,6 +162,7 @@ public class FraisAdminServiceImpl implements FraisAdminService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Frais action date not found");
         }
         if (fraisAdminDTO.getIdDoss() == null) {
+            log.warn("fraisAdminDTO.getIdDoss() {}", fraisAdminDTO.getIdDoss());
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Frais dossier not found");
         }
         if (fraisAdminDTO.getUnit() == null) {

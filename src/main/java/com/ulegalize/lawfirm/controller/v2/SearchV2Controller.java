@@ -258,18 +258,17 @@ public class SearchV2Controller {
     }
 
     @GetMapping(path = "/calendarEventType")
-    public ResponseEntity<List<ItemEventDto>> getCalendarEventType(@RequestParam Boolean onlyDossier) {
+    public ResponseEntity<List<ItemEventDto>> getCalendarEventType() {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         log.debug("getCalendarEventType() for language {}", lawfirmToken.getLanguage());
 
-        List<EnumCalendarEventType> enumCalendarEventTypeList = onlyDossier != null && onlyDossier ? List.of(EnumCalendarEventType.AUD) : List.of(EnumCalendarEventType.values());
         EnumLanguage enumLanguage = EnumLanguage.fromshortCode(lawfirmToken.getLanguage());
 
         return ResponseEntity
                 .ok()
                 .cacheControl(CacheControl.maxAge(120, TimeUnit.SECONDS))
-                .body(enumCalendarEventTypeList.stream().map(enumCalendarEventType -> {
+                .body(Arrays.stream(EnumCalendarEventType.values()).map(enumCalendarEventType -> {
                             return new ItemEventDto(enumCalendarEventType.getCode(),
                                     Utils.getLabel(enumLanguage,
                                             enumCalendarEventType.getLabelFr(),
