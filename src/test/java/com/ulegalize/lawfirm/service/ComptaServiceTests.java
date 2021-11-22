@@ -1,11 +1,13 @@
 package com.ulegalize.lawfirm.service;
 
 import com.ulegalize.dto.ComptaDTO;
+import com.ulegalize.enumeration.EnumVCOwner;
 import com.ulegalize.lawfirm.EntityTest;
 import com.ulegalize.lawfirm.model.entity.*;
 import com.ulegalize.lawfirm.model.enumeration.EnumRefTransaction;
 import com.ulegalize.lawfirm.model.enumeration.EnumTType;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -26,11 +28,20 @@ public class ComptaServiceTests extends EntityTest {
 
     @Autowired
     private ComptaService comptaService;
+    private TDossiers dossier;
+    private LawfirmEntity lawfirm;
+
+    @Before
+    public void init() {
+        lawfirm = createLawfirm();
+        dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
+
+    }
 
     @Test
     public void test_A_createTempVc() {
-        LawfirmEntity lawfirm = createLawfirm();
-        TFrais tFrais = createTFrais(lawfirm);
+
+        TFrais tFrais = createTFrais(lawfirm, dossier);
 
         ComptaDTO compta = comptaService.getComptaById(tFrais.getIdFrais(), lawfirm.getVckey());
 
@@ -40,8 +51,8 @@ public class ComptaServiceTests extends EntityTest {
 
     @Test
     public void test_B_updateCompta() {
-        LawfirmEntity lawfirm = createLawfirm();
-        TFrais tFrais = createTFrais(lawfirm);
+
+        TFrais tFrais = createTFrais(lawfirm, dossier);
 
         ComptaDTO compta = comptaService.getComptaById(tFrais.getIdFrais(), lawfirm.getVckey());
 
@@ -55,7 +66,7 @@ public class ComptaServiceTests extends EntityTest {
 
     @Test
     public void test_C_createCompta() {
-        LawfirmEntity lawfirm = createLawfirm();
+
 
         ComptaDTO compta = new ComptaDTO();
         compta.setVcKey(lawfirm.getVckey());
@@ -86,9 +97,9 @@ public class ComptaServiceTests extends EntityTest {
 
     @Test
     public void test_D_getAllComptaByDossierId_debours() {
-        LawfirmEntity lawfirm = createLawfirm();
 
-        TFrais tFrais = createTFrais(lawfirm);
+
+        TFrais tFrais = createTFrais(lawfirm, dossier);
         tFrais.getRefPoste().setFraisProcedure(true);
 
         testEntityManager.persist(tFrais.getRefPoste());
@@ -101,9 +112,9 @@ public class ComptaServiceTests extends EntityTest {
 
     @Test
     public void test_E_getAllComptaByDossierId_debours_notFound() {
-        LawfirmEntity lawfirm = createLawfirm();
 
-        TFrais tFrais = createTFrais(lawfirm);
+
+        TFrais tFrais = createTFrais(lawfirm, dossier);
         tFrais.getRefPoste().setFraisCollaboration(true);
 
         testEntityManager.persist(tFrais.getRefPoste());
@@ -116,9 +127,9 @@ public class ComptaServiceTests extends EntityTest {
 
     @Test
     public void test_F_getAllComptaByDossierId_FraisCollaboration() {
-        LawfirmEntity lawfirm = createLawfirm();
 
-        TFrais tFrais = createTFrais(lawfirm);
+
+        TFrais tFrais = createTFrais(lawfirm, dossier);
         tFrais.getRefPoste().setFraisCollaboration(true);
 
         testEntityManager.persist(tFrais.getRefPoste());
@@ -131,9 +142,9 @@ public class ComptaServiceTests extends EntityTest {
 
     @Test
     public void test_G_getAllComptaByDossierId_FraisCollaboration_notFound() {
-        LawfirmEntity lawfirm = createLawfirm();
 
-        TFrais tFrais = createTFrais(lawfirm);
+
+        TFrais tFrais = createTFrais(lawfirm, dossier);
         tFrais.getRefPoste().setHonoraires(true);
 
         testEntityManager.persist(tFrais.getRefPoste());

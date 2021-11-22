@@ -34,6 +34,7 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 
@@ -45,6 +46,8 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final RefPosteRepository refPosteRepository;
     private final LawfirmUserRepository lawfirmUserRepository;
     private final TTimesheetRepository timesheetRepository;
+    private final TFactureTimesheetRepository factureTimesheetRepository;
+    private final TDebourRepository tDebourRepository;
     private final SearchService searchService;
     private final EntityToInvoiceConverter entityToInvoiceConverter;
     private final DTOToInvoiceEntityConverter dtoToInvoiceEntityConverter;
@@ -53,6 +56,9 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final ClientRepository clientRepository;
     private final TFraisRepository fraisRepository;
     private final TFactureEcheanceRepository tfactureEcheanceRepository;
+    private final FactureFraisAdminRepository factureFraisAdminRepository;
+    private final FactureFraisRepository factureFraisRepository;
+    private final FactureFraisCollaboratRepository factureFraisCollaboratRepository;
     private final ReportApi reportApi;
     private final DriveFactory driveFactory;
     @Value("${spring.profiles.active}")
@@ -63,6 +69,8 @@ public class InvoiceServiceImpl implements InvoiceService {
                               RefPosteRepository refPosteRepository,
                               LawfirmUserRepository lawfirmUserRepository,
                               TTimesheetRepository timesheetRepository,
+                              TFactureTimesheetRepository factureTimesheetRepository,
+                              TDebourRepository tDebourRepository,
                               SearchService searchService,
                               EntityToInvoiceConverter entityToInvoiceConverter,
                               DTOToInvoiceEntityConverter dtoToInvoiceEntityConverter,
@@ -70,10 +78,12 @@ public class InvoiceServiceImpl implements InvoiceService {
                               DossierRepository dossierRepository,
                               ClientRepository clientRepository,
                               TFraisRepository fraisRepository,
-                              TFactureEcheanceRepository tfactureEcheanceRepository, ReportApi reportApi,
+                              TFactureEcheanceRepository tfactureEcheanceRepository, FactureFraisAdminRepository factureFraisAdminRepository, FactureFraisRepository factureFraisRepository, FactureFraisCollaboratRepository factureFraisCollaboratRepository, ReportApi reportApi,
                               DriveFactory driveFactory) {
         this.facturesRepository = facturesRepository;
         this.lawfirmRepository = lawfirmRepository;
+        this.factureTimesheetRepository = factureTimesheetRepository;
+        this.tDebourRepository = tDebourRepository;
         this.entityToInvoiceConverter = entityToInvoiceConverter;
         this.refPosteRepository = refPosteRepository;
         this.lawfirmUserRepository = lawfirmUserRepository;
@@ -85,6 +95,9 @@ public class InvoiceServiceImpl implements InvoiceService {
         this.clientRepository = clientRepository;
         this.fraisRepository = fraisRepository;
         this.tfactureEcheanceRepository = tfactureEcheanceRepository;
+        this.factureFraisAdminRepository = factureFraisAdminRepository;
+        this.factureFraisRepository = factureFraisRepository;
+        this.factureFraisCollaboratRepository = factureFraisCollaboratRepository;
         this.reportApi = reportApi;
         this.driveFactory = driveFactory;
     }
@@ -254,6 +267,28 @@ public class InvoiceServiceImpl implements InvoiceService {
                     invoiceDTO.getPrestationIdList().add(tFactureTimesheet.getTsId());
                 }
             }
+            // frais admin
+            if (facturesOptional.get().getFraisAdminList() != null && !facturesOptional.get().getFraisAdminList().isEmpty()) {
+
+                for (FactureFraisAdmin factureFraisAdmin : facturesOptional.get().getFraisAdminList()) {
+                    invoiceDTO.getFraisAdminIdList().add(factureFraisAdmin.getDeboursId());
+                }
+            }
+
+            // debours
+            if (facturesOptional.get().getFraisDeboursList() != null && !facturesOptional.get().getFraisDeboursList().isEmpty()) {
+
+                for (FactureFraisDebours factureFraisDebours : facturesOptional.get().getFraisDeboursList()) {
+                    invoiceDTO.getDeboursIdList().add(factureFraisDebours.getFraisId());
+                }
+            }
+            // frais coll
+            if (facturesOptional.get().getFraisDeboursList() != null && !facturesOptional.get().getFraisDeboursList().isEmpty()) {
+
+                for (FactureFraisCollaboration factureFraisCollaboration : facturesOptional.get().getFraisCollaborationArrayList()) {
+                    invoiceDTO.getFraisCollaborationIdList().add(factureFraisCollaboration.getFraisId());
+                }
+            }
         }
         log.debug("Leaving getInvoiceById with invoiceId {} ", invoiceId);
         return invoiceDTO;
@@ -264,15 +299,14 @@ public class InvoiceServiceImpl implements InvoiceService {
         log.debug("Entering createInvoice with {}", invoiceDTO.toString());
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        if (invoiceDTO.getInvoiceDetailsDTOList() == null || invoiceDTO.getInvoiceDetailsDTOList().isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "facture details cannot be empty");
-        }
+        commonRules(invoiceDTO, vcKey, lawfirmToken.getUserId());
+
         invoiceDTO.setVcKey(vcKey);
         Integer yearFacture = invoiceDTO.getDateValue().getYear();
         Integer numFacture = facturesRepository.getMaxNumFactTempByVcKey(vcKey);
         Optional<LawfirmDTO> lawfirmDTOOptional = lawfirmRepository.findLawfirmDTOByVckey(vcKey);
 
-        if (!lawfirmDTOOptional.isPresent()) {
+        if (lawfirmDTOOptional.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "lawfirm is not found");
         }
 
@@ -302,6 +336,7 @@ public class InvoiceServiceImpl implements InvoiceService {
             log.info("invoiceDetailsDTO : {} was added to tFacture : {} ", invoiceDetailsDTO, tFactures);
         });
 
+        // prestations
         invoiceDTO.getPrestationIdList().forEach(prestationId -> {
             TFactureTimesheet tFactureTimesheet = new TFactureTimesheet();
             tFactureTimesheet.setTsId(prestationId);
@@ -309,6 +344,36 @@ public class InvoiceServiceImpl implements InvoiceService {
             tFactureTimesheet.setUpdUser(lawfirmToken.getUsername());
             tFactures.addTFactureTimesheet(tFactureTimesheet);
             log.info("TFactureTimesheet : {} was added to tFacture : {} ", prestationId, tFactures);
+        });
+
+        // frais admin
+        invoiceDTO.getFraisAdminIdList().forEach(fraisAdminId -> {
+            FactureFraisAdmin factureFraisAdmin = new FactureFraisAdmin();
+            factureFraisAdmin.setDeboursId(fraisAdminId);
+            factureFraisAdmin.setCreUser(lawfirmToken.getUsername());
+            factureFraisAdmin.setUpdUser(lawfirmToken.getUsername());
+            tFactures.addFactureFraisAdmin(factureFraisAdmin);
+            log.info("FactureFraisAdmin : {} was added to tFacture : {} ", fraisAdminId, tFactures);
+        });
+
+        // debours
+        invoiceDTO.getDeboursIdList().forEach(fraisId -> {
+            FactureFraisDebours factureFraisDebours = new FactureFraisDebours();
+            factureFraisDebours.setFraisId(fraisId);
+            factureFraisDebours.setCreUser(lawfirmToken.getUsername());
+            factureFraisDebours.setUpdUser(lawfirmToken.getUsername());
+            tFactures.addFactureFraisDebours(factureFraisDebours);
+            log.info("FactureFrais debours : {} was added to tFacture : {} ", fraisId, tFactures);
+        });
+
+        // frais collaboration
+        invoiceDTO.getFraisCollaborationIdList().forEach(fraisId -> {
+            FactureFraisCollaboration factureFraisCollaboration = new FactureFraisCollaboration();
+            factureFraisCollaboration.setFraisId(fraisId);
+            factureFraisCollaboration.setCreUser(lawfirmToken.getUsername());
+            factureFraisCollaboration.setUpdUser(lawfirmToken.getUsername());
+            tFactures.addFactureFraisColl(factureFraisCollaboration);
+            log.info("FactureFrais collabration : {} was added to tFacture : {} ", fraisId, tFactures);
         });
 
         tFactures.setDateUpd(LocalDateTime.now());
@@ -324,9 +389,10 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Override
     public InvoiceDTO updateInvoice(InvoiceDTO invoiceDTO, String vcKey) {
         log.debug("Entering updateInvoice with invoice id : {}", invoiceDTO.getId());
-        commonRules(invoiceDTO);
-
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        commonRules(invoiceDTO, vcKey, lawfirmToken.getUserId());
+
 
         if (invoiceDTO.getId() == null) {
             log.warn("invoice is not filled in {}", invoiceDTO.getId());
@@ -335,7 +401,7 @@ public class InvoiceServiceImpl implements InvoiceService {
 
         Optional<TFactures> tFacturesOptional = facturesRepository.findByIdFactureAndVcKey(invoiceDTO.getId(), vcKey);
 
-        if (!tFacturesOptional.isPresent()) {
+        if (tFacturesOptional.isEmpty()) {
             log.warn("invoice does not exist {}", invoiceDTO.getId());
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "invoice does not exist");
         }
@@ -397,6 +463,7 @@ public class InvoiceServiceImpl implements InvoiceService {
         }
 
 
+        // prestation
         if (invoiceDTO.getPrestationIdList() != null) {
             List<TFactureTimesheet> tFactureTimesheetList = new ArrayList<>();
             tFacturesOptional.get().getTFactureTimesheetList().clear();
@@ -414,6 +481,73 @@ public class InvoiceServiceImpl implements InvoiceService {
         } else {
             log.warn("PrestationIdList is empty {}", invoiceDTO.getPrestationIdList());
             tFacturesOptional.get().getTFactureTimesheetList().clear();
+        }
+
+        // frais admin
+        if (!CollectionUtils.isEmpty(invoiceDTO.getFraisAdminIdList())) {
+            List<FactureFraisAdmin> tFactureTimesheetList = new ArrayList<>();
+            tFacturesOptional.get().getFraisAdminList().clear();
+            facturesRepository.save(tFacturesOptional.get());
+
+            log.debug("frais admin clear");
+            for (Long deboursId : invoiceDTO.getFraisAdminIdList()) {
+                FactureFraisAdmin tFactureTimesheet = new FactureFraisAdmin();
+                tFactureTimesheet.setDeboursId(deboursId);
+                tFactureTimesheet.setCreUser(lawfirmToken.getUsername());
+                tFactureTimesheetList.add(tFactureTimesheet);
+                tFactureTimesheet.setTFactures(tFacturesOptional.get());
+            }
+            tFacturesOptional.get().getFraisAdminList().addAll(tFactureTimesheetList);
+            log.debug("frais admin added");
+
+        } else {
+            log.warn("FraisAdminIdList is empty {}", invoiceDTO.getFraisAdminIdList());
+            tFacturesOptional.get().getFraisAdminList().clear();
+        }
+
+        // debours
+        if (!CollectionUtils.isEmpty(invoiceDTO.getDeboursIdList())) {
+            List<FactureFraisDebours> factureFraisDeboursList = new ArrayList<>();
+            tFacturesOptional.get().getFraisDeboursList().clear();
+            facturesRepository.save(tFacturesOptional.get());
+
+            log.debug("frais debours clear");
+            for (Long fraisId : invoiceDTO.getDeboursIdList()) {
+                FactureFraisDebours factureFraisDebours = new FactureFraisDebours();
+                factureFraisDebours.setFraisId(fraisId);
+                factureFraisDebours.setCreUser(lawfirmToken.getUsername());
+                factureFraisDeboursList.add(factureFraisDebours);
+                factureFraisDebours.setTFactures(tFacturesOptional.get());
+            }
+            tFacturesOptional.get().getFraisDeboursList().addAll(factureFraisDeboursList);
+            log.debug("frais debours added");
+
+        } else {
+            log.warn("DeboursIdList is empty {}", invoiceDTO.getDeboursIdList());
+            tFacturesOptional.get().getFraisDeboursList().clear();
+        }
+
+
+        // frais collaboration
+        if (!CollectionUtils.isEmpty(invoiceDTO.getFraisCollaborationIdList())) {
+            List<FactureFraisCollaboration> factureFraisDeboursList = new ArrayList<>();
+            tFacturesOptional.get().getFraisCollaborationArrayList().clear();
+            facturesRepository.save(tFacturesOptional.get());
+
+            log.debug("frais coll clear");
+            for (Long fraisId : invoiceDTO.getFraisCollaborationIdList()) {
+                FactureFraisCollaboration factureFraisCollaboration = new FactureFraisCollaboration();
+                factureFraisCollaboration.setFraisId(fraisId);
+                factureFraisCollaboration.setCreUser(lawfirmToken.getUsername());
+                factureFraisDeboursList.add(factureFraisCollaboration);
+                factureFraisCollaboration.setTFactures(tFacturesOptional.get());
+            }
+            tFacturesOptional.get().getFraisCollaborationArrayList().addAll(factureFraisDeboursList);
+            log.debug("frais coll added");
+
+        } else {
+            log.warn("FraisCollaborationIdList is empty {}", invoiceDTO.getFraisCollaborationIdList());
+            tFacturesOptional.get().getFraisCollaborationArrayList().clear();
         }
 
         tFacturesOptional.get().setMontant(invoiceDTO.getMontant() != null ? invoiceDTO.getMontant() : BigDecimal.ZERO);
@@ -448,63 +582,100 @@ public class InvoiceServiceImpl implements InvoiceService {
         return invoiceDTO;
     }
 
-    public void commonRules(InvoiceDTO invoiceDTO) {
+    public void commonRules(InvoiceDTO invoiceDTO, String vcKey, Long userId) throws ResponseStatusException {
         if (invoiceDTO == null) {
             log.warn("Invoice is not filled in");
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Invoice is not filled in");
         }
 
+        if (CollectionUtils.isEmpty(invoiceDTO.getInvoiceDetailsDTOList())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "facture details cannot be empty");
+        }
+
         if (invoiceDTO.getDossierId() != null) {
             Optional<TDossiers> tDossiers = dossierRepository.findById(invoiceDTO.getDossierId());
-            if (!tDossiers.isPresent()) {
+            if (tDossiers.isEmpty()) {
                 log.warn("Dossier is not found {} ", invoiceDTO.getDossierId());
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Dossier is not found");
+            } else {
+                // check if the prestation are coming from vckey and dossier
+                Optional<LawfirmUsers> lawfirmUsers = lawfirmUserRepository.findLawfirmUsersByVcKeyAndUserId(vcKey, userId);
+
+                if (lawfirmUsers.isEmpty()) {
+                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, "this dossier id " + invoiceDTO.getDossierId() + " is not linked with the vckey");
+                }
+
+                if (!CollectionUtils.isEmpty(invoiceDTO.getPrestationIdList())) {
+                    log.debug("Prestation {} for the invoice", invoiceDTO.getPrestationIdList());
+
+                    Long prestationCount = timesheetRepository.countAllByIdAndDossierId(invoiceDTO.getPrestationIdList(), invoiceDTO.getDossierId(), lawfirmUsers.get().getId());
+
+                    // if the count is different then a prestation is not correctly linked to dossier id
+                    if (prestationCount != invoiceDTO.getPrestationIdList().size()) {
+                        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "The TS list is not linked with the dossier");
+                    }
+                }
+                if (!CollectionUtils.isEmpty(invoiceDTO.getFraisAdminIdList())) {
+                    log.debug("Frais admin {} for the invoice", invoiceDTO.getFraisAdminIdList());
+
+                    Long deboursCount = tDebourRepository.countAllByIdAndDossierId(invoiceDTO.getFraisAdminIdList(), invoiceDTO.getDossierId(), lawfirmUsers.get().getId());
+
+                    // if the count is different then a prestation is not correctly linked to dossier id
+                    if (deboursCount != invoiceDTO.getFraisAdminIdList().size()) {
+                        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "The frais admin list is not linked with the dossier");
+                    }
+                }
+                if (!CollectionUtils.isEmpty(invoiceDTO.getDeboursIdList())) {
+                    log.debug("Debours {} for the invoice", invoiceDTO.getDeboursIdList());
+
+                    Long fraisDebours = fraisRepository.countAllFraisDeboursByIdAndDossierId(invoiceDTO.getDeboursIdList(), invoiceDTO.getDossierId(), lawfirmUsers.get().getId());
+
+                    // if the count is different then a prestation is not correctly linked to dossier id
+                    if (fraisDebours != invoiceDTO.getDeboursIdList().size()) {
+                        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "The debours list is not linked with the dossier");
+                    }
+                }
+                if (!CollectionUtils.isEmpty(invoiceDTO.getFraisCollaborationIdList())) {
+                    log.debug("frais collaborat {} for the invoice", invoiceDTO.getFraisCollaborationIdList());
+
+                    Long fraisCollabCount = fraisRepository.countAllFraisCollaByIdAndDossierId(invoiceDTO.getFraisCollaborationIdList(), invoiceDTO.getDossierId(), lawfirmUsers.get().getId());
+
+                    // if the count is different then a prestation is not correctly linked to dossier id
+                    if (fraisCollabCount != invoiceDTO.getFraisCollaborationIdList().size()) {
+                        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "The frais collab list is not linked with the dossier");
+                    }
+                }
             }
+
         }
 
         if (invoiceDTO.getClientId() != null) {
             Optional<TClients> tClients = clientRepository.findById(invoiceDTO.getClientId());
-            if (!tClients.isPresent()) {
+            if (tClients.isEmpty()) {
                 log.warn("CLient is not found {} ", invoiceDTO.getClientId());
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Client is not found");
             }
         }
 
         Optional<RefPoste> refPoste = refPosteRepository.findById(invoiceDTO.getPosteId());
-        if (!refPoste.isPresent()) {
+        if (refPoste.isEmpty()) {
             log.warn("Post is not found {} ", invoiceDTO.getPosteId());
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Post is not found");
         }
 
         if (invoiceDTO.getEcheanceId() != null) {
             Optional<TFactureEcheance> tFactureEcheanceOptional = tfactureEcheanceRepository.findById(invoiceDTO.getEcheanceId());
-            if (!tFactureEcheanceOptional.isPresent()) {
+            if (tFactureEcheanceOptional.isEmpty()) {
                 log.warn("Facture Echeance is not found {}", invoiceDTO.getEcheanceId());
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Facture Echeance is not found");
             }
         }
 
         Optional<EnumFactureType> enumFactureType = Optional.ofNullable(EnumFactureType.fromId(invoiceDTO.getTypeId()));
-        if (!enumFactureType.isPresent()) {
+        if (enumFactureType.isEmpty()) {
             log.warn("FactureType is not found {} ", invoiceDTO.getTypeId());
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "FactureType is not found");
         }
-
-    }
-
-    @Override
-    public List<PrestationSummary> getPrestationByDossierId(Long invoiceId, Long dossierId, Long userId, String vcKey) {
-        log.debug("getPrestationByDossierId with user {} and dossierId {}", userId, dossierId);
-        Optional<LawfirmUsers> lawfirmUsers = lawfirmUserRepository.findLawfirmUsersByVcKeyAndUserId(vcKey, userId);
-
-        if (lawfirmUsers.isPresent()) {
-            log.debug("Law firm list {} user id {}", lawfirmUsers.get().getId(), userId);
-
-            return timesheetRepository.findAllByInvoiceIdDossierId(invoiceId, dossierId, lawfirmUsers.get().getId());
-        }
-
-        return new ArrayList<>();
-
 
     }
 
@@ -629,6 +800,123 @@ public class InvoiceServiceImpl implements InvoiceService {
         log.debug("Total {} (invoice) found in the vckey {} and dossierId {}", sumAllHonoByVcKey, lawfirmToken.getVcKey(), dossierId);
 
         return invoiceDTO;
+    }
+
+    @Override
+    public List<PrestationSummary> getPrestationByDossierId(Long invoiceId, Long dossierId, Long userId, String vcKey) {
+        log.debug("getPrestationByDossierId with user {} and dossierId {}", userId, dossierId);
+        Optional<LawfirmUsers> lawfirmUsers = lawfirmUserRepository.findLawfirmUsersByVcKeyAndUserId(vcKey, userId);
+
+        if (lawfirmUsers.isPresent()) {
+            log.debug("Law firm list {} user id {}", lawfirmUsers.get().getId(), userId);
+
+            List<PrestationSummary> tTimesheetList = timesheetRepository.findAllByInvoiceIdDossierId(invoiceId, dossierId, lawfirmUsers.get().getId());
+
+            return tTimesheetList.stream().map(prestationSummary -> {
+                // get facture ts list but not the one linked.
+                List<TFactureTimesheet> factureTimesheets = factureTimesheetRepository.findByTsIdAndNotId(prestationSummary.getFactureTimesheetLinkedId(), prestationSummary.getId());
+
+                if (!CollectionUtils.isEmpty(factureTimesheets)) {
+                    // get the first
+                    TFactureTimesheet tFactureTimesheet = factureTimesheets.get(0);
+                    prestationSummary.setAlreadyInvoiced(true);
+                    prestationSummary.setFactureTimesheetExtId(tFactureTimesheet.getID());
+                    prestationSummary.setFactExtId(tFactureTimesheet.getTFactures().getIdFacture());
+                    prestationSummary.setFactExtRef(tFactureTimesheet.getTFactures().getFactureRef());
+                }
+                return prestationSummary;
+            }).collect(Collectors.toList());
+
+        }
+
+        return new ArrayList<>();
+    }
+
+    @Override
+    public List<FraisAdminDTO> getFraisAdminByDossierId(Long invoiceId, Long dossierId, Long userId, String vcKey) {
+        log.debug("getFraisAdminByDossierId with user {} and dossierId {}", userId, dossierId);
+        Optional<LawfirmUsers> lawfirmUsers = lawfirmUserRepository.findLawfirmUsersByVcKeyAndUserId(vcKey, userId);
+
+        if (lawfirmUsers.isPresent()) {
+            log.debug("Law firm list {} user id {}", lawfirmUsers.get().getId(), userId);
+
+            List<FraisAdminDTO> fraisAdminDTOS = tDebourRepository.findAllByInvoiceIdDossierId(invoiceId, dossierId, lawfirmUsers.get().getId());
+
+            return fraisAdminDTOS.stream().map(fraisAdminDTO -> {
+                // get facture ts list but not the one linked.
+                List<FactureFraisAdmin> factureTimesheets = factureFraisAdminRepository.findByFraisIdAndNotId(fraisAdminDTO.getFactureLinkedFraisId(), fraisAdminDTO.getId());
+
+                if (!CollectionUtils.isEmpty(factureTimesheets)) {
+                    // get the first
+                    FactureFraisAdmin factureFraisAdmin = factureTimesheets.get(0);
+                    fraisAdminDTO.setAlreadyInvoiced(true);
+                    fraisAdminDTO.setFactureExtFraisId(factureFraisAdmin.getID());
+                    fraisAdminDTO.setFactExtId(factureFraisAdmin.getTFactures().getIdFacture());
+                    fraisAdminDTO.setFactExtRef(factureFraisAdmin.getTFactures().getFactureRef());
+                }
+                return fraisAdminDTO;
+            }).collect(Collectors.toList());
+        }
+
+        return new ArrayList<>();
+    }
+
+    @Override
+    public List<ComptaDTO> getDeboursByDossierId(Long invoiceId, Long dossierId, Long userId, String vcKey) {
+        log.debug("getDeboursByDossierId with user {} and dossierId {}", userId, dossierId);
+        Optional<LawfirmUsers> lawfirmUsers = lawfirmUserRepository.findLawfirmUsersByVcKeyAndUserId(vcKey, userId);
+
+        if (lawfirmUsers.isPresent()) {
+            log.debug("Law firm list {} user id {}", lawfirmUsers.get().getId(), userId);
+
+            List<ComptaDTO> comptaDTOList = fraisRepository.findAllDeboursByInvoiceIdDossierId(invoiceId, dossierId, lawfirmUsers.get().getId());
+
+            return comptaDTOList.stream().map(comptaDTO -> {
+                // get facture ts list but not the one linked.
+                List<FactureFraisDebours> factureTimesheets = factureFraisRepository.findByFraisIdAndNotId(comptaDTO.getFactureLinkedFraisId(), comptaDTO.getId());
+
+                if (!CollectionUtils.isEmpty(factureTimesheets)) {
+                    // get the first
+                    FactureFraisDebours factureFraisDebours = factureTimesheets.get(0);
+                    comptaDTO.setAlreadyInvoiced(true);
+                    comptaDTO.setFactureExtFraisId(factureFraisDebours.getID());
+                    comptaDTO.setFactExtId(factureFraisDebours.getTFactures().getIdFacture());
+                    comptaDTO.setFactExtRef(factureFraisDebours.getTFactures().getFactureRef());
+                }
+                return comptaDTO;
+            }).collect(Collectors.toList());
+        }
+
+        return new ArrayList<>();
+    }
+
+    @Override
+    public List<ComptaDTO> getFraisCollabByDossierId(Long invoiceId, Long dossierId, Long userId, String vcKey) {
+        log.debug("getFraisCollabByDossierId with user {} and dossierId {}", userId, dossierId);
+        Optional<LawfirmUsers> lawfirmUsers = lawfirmUserRepository.findLawfirmUsersByVcKeyAndUserId(vcKey, userId);
+
+        if (lawfirmUsers.isPresent()) {
+            log.debug("Law firm list {} user id {}", lawfirmUsers.get().getId(), userId);
+
+            List<ComptaDTO> comptaDTOList = fraisRepository.findAllCollabByInvoiceIdDossierId(invoiceId, dossierId, lawfirmUsers.get().getId());
+
+            return comptaDTOList.stream().map(comptaDTO -> {
+                // get facture ts list but not the one linked.
+                List<FactureFraisCollaboration> factureTimesheets = factureFraisCollaboratRepository.findByFraisIdAndNotId(comptaDTO.getFactureLinkedFraisId(), comptaDTO.getId());
+
+                if (!CollectionUtils.isEmpty(factureTimesheets)) {
+                    // get the first
+                    FactureFraisCollaboration factureFraisDebours = factureTimesheets.get(0);
+                    comptaDTO.setAlreadyInvoiced(true);
+                    comptaDTO.setFactureExtFraisId(factureFraisDebours.getID());
+                    comptaDTO.setFactExtId(factureFraisDebours.getTFactures().getIdFacture());
+                    comptaDTO.setFactExtRef(factureFraisDebours.getTFactures().getFactureRef());
+                }
+                return comptaDTO;
+            }).collect(Collectors.toList());
+        }
+
+        return new ArrayList<>();
     }
 
     private void sendInvoiceToDrive(LawfirmToken lawfirmToken, Long invoiceId, String factureRef, Integer yearFacture) {

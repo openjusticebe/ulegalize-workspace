@@ -1,8 +1,6 @@
 package com.ulegalize.lawfirm.service;
 
-import com.ulegalize.dto.InvoiceDTO;
-import com.ulegalize.dto.ItemLongDto;
-import com.ulegalize.dto.PrestationSummary;
+import com.ulegalize.dto.*;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.data.domain.Page;
 import org.springframework.web.server.ResponseStatusException;
@@ -37,4 +35,10 @@ public interface InvoiceService {
     Long deleteInvoiceById(Long invoiceId);
 
     InvoiceDTO totalInvoiceByDossierId(Long dossierId);
+
+    List<FraisAdminDTO> getFraisAdminByDossierId(Long invoiceId, Long dossierId, Long userId, String vcKey);
+
+    List<ComptaDTO> getDeboursByDossierId(Long invoiceId, Long dossierId, Long userId, String vcKey);
+
+    List<ComptaDTO> getFraisCollabByDossierId(Long invoiceId, Long dossierId, Long userId, String vcKey);
 }

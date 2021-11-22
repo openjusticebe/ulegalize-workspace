@@ -43,6 +43,8 @@ public interface SearchService {
 
     List<ItemLongDto> getUsers(String searchValue);
 
+    public List<ItemStringDto> getCientByVcKey(String searchCriteria);
+
     List<ItemStringDto> getTemplateModel();
 
     List<ItemVatDTO> getDefaultVatsByCountryCode(String countryCode);

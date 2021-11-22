@@ -14,6 +14,7 @@ import com.ulegalize.lawfirm.rest.DriveFactory;
 import com.ulegalize.lawfirm.rest.v2.DriveApi;
 import com.ulegalize.lawfirm.service.SearchService;
 import com.ulegalize.lawfirm.utils.DriveUtils;
+import com.ulegalize.utils.ClientsUtils;
 import com.ulegalize.utils.Utils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -31,6 +32,7 @@ import java.util.stream.Collectors;
 public class SearchServiceImpl implements SearchService {
     private final LawfirmUserRepository lawfirmUserRepository;
     private final TUsersRepository usersRepository;
+    private final ClientRepository clientRepository;
     private final TMatieresRepository matieresRepository;
     private final TLanguesRepository languesRepository;
     private final RefCompteRepository refCompteRepository;
@@ -42,7 +44,7 @@ public class SearchServiceImpl implements SearchService {
     private final VatCountryRepository vatCountryRepository;
     private final DriveFactory driveFactory;
 
-    public SearchServiceImpl(LawfirmUserRepository lawfirmUserRepository, TUsersRepository usersRepository, TMatieresRepository matieresRepository, TLanguesRepository languesRepository,
+    public SearchServiceImpl(LawfirmUserRepository lawfirmUserRepository, TUsersRepository usersRepository, ClientRepository clientRepository, TMatieresRepository matieresRepository, TLanguesRepository languesRepository,
                              RefCompteRepository refCompteRepository, RefPosteRepository refPosteRepository,
                              TTimesheetTypeRepository timesheetTypeRepository, TVirtualcabVatRepository tVirtualcabVatRepository,
                              TDebourTypeRepository tDebourTypeRepository,
@@ -50,6 +52,7 @@ public class SearchServiceImpl implements SearchService {
                              VatCountryRepository vatCountryRepository, DriveFactory driveFactory) {
         this.lawfirmUserRepository = lawfirmUserRepository;
         this.usersRepository = usersRepository;
+        this.clientRepository = clientRepository;
         this.matieresRepository = matieresRepository;
         this.languesRepository = languesRepository;
         this.refCompteRepository = refCompteRepository;
@@ -204,6 +207,21 @@ public class SearchServiceImpl implements SearchService {
         return tUsers.stream()
                 .map(users -> {
                     return new ItemLongDto(users.getId(), users.getEmail());
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ItemStringDto> getCientByVcKey(String searchCriteria) {
+        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        log.debug("getAllCientByVcKey searchCriteria {} vcKey {} user id {}", searchCriteria, lawfirmToken.getVcKey(), lawfirmToken.getUserId());
+        List<TClients> lawfirmClientOptional = clientRepository.findBySearchAndUserIdOrVcKey(Collections.singletonList(lawfirmToken.getVcKey()), lawfirmToken.getUserId(), searchCriteria);
+
+        return lawfirmClientOptional.stream()
+                .map(users -> {
+                    return new ItemStringDto(users.getF_email(),
+                            ClientsUtils.getEmailFullname(users.getF_email(), users.getF_nom(), users.getF_prenom(), users.getF_company()));
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());

@@ -153,7 +153,20 @@ public class DossierV2Controller {
 
         log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
-        Long dossiersId = dossierV2Service.saveAffaire(dossierDTO, lawfirmToken.getVcKey());
+        Long dossiersId = dossierV2Service.saveAffaireAndCreateCase(dossierDTO, lawfirmToken.getVcKey());
+
+        return dossierV2Service.getDossierById(dossiersId);
+    }
+
+    @PostMapping(value = "/attach/{caseId}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ApiIgnore
+    public DossierDTO saveAffaireAndAttachToCase(@RequestBody DossierDTO dossierDTO, @PathVariable String caseId) {
+        log.debug("saveAffaireAndAttachToCase({}, {})", dossierDTO, caseId);
+        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+
+        Long dossiersId = dossierV2Service.saveAffaireAndAttachToCase(caseId, dossierDTO, lawfirmToken.getVcKey());
 
         return dossierV2Service.getDossierById(dossiersId);
     }

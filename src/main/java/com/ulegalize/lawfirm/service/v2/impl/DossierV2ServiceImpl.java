@@ -3,6 +3,7 @@ package com.ulegalize.lawfirm.service.v2.impl;
 import com.ulegalize.dto.*;
 import com.ulegalize.enumeration.*;
 import com.ulegalize.lawfirm.kafka.producer.drive.IDriveProducer;
+import com.ulegalize.lawfirm.kafka.producer.transparency.IAffaireProducer;
 import com.ulegalize.lawfirm.kafka.producer.transparency.ICaseProducer;
 import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.converter.EntityToDossierConverter;
@@ -11,6 +12,7 @@ import com.ulegalize.lawfirm.repository.*;
 import com.ulegalize.lawfirm.rest.DriveFactory;
 import com.ulegalize.lawfirm.service.MailService;
 import com.ulegalize.lawfirm.service.PrestationService;
+import com.ulegalize.lawfirm.service.v2.ClientV2Service;
 import com.ulegalize.lawfirm.service.v2.DossierV2Service;
 import com.ulegalize.lawfirm.service.v2.LawfirmV2Service;
 import com.ulegalize.lawfirm.service.v2.ObjSharedV2Service;
@@ -29,6 +31,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.server.ResponseStatusException;
@@ -64,9 +67,11 @@ public class DossierV2ServiceImpl implements DossierV2Service {
     private final MailService mailService;
     private final DriveFactory driveFactory;
     private final LawfirmV2Service lawfirmV2Service;
+    private final ClientV2Service clientV2Service;
 
     // api
     private final ICaseProducer caseProducer;
+    private final IAffaireProducer affaireProducer;
 
     public DossierV2ServiceImpl(EntityToDossierConverter entityToDossierConverter,
                                 DossierRepository dossierRepository,
@@ -80,7 +85,7 @@ public class DossierV2ServiceImpl implements DossierV2Service {
                                 TDebourRepository tDebourRepository,
                                 TUsersRepository tUsersRepository, TFacturesRepository tFacturesRepository, ObjSharedV2Service objSharedV2Service, TObjSharedRepository tObjSharedRepository,
                                 TObjSharedWithRepository tObjSharedWithRepository, MailService mailService, DriveFactory driveFactory, LawfirmV2Service lawfirmV2Service,
-                                ICaseProducer caseProducer) {
+                                ClientV2Service clientV2Service, ICaseProducer caseProducer, IAffaireProducer affaireProducer) {
         this.entityToDossierConverter = entityToDossierConverter;
         this.dossierRepository = dossierRepository;
         this.tDossierRightsRepository = tDossierRightsRepository;
@@ -101,7 +106,9 @@ public class DossierV2ServiceImpl implements DossierV2Service {
         this.mailService = mailService;
         this.driveFactory = driveFactory;
         this.lawfirmV2Service = lawfirmV2Service;
+        this.clientV2Service = clientV2Service;
         this.caseProducer = caseProducer;
+        this.affaireProducer = affaireProducer;
     }
 
     @Override
@@ -370,6 +377,111 @@ public class DossierV2ServiceImpl implements DossierV2Service {
         return tDossiers.getIdDoss();
     }
 
+    @Override
+    public Long saveAffaireAndCreateCase(DossierDTO dossierDTO, String vcKey) {
+        log.debug("entering saveAffaireAndCreateCase {}", dossierDTO);
+        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        Long saveAffaire = saveAffaire(dossierDTO, vcKey);
+
+        DossierDTO newDossierDto = getDossierById(saveAffaire);
+
+        createCasLawfirm(newDossierDto, lawfirmToken);
+
+        return saveAffaire;
+    }
+
+    @Override
+    public Long saveAffaireAndAttachToCase(String caseId, DossierDTO dossierDTO, String vcKey) {
+        log.debug("entering saveAffaireAndAttachToCase {}", dossierDTO);
+        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        Long saveAffaire = saveAffaire(dossierDTO, vcKey);
+        DossierDTO newDossierDto = getDossierById(saveAffaire);
+
+        attachAffaire(caseId, newDossierDto, lawfirmToken);
+
+        return saveAffaire;
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED, noRollbackFor = ResponseStatusException.class)
+    public void createCasLawfirm(DossierDTO dossierDTO, LawfirmToken lawfirmToken) throws ResponseStatusException {
+        log.debug("entering createCasLawfirm {}", dossierDTO);
+        List<ContactSummary> contactSummaryList = new ArrayList<>();
+        switch (dossierDTO.getType()) {
+            case BA:
+            case DC:
+            case DF:
+                ContactSummary contactSummary = clientV2Service.getCientById(dossierDTO.getIdClient());
+                contactSummaryList.add(contactSummary);
+                break;
+            case MD:
+                for (ItemClientDto dossierContact1 : dossierDTO.getClientList()) {
+                    log.info(" Contact type {}", dossierContact1.getType());
+                    try {
+                        ContactSummary contactSummary1 = clientV2Service.getCientById(dossierContact1.getValue());
+                        if (contactSummary1.getEmail() != null && !contactSummary1.getEmail().isEmpty()) {
+                            contactSummaryList.add(contactSummary1);
+                        }
+                    } catch (ResponseStatusException rs) {
+                        log.warn("Client does not exist {}", rs.getMessage());
+                    }
+                }
+                break;
+        }
+
+        if (!CollectionUtils.isEmpty(contactSummaryList)) {
+            CaseCreationDTO caseCreationDTO = new CaseCreationDTO();
+            caseCreationDTO.setDossier(dossierDTO);
+            caseCreationDTO.setContactSummaryList(new ArrayList<>());
+            caseCreationDTO.getContactSummaryList().addAll(contactSummaryList);
+
+            caseProducer.createCaseMessage(caseCreationDTO, lawfirmToken);
+        } else {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No contact with email for transparency");
+        }
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED, noRollbackFor = ResponseStatusException.class)
+    public void attachAffaire(String caseId, DossierDTO dossierDTO, LawfirmToken lawfirmToken) throws
+            ResponseStatusException {
+        log.debug("entering createCasLawfirm {}", dossierDTO);
+        List<ContactSummary> contactSummaryList = new ArrayList<>();
+        switch (dossierDTO.getType()) {
+            case BA:
+            case DC:
+            case DF:
+                ContactSummary contactSummary = clientV2Service.getCientById(dossierDTO.getIdClient());
+                contactSummaryList.add(contactSummary);
+                break;
+            case MD:
+                for (ItemClientDto dossierContact1 : dossierDTO.getClientList()) {
+                    log.info(" Contact type {}", dossierContact1.getType());
+                    try {
+                        ContactSummary contactSummary1 = clientV2Service.getCientById(dossierContact1.getValue());
+                        if (contactSummary1.getEmail() != null && !contactSummary1.getEmail().isEmpty()) {
+                            contactSummaryList.add(contactSummary1);
+                        }
+                    } catch (ResponseStatusException rs) {
+                        log.warn("Client does not exist {}", rs.getMessage());
+                    }
+                }
+                break;
+        }
+
+        if (!CollectionUtils.isEmpty(contactSummaryList)) {
+            CaseCreationDTO caseCreationDTO = new CaseCreationDTO();
+            caseCreationDTO.setDossier(dossierDTO);
+            caseCreationDTO.setContactSummaryList(new ArrayList<>());
+            caseCreationDTO.getContactSummaryList().addAll(contactSummaryList);
+            caseCreationDTO.setCaseId(caseId);
+
+            affaireProducer.attachAffaire(caseCreationDTO, lawfirmToken);
+        } else {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No contact with email for transparency");
+        }
+    }
+
     private void createTDossierRight(TDossiers dossiers, Long userId, String vcKey, String username) {
         TDossierRights tDossierRights = new TDossierRights();
         tDossierRights.setDossierId(dossiers.getIdDoss());
@@ -598,7 +710,8 @@ public class DossierV2ServiceImpl implements DossierV2Service {
     }
 
     @Override
-    public List<ItemLongDto> getAffairesByVcUserIdAndSearchCriteria(String vcKey, Long userId, String searchCriteria) {
+    public List<ItemLongDto> getAffairesByVcUserIdAndSearchCriteria(String vcKey, Long userId, String
+            searchCriteria) {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         log.debug("Get Affaires by vcKey {} and userId {} and Search Criteria {}", vcKey, userId, searchCriteria);
@@ -826,17 +939,8 @@ public class DossierV2ServiceImpl implements DossierV2Service {
 
             List<LawfirmUsers> lawfirmUsersList = lawfirmUserRepository.findByVcKeyAndDossier_NotExist(shareAffaireDTO.getVcKey(), shareAffaireDTO.getAffaireId());
 
-            for (LawfirmUsers lawfirmUsers : lawfirmUsersList) {
-                TDossierRights tDossierRights = new TDossierRights();
-                tDossierRights.setDossierId(shareAffaireDTO.getAffaireId());
-                tDossierRights.setVcUserId(lawfirmUsers.getId());
-                tDossierRights.setVcOwner(vcOwner);
-                tDossierRights.setRIGHTS("ACCESS");
-                tDossierRights.setCreUser(lawfirmToken.getUsername());
-                tDossierRightsRepository.save(tDossierRights);
+            emails.addAll(createShareDossier(lawfirmToken, lawfirmUsersList, vcOwner, shareAffaireDTO.getAffaireId()));
 
-                emails.add(lawfirmUsers.getUser().getEmail());
-            }
         }
         // single member
         else {
@@ -851,20 +955,8 @@ public class DossierV2ServiceImpl implements DossierV2Service {
                     vcOwner = EnumVCOwner.NOT_OWNER_VC;
                 }
 
-                for (LawfirmUsers lawfirmUsers : lawfirmUsersList) {
-                    TDossierRights tDossierRights = new TDossierRights();
-                    tDossierRights.setDossierId(shareAffaireDTO.getAffaireId());
-                    tDossierRights.setVcUserId(lawfirmUsers.getId());
-                    tDossierRights.setVcOwner(vcOwner);
-                    tDossierRights.setRIGHTS("ACCESS");
-                    tDossierRights.setCreUser(lawfirmToken.getUsername());
-                    tDossierRightsRepository.save(tDossierRights);
-
-                    emails.add(lawfirmUsers.getUser().getEmail());
-                }
-
+                emails.addAll(createShareDossier(lawfirmToken, lawfirmUsersList, vcOwner, shareAffaireDTO.getAffaireId()));
             }
-
         }
 
         log.info("start share folder");
@@ -891,15 +983,50 @@ public class DossierV2ServiceImpl implements DossierV2Service {
         }
     }
 
+    private List<String> createShareDossier(LawfirmToken
+                                                    lawfirmToken, List<LawfirmUsers> lawfirmUsersList, EnumVCOwner vcOwner, Long affaireId) {
+        log.debug("Entering createShareDossier {} , vcOwner {}, affaireId {}, username {}", lawfirmUsersList, vcOwner, affaireId, lawfirmToken.getUsername());
+        List<String> emails = new ArrayList<>();
+
+        for (LawfirmUsers lawfirmUsers : lawfirmUsersList) {
+            TDossierRights tDossierRights = new TDossierRights();
+            tDossierRights.setDossierId(affaireId);
+            tDossierRights.setVcUserId(lawfirmUsers.getId());
+            tDossierRights.setVcOwner(vcOwner);
+            tDossierRights.setRIGHTS("ACCESS");
+            tDossierRights.setCreUser(lawfirmToken.getUsername());
+            tDossierRightsRepository.save(tDossierRights);
+
+            emails.add(lawfirmUsers.getUser().getEmail());
+        }
+
+        log.debug("emails to register {}", emails);
+
+
+        List<ShareAffaireDTO> shareAffaireDTOS = tDossierRightsRepository.findShareUserByAffaireId(affaireId);
+
+        caseProducer.shareUserToDossier(lawfirmToken, shareAffaireDTOS);
+
+        log.info("Share user sent to transparency");
+
+
+        return emails;
+    }
+
     @Override
     public void deleteShareFolderUser(ShareAffaireDTO shareAffaireDTO) {
         log.debug("Enrering deleteShareUser shareAffaireDTO {}", shareAffaireDTO);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (shareAffaireDTO.getAffaireId() == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Object has no affaire id selected");
+        }
+
         Optional<TDossiers> dossiersOptional = dossierRepository.findByIdDossAndVcKey(shareAffaireDTO.getAffaireId(), shareAffaireDTO.getVcKey());
 
-        if (!dossiersOptional.isPresent()) {
+        if (dossiersOptional.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Dossier does not exist");
         }
+
         Optional<LawfirmUsers> lawfirmUsersOptional = lawfirmUserRepository.findLawfirmUsersByVcKeyAndUserId(shareAffaireDTO.getVcKey(), shareAffaireDTO.getUserId());
 
         Long countOwner = tDossierRightsRepository.countByDossierIdAndVcOwnerAndvcUserId(shareAffaireDTO.getAffaireId(), lawfirmUsersOptional.get().getId());
@@ -942,6 +1069,10 @@ public class DossierV2ServiceImpl implements DossierV2Service {
                 }
             });
         });
+
+        List<ShareAffaireDTO> shareAffaireDTOS = tDossierRightsRepository.findShareUserByAffaireId(shareAffaireDTO.getAffaireId());
+        caseProducer.shareUserToDossier(lawfirmToken, shareAffaireDTOS);
+
 
     }
 

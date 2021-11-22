@@ -139,4 +139,60 @@ public class InvoiceV2ControllerTest extends EntityTest {
                 .andExpect(status().isOk());
     }
 
+    @WithMockUser(value = "spring")
+    @Test
+    public void test_H_getPrestationByDossierId() throws Exception {
+        TFactures tFactures = createFacture(lawfirm);
+
+        mockMvc.perform(get("/v2/invoices/" + tFactures.getIdFacture() + "/prestations/" + tFactures.getIdDoss())
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .param("$[0].id", tFactures.getTFactureTimesheetList().get(0).getTsId().toString()))
+                .andExpect(status().isOk());
+    }
+
+    @WithMockUser(value = "spring")
+    @Test
+    public void test_I_getFraisAdminByDossierId() throws Exception {
+        TFactures tFactures = createFacture(lawfirm);
+
+        mockMvc.perform(get("/v2/invoices/" + tFactures.getIdFacture() + "/fraisAdmin/" + tFactures.getIdDoss())
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .param("$[0].id", tFactures.getFraisAdminList().get(0).getID().toString()))
+                .andExpect(status().isOk());
+    }
+
+    @WithMockUser(value = "spring")
+    @Test
+    public void test_J_getDeboursByDossierId() throws Exception {
+        TFactures tFactures = createFacture(lawfirm);
+        // to link debours
+        tFactures.getFraisDeboursList().get(0).getTFrais().getRefPoste().setFraisProcedure(true);
+        testEntityManager.persist(tFactures.getFraisDeboursList().get(0).getTFrais().getRefPoste());
+
+
+        mockMvc.perform(get("/v2/invoices/" + tFactures.getIdFacture() + "/debours/" + tFactures.getIdDoss())
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .param("$[0].id", tFactures.getFraisDeboursList().get(0).getID().toString()))
+                .andExpect(status().isOk());
+    }
+
+    @WithMockUser(value = "spring")
+    @Test
+    public void test_K_getFraisCollabByDossierId() throws Exception {
+        TFactures tFactures = createFacture(lawfirm);
+        // to link debours
+        tFactures.getFraisDeboursList().get(0).getTFrais().getRefPoste().setFraisCollaboration(true);
+        testEntityManager.persist(tFactures.getFraisDeboursList().get(0).getTFrais().getRefPoste());
+
+
+        mockMvc.perform(get("/v2/invoices/" + tFactures.getIdFacture() + "/fraisCollaborat/" + tFactures.getIdDoss())
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .param("$[0].id", tFactures.getFraisCollaborationArrayList().get(0).getID().toString()))
+                .andExpect(status().isOk());
+    }
+
 }

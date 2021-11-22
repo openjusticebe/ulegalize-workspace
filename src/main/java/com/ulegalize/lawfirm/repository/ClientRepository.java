@@ -25,6 +25,15 @@ public interface ClientRepository extends JpaRepository<TClients, Long> {
             " where lawfirm.vckey in :vcKeys or d.user_id = :userId")
     List<TClients> findByUserIdOrVcKey(List<String> vcKeys, Long userId);
 
+    @Query(value = "SELECT d from TClients d" +
+            " join fetch d.virtualcabClientList vcc " +
+            " join vcc.lawfirm lawfirm " +
+            " where (lawfirm.vckey in :vcKeys or d.user_id = :userId)" +
+            " and ((d.f_nom like %:searchCriteria%" +
+            " or d.f_prenom like %:searchCriteria% or d.f_company like %:searchCriteria%)" +
+            " and d.f_email is not null and d.f_email <> '' )")
+    List<TClients> findBySearchAndUserIdOrVcKey(List<String> vcKeys, Long userId, String searchCriteria);
+
     @Query(value = "SELECT d from TClients d " +
             " join d.virtualcabClientList vcc " +
             " join vcc.lawfirm lawfirm " +

@@ -14,6 +14,7 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Objects;
 
 @Entity
@@ -159,6 +160,16 @@ public class TFrais implements Serializable {
     @Getter
     @Setter
     private TFactures tFactures;
+
+    @OneToMany(mappedBy = "tFrais")
+    @Getter
+    @Setter
+    private List<FactureFraisDebours> factureFraisDeboursList;
+
+    @OneToMany(mappedBy = "tFrais")
+    @Getter
+    @Setter
+    private List<FactureFraisCollaboration> factureFraisCollaborationList;
 
     @Override
     public boolean equals(Object o) {

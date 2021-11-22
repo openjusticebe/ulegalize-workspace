@@ -1,8 +1,6 @@
 package com.ulegalize.lawfirm.controller.v2;
 
-import com.ulegalize.dto.InvoiceDTO;
-import com.ulegalize.dto.ItemLongDto;
-import com.ulegalize.dto.PrestationSummary;
+import com.ulegalize.dto.*;
 import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.service.InvoiceService;
 import com.ulegalize.lawfirm.utils.CalendarEventsUtil;
@@ -10,7 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -21,7 +18,6 @@ import springfox.documentation.annotations.ApiIgnore;
 import java.math.BigDecimal;
 import java.time.ZonedDateTime;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/v2/invoices")
@@ -38,12 +34,7 @@ public class InvoiceV2Controller {
 
         log.debug("getInvoiceById(invoiceId: {} for vckey {}", invoiceId, lawfirmToken.getVcKey());
 
-        ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.ok();
-        if (vcKey != null && vcKey.equals(lawfirmToken.getVcKey())) {
-            responseBuilder
-                    .cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS));
-        }
-        return responseBuilder
+        return ResponseEntity.ok()
                 .body(invoiceService.getInvoiceById(invoiceId, lawfirmToken.getVcKey()));
     }
 
@@ -174,6 +165,42 @@ public class InvoiceV2Controller {
         log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
         return invoiceService.getPrestationByDossierId(invoiceId, dossierId, lawfirmToken.getUserId(), lawfirmToken.getVcKey());
+    }
+
+    @GetMapping("/{invoiceId}/fraisAdmin/{dossierId}")
+    @ApiIgnore
+    public List<FraisAdminDTO> getFraisAdminByDossierId(@PathVariable Long invoiceId, @PathVariable Long dossierId) {
+        log.debug("getFraisAdminByDossierId(invoiceId {}, dossier id {})", invoiceId, dossierId);
+
+        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+
+        return invoiceService.getFraisAdminByDossierId(invoiceId, dossierId, lawfirmToken.getUserId(), lawfirmToken.getVcKey());
+    }
+
+    @GetMapping("/{invoiceId}/debours/{dossierId}")
+    @ApiIgnore
+    public List<ComptaDTO> getDeboursByDossierId(@PathVariable Long invoiceId, @PathVariable Long dossierId) {
+        log.debug("getDeboursByDossierId(invoiceId {}, dossier id {})", invoiceId, dossierId);
+
+        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+
+        return invoiceService.getDeboursByDossierId(invoiceId, dossierId, lawfirmToken.getUserId(), lawfirmToken.getVcKey());
+    }
+
+    @GetMapping("/{invoiceId}/fraisCollaborat/{dossierId}")
+    @ApiIgnore
+    public List<ComptaDTO> getFraisCollabByDossierId(@PathVariable Long invoiceId, @PathVariable Long dossierId) {
+        log.debug("getFraisCollabByDossierId(invoiceId {}, dossier id {})", invoiceId, dossierId);
+
+        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+
+        return invoiceService.getFraisCollabByDossierId(invoiceId, dossierId, lawfirmToken.getUserId(), lawfirmToken.getVcKey());
     }
 
     @GetMapping("/vat/{vat}")
