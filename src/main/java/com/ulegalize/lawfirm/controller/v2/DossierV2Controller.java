@@ -43,12 +43,7 @@ public class DossierV2Controller {
 
         log.debug("getFinanceDossierById(dossierId: {}) for vckey {}", dossierId, lawfirmToken.getVcKey());
 
-        ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.ok();
-        if (vcKey != null && vcKey.equals(lawfirmToken.getVcKey())) {
-            responseBuilder
-                    .cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS));
-        }
-        return responseBuilder
+        return ResponseEntity.ok()
                 .body(dossierV2Service.getFinanceDossierById(dossierId));
     }
 
