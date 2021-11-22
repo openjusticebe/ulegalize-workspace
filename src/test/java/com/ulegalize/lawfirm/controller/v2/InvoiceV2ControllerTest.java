@@ -77,53 +77,65 @@ public class InvoiceV2ControllerTest extends EntityTest {
 
     @WithMockUser(value = "spring")
     @Test
-    public void test_A_getInvoicesBySearchCriteria_withParma_founded() throws Exception{
+    public void test_B_getInvoicesBySearchCriteria_withParma_founded() throws Exception {
 
         TFactures tFactures = createFacture(lawfirm);
 
         mockMvc.perform(get("/v2/invoices")
-                .with(authentication(authentication))
-                .contentType(MediaType.APPLICATION_JSON)
-                .param("searchCriteria", String.valueOf(LocalDate.now().getYear())))
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .param("searchCriteria", String.valueOf(LocalDate.now().getYear())))
                 .andExpect(jsonPath("$[0].label", containsStringIgnoringCase(String.valueOf(tFactures.getYearFacture()))))
                 .andExpect(status().isOk());
     }
 
     @WithMockUser(value = "spring")
     @Test
-    public void test_A_getInvoicesBySearchCriteria_withParma_notFounded() throws Exception {
+    public void test_C_getInvoicesBySearchCriteria_withParma_notFounded() throws Exception {
 
         mockMvc.perform(get("/v2/invoices")
-                .with(authentication(authentication))
-                .contentType(MediaType.APPLICATION_JSON)
-                .param("searchCriteria", "bala bala"))
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .param("searchCriteria", "bala bala"))
                 .andExpect(jsonPath("$").isEmpty())
                 .andExpect(status().isOk());
     }
 
     @WithMockUser(value = "spring")
     @Test
-    public void test_A_getDefaultInvoice() throws Exception {
+    public void test_D_getDefaultInvoice() throws Exception {
 
         TFactures tFactures = createFacture(lawfirm);
 
         mockMvc.perform(get("/v2/invoices/default")
-                .with(authentication(authentication))
-                .contentType(MediaType.APPLICATION_JSON))
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.vcKey", equalTo(tFactures.getVcKey())))
                 .andExpect(status().isOk());
     }
 
     @WithMockUser(value = "spring")
     @Test
-    public void test_A_getInvoiceById() throws Exception {
+    public void test_E_getInvoiceById() throws Exception {
         TFactures tFactures = createFacture(lawfirm);
 
         mockMvc.perform(get("/v2/invoices/" + tFactures.getIdFacture())
-                .with(authentication(authentication))
-                .contentType(MediaType.APPLICATION_JSON)
-                .param("invoiceId", String.valueOf(tFactures.getIdFacture())))
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .param("invoiceId", String.valueOf(tFactures.getIdFacture())))
                 .andExpect(jsonPath("$.id", equalTo(tFactures.getIdFacture().intValue())))
+                .andExpect(status().isOk());
+    }
+
+    @WithMockUser(value = "spring")
+    @Test
+    public void test_F_totalByDossier() throws Exception {
+        TFactures tFactures = createFacture(lawfirm);
+
+        mockMvc.perform(get("/v2/invoices/dossier/" + tFactures.getIdDoss() + "/total")
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .param("$.montant", tFactures.getMontant().toString()))
                 .andExpect(status().isOk());
     }
 

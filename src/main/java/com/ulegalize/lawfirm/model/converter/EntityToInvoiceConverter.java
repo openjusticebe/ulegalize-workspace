@@ -4,16 +4,22 @@ import com.ulegalize.dto.InvoiceDTO;
 import com.ulegalize.dto.ItemDto;
 import com.ulegalize.dto.ItemLongDto;
 import com.ulegalize.lawfirm.model.entity.TFactures;
-import com.ulegalize.lawfirm.utils.SuperConverter;
+import com.ulegalize.lawfirm.repository.TFraisRepository;
+import com.ulegalize.lawfirm.utils.SuperTriConverter;
 import com.ulegalize.utils.ClientsUtils;
 import com.ulegalize.utils.DossiersUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+
 @Component
-public class EntityToInvoiceConverter implements SuperConverter<TFactures, InvoiceDTO> {
+public class EntityToInvoiceConverter implements SuperTriConverter<TFactures, Boolean, InvoiceDTO> {
+    @Autowired
+    TFraisRepository tFraisRepository;
 
     @Override
-    public InvoiceDTO apply(TFactures factures) {
+    public InvoiceDTO apply(TFactures factures, Boolean withHonoraire) {
 
         InvoiceDTO invoiceDTO = new InvoiceDTO();
         invoiceDTO.setId(factures.getIdFacture());
@@ -70,6 +76,11 @@ public class EntityToInvoiceConverter implements SuperConverter<TFactures, Invoi
                     factures.getTFactureEcheance().getDESCRIPTION()));
         }
 
+        // calculate honoraire
+        if (withHonoraire != null && withHonoraire) {
+            BigDecimal honoByInvoiceId = tFraisRepository.sumAllHonoTtcByInvoiceId(factures.getIdFacture(), factures.getVcKey());
+            invoiceDTO.setTotalHonoraire(honoByInvoiceId);
+        }
         return invoiceDTO;
     }
 

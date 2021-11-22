@@ -68,6 +68,12 @@ public class TDossierRights implements Serializable {
     @Setter
     private String updUser;
 
+    @Column(name = "LAST_ACCESS_DATE")
+    @UpdateTimestamp
+    @Getter
+    @Setter
+    private ZonedDateTime lastAccessDate = ZonedDateTime.now();
+
     //bi-directional many-to-one association to TDossiers
     @ManyToOne
     @JoinColumn(name = "DOSSIER_ID", insertable = false, nullable = false, updatable = false)

@@ -2,6 +2,7 @@ package com.ulegalize.lawfirm.repo;
 
 import com.ulegalize.lawfirm.EntityTest;
 import com.ulegalize.lawfirm.model.entity.LawfirmEntity;
+import com.ulegalize.lawfirm.model.entity.TFactureDetails;
 import com.ulegalize.lawfirm.model.entity.TFactures;
 import com.ulegalize.lawfirm.repository.OffsetBasedPageRequest;
 import com.ulegalize.lawfirm.repository.TFacturesRepository;
@@ -15,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -43,7 +45,7 @@ public class TFacturesRepositoryTests extends EntityTest {
     }
 
     @Test
-    public void test_A_getInvoiceById() {
+    public void test_B_getInvoiceById() {
         LawfirmEntity lawfirmEntity = createLawfirm();
         TFactures tFactures = createFacture(lawfirmEntity);
 
@@ -55,7 +57,7 @@ public class TFacturesRepositoryTests extends EntityTest {
     }
 
     @Test
-    public void test_B_findAllWithPagination() {
+    public void test_C_findAllWithPagination() {
         LawfirmEntity lawfirmEntity = createLawfirm();
         TFactures tFactures = createFacture(lawfirmEntity);
 
@@ -70,7 +72,7 @@ public class TFacturesRepositoryTests extends EntityTest {
     }
 
     @Test
-    public void test_C_findAllWithPagination_byClient() {
+    public void test_D_findAllWithPagination_byClient() {
         LawfirmEntity lawfirmEntity = createLawfirm();
         TFactures tFactures = createFacture(lawfirmEntity);
 
@@ -85,7 +87,7 @@ public class TFacturesRepositoryTests extends EntityTest {
     }
 
     @Test
-    public void test_D_findAllWithPagination_noResult() {
+    public void test_E_findAllWithPagination_noResult() {
         LawfirmEntity lawfirmEntity = createLawfirm();
         TFactures tFactures = createFacture(lawfirmEntity);
 
@@ -95,6 +97,35 @@ public class TFacturesRepositoryTests extends EntityTest {
         Page<TFactures> allInvoices = tFacturesRepository.findAllWithPagination(lawfirmEntity.getVckey(), null, null, null, tFactures.getTClients().getF_nom() + "Result", pageable);
         assertNotNull(allInvoices);
         assertEquals(0, allInvoices.getTotalElements());
+
+    }
+
+    @Test
+    public void test_F_sumHtvaInvoiceByVcKey() {
+        LawfirmEntity lawfirmEntity = createLawfirm();
+        TFactures tFactures = createFacture(lawfirmEntity);
+
+        BigDecimal sum = tFacturesRepository.sumHtvaInvoiceByVcKey(lawfirmEntity.getVckey(), tFactures.getIdDoss());
+        assertNotNull(sum);
+        BigDecimal sumExpected = tFactures.getTFactureDetailsList().stream().map(TFactureDetails::getHtva)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        assertEquals(sumExpected.toBigInteger(), sum.toBigInteger());
+
+    }
+
+    @Test
+    public void test_H_sumTvacInvoiceByVcKey() {
+        LawfirmEntity lawfirmEntity = createLawfirm();
+        TFactures tFactures = createFacture(lawfirmEntity);
+
+        BigDecimal sum = tFacturesRepository.sumTvacInvoiceByVcKey(lawfirmEntity.getVckey(), tFactures.getIdDoss());
+        assertNotNull(sum);
+        assertEquals(tFactures.getMontant().toBigInteger(), sum.toBigInteger());
+        BigDecimal sumExpected = tFactures.getTFactureDetailsList().stream().map(TFactureDetails::getTtc)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        assertEquals(sumExpected.toBigInteger(), sum.toBigInteger());
 
     }
 

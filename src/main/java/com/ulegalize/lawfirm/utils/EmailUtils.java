@@ -108,7 +108,7 @@ public class EmailUtils {
         return model;
     }
 
-    public static Map<String, Object> prepareContextNotificationEmail(String language, TCalendarEvent appointment, String emailContact, String phoneContact, String portalUrl, String emailTo, String clientFrom) {
+    public static Map<String, Object> prepareContextNotificationEmail(String language, TCalendarEvent appointment, Date startDate, Date endDate, String emailContact, String phoneContact, String portalUrl, String emailTo, String clientFrom) {
 
         Map<String, Object> model = communPrepareContext(clientFrom, portalUrl);
 
@@ -124,10 +124,11 @@ public class EmailUtils {
         EnumLanguage enumLanguage = EnumLanguage.fromshortCode(language);
 
         model.put("appointment_type", Utils.getLabel(enumLanguage, appointment.getEventType().getLabelFr(), appointment.getEventType().getLabelEn(), appointment.getEventType().getLabelNl()));
-        model.put("appointment_date", formatDateToString(appointment.getStart()));
-        model.put("appointment_time", formatTimeToString(appointment.getStart()));
-        model.put("appointment_time_end", formatTimeToString(appointment.getEnd()));
+        model.put("appointment_date", formatDateToString(startDate));
+        model.put("appointment_time", formatTimeToString(startDate));
+        model.put("appointment_time_end", endDate != null ? formatTimeToString(endDate) : null);
 
+        model.put("title", appointment.getTitle());
         model.put("dossier_reference", dossierReference);
         model.put("location", location);
         model.put("description", note);

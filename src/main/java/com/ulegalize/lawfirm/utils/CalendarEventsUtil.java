@@ -34,8 +34,8 @@ public class CalendarEventsUtil {
     }
 
     public static Date convertToDateViaInstant(ZonedDateTime dateToConvert) {
-        return Date
-                .from(dateToConvert.toInstant());
+        return dateToConvert != null ? Date
+                .from(dateToConvert.toInstant()) : null;
     }
 
     public static Date convertZoneToDateViaInstant(ZonedDateTime dateToConvert) {

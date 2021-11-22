@@ -38,7 +38,6 @@ public class LawfirmProducerImpl implements ILawfirmProducer {
                 && !activeProfile.equalsIgnoreCase("devDocker")) {
             try {
                 KafkaObject<LawfirmDTO> messageKafka = new KafkaObject<>(lawfirmToken, message);
-
                 ListenableFuture<SendResult<String, Object>> future = kafkaTemplate.send(topicName,  messageKafka);
 
                 future.addCallback(new ListenableFutureCallback<SendResult<String, Object>>() {

@@ -34,7 +34,8 @@ public interface DossierRepository extends JpaRepository<TDossiers, Long> {
             " round(ifnull(presta.cout,0), 2)+ ifnull(fraisadmin.cout,0)+ ifnull(fraisProcedure.cout,0)+ ifnull(fraisCollaboration.cout,0) - ifnull(honoraire.cout,0) balance," +
             " owner.vc_key as vckeyOwner," +
             " tdossiers0_.date_close as closeDossier," +
-            " tdossiers0_.doss_type as type" +
+            " tdossiers0_.doss_type as type," +
+            " dossierrig1_.last_access_date as lastAccessDate" +
             " from t_dossiers tdossiers0_ " +
             " inner join t_dossier_rights dossierrig1_ on tdossiers0_.id_doss = dossierrig1_.dossier_id " +
             " left join (" +
@@ -114,7 +115,7 @@ public interface DossierRepository extends JpaRepository<TDossiers, Long> {
             "       tclients3_.id_client   ," +
             "       owner.vc_key           ," +
             "       tdossiers0_.date_close" +
-            " order by tdossiers0_.year_doss desc, tdossiers0_.num_doss desc",
+            " order by dossierrig1_.last_access_date desc, tdossiers0_.year_doss desc, tdossiers0_.num_doss desc",
             countQuery = "select count(tdossiers0_.id_doss) " +
                     " from t_dossiers tdossiers0_ " +
                     " inner join t_dossier_rights dossierrig1_ on tdossiers0_.id_doss = dossierrig1_.dossier_id " +

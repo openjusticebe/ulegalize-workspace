@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface TDossierRightsRepository extends JpaRepository<TDossierRights, Long>, JpaSpecificationExecutor<TDossierRights> {
 
@@ -28,7 +29,7 @@ public interface TDossierRightsRepository extends JpaRepository<TDossierRights, 
 
     List<TDossierRights> findAllByVcUserId(Long vcUserId);
 
-    List<TDossierRights> findAllByVcUserIdIn(List<Long> vcUserId);
+    Optional<TDossierRights> findAllByVcUserIdAndDossierId(Long vcUserId, Long dossierId);
 
     @Query(value = "delete from TDossierRights l where l.vcUserId = ?1")
     @Modifying
