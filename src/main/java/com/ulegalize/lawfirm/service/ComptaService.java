@@ -1,6 +1,7 @@
 package com.ulegalize.lawfirm.service;
 
 import com.ulegalize.dto.ComptaDTO;
+import com.ulegalize.dto.InvoiceDTO;
 import com.ulegalize.dto.ItemBigDecimalDto;
 import com.ulegalize.dto.ItemDto;
 import org.springframework.data.domain.Page;
@@ -24,5 +25,7 @@ public interface ComptaService {
     Long createCompta(ComptaDTO comptaDTO, String vcKey);
 
     ItemBigDecimalDto getTvaDefaultCompta(Long userId, String vcKey);
+
+    InvoiceDTO totalHonoraireByDossierId(Long dossierId);
 
 }

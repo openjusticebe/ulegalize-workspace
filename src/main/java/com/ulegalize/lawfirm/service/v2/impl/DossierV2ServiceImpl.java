@@ -35,6 +35,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -114,10 +115,22 @@ public class DossierV2ServiceImpl implements DossierV2Service {
         Optional<LawfirmUsers> lawfirmUsers = lawfirmUserRepository.findLawfirmUsersByVcKeyAndUserId(vcKey, userId);
 
         if (lawfirmUsers.isPresent()) {
+            // update last access date
+            Optional<TDossierRights> optionalTDossierRights = tDossierRightsRepository.findAllByVcUserIdAndDossierId(lawfirmUsers.get().getId(), id_doss);
+
+            optionalTDossierRights.ifPresent(dossierRepository -> {
+                log.debug("Dossier right exists ");
+                dossierRepository.setLastAccessDate(ZonedDateTime.now());
+
+                tDossierRightsRepository.save(dossierRepository);
+                log.debug("Dossier right saved ");
+            });
+
             Optional<TDossiers> tDossiers = dossierRepository.findByIdDoss(id_doss, lawfirmUsers.get().getId(), List.of(EnumVCOwner.NOT_SAME_VC, EnumVCOwner.OWNER_VC, EnumVCOwner.NOT_OWNER_VC));
 
             if (tDossiers.isPresent()) {
                 log.info("Dossier is present id doss {} and vc user id {}", id_doss, lawfirmUsers.get().getId());
+
                 EnumLanguage enumLanguage = EnumLanguage.fromshortCode(lawfirmToken.getLanguage());
                 return entityToDossierConverter.apply(tDossiers.get(), enumLanguage);
             }
@@ -166,7 +179,9 @@ public class DossierV2ServiceImpl implements DossierV2Service {
                         dossier.getFirstnameClient(), dossier.getLastnameClient(), dossier.getCompanyClient(), dossier.getIdClient(),
                         dossier.getAdverseFirstnameClient(), dossier.getAdverseLastnameClient(), dossier.getAdverseCompanyClient(), dossier.getAdverseIdClient(),
                         dossier.getBalance(), dossier.getVckeyOwner(), enumVCOwner2, dossier.getCloseDossier(),
-                        dossier.getType()
+                        dossier.getType(),
+                        dossier.getLastAccessDate()
+
                 );
                 dossierDTO.setTypeItem(new ItemStringDto(dossier.getType().getDossType(),
                         Utils.getLabel(enumLanguage,
@@ -203,13 +218,19 @@ public class DossierV2ServiceImpl implements DossierV2Service {
         financeDTO.setFraisAdmin(allDebours.setScale(2, RoundingMode.HALF_UP));
         BigDecimal allCollabByVcKey = tFraisRepository.sumAllCollabByVcKey(dossierId, vcKey);
         financeDTO.setCollaboration(allCollabByVcKey.setScale(2, RoundingMode.HALF_UP));
-        BigDecimal allHonoByVcKey = tFraisRepository.sumAllHonoByVcKey(dossierId, vcKey);
+        BigDecimal allHonoByVcKey = tFraisRepository.sumAllHonoHtvaByVcKey(dossierId, vcKey);
         financeDTO.setHonoraires(allHonoByVcKey.setScale(2, RoundingMode.HALF_UP));
         BigDecimal allAccountTiers = tFraisRepository.sumAllTiersByVcKey(dossierId, vcKey);
         financeDTO.setTiersAccount(allAccountTiers.setScale(2, RoundingMode.HALF_UP));
 
-        BigDecimal balance = prestations.add(countAllJusticeByVcKey).add(allDebours).add(allCollabByVcKey).subtract(allHonoByVcKey);
-        financeDTO.setBalance(balance.setScale(2, RoundingMode.HALF_UP));
+        BigDecimal totalHonoraire = prestations.add(countAllJusticeByVcKey).add(allDebours).add(allCollabByVcKey);
+        financeDTO.setTotalHonoraire(totalHonoraire.setScale(2, RoundingMode.HALF_UP));
+
+        BigDecimal totalInvoice = tFacturesRepository.sumHtvaInvoiceByVcKey(vcKey, dossierId);
+        financeDTO.setTotalInvoice(totalInvoice.setScale(2, RoundingMode.HALF_UP));
+
+        financeDTO.setBalance(totalHonoraire.subtract(totalInvoice));
+
         return financeDTO;
     }
 

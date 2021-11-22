@@ -51,6 +51,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final DTOToInvoiceDetailsEntityConverter dtoToInvoiceDetailsEntityConverter;
     private final DossierRepository dossierRepository;
     private final ClientRepository clientRepository;
+    private final TFraisRepository fraisRepository;
     private final TFactureEcheanceRepository tfactureEcheanceRepository;
     private final ReportApi reportApi;
     private final DriveFactory driveFactory;
@@ -68,6 +69,7 @@ public class InvoiceServiceImpl implements InvoiceService {
                               DTOToInvoiceDetailsEntityConverter dtoToInvoiceDetailsEntityConverter,
                               DossierRepository dossierRepository,
                               ClientRepository clientRepository,
+                              TFraisRepository fraisRepository,
                               TFactureEcheanceRepository tfactureEcheanceRepository, ReportApi reportApi,
                               DriveFactory driveFactory) {
         this.facturesRepository = facturesRepository;
@@ -81,6 +83,7 @@ public class InvoiceServiceImpl implements InvoiceService {
         this.dtoToInvoiceDetailsEntityConverter = dtoToInvoiceDetailsEntityConverter;
         this.dossierRepository = dossierRepository;
         this.clientRepository = clientRepository;
+        this.fraisRepository = fraisRepository;
         this.tfactureEcheanceRepository = tfactureEcheanceRepository;
         this.reportApi = reportApi;
         this.driveFactory = driveFactory;
@@ -105,7 +108,11 @@ public class InvoiceServiceImpl implements InvoiceService {
             allInvoices = facturesRepository.findAllWithPagination(vcKey, searchEcheance, searchYearDossier, number, searchClient, pageable);
 
         }
-        List<InvoiceDTO> invoiceDTOList = !CollectionUtils.isEmpty(allInvoices.getContent()) ? entityToInvoiceConverter.convertToList(allInvoices.getContent()) : new ArrayList<>();
+        List<InvoiceDTO> invoiceDTOList = new ArrayList<>();
+        if (!CollectionUtils.isEmpty(allInvoices.getContent())) {
+            invoiceDTOList = entityToInvoiceConverter.convertToList(allInvoices.getContent(), true);
+        }
+
 
         return new PageImpl<>(invoiceDTOList, Pageable.unpaged(), allInvoices.getTotalElements());
     }
@@ -118,7 +125,7 @@ public class InvoiceServiceImpl implements InvoiceService {
         Sort.Order order2 = new Sort.Order(Sort.Direction.DESC, "factureRef");
         Pageable pageable = new OffsetBasedPageRequest(limit, offset, Sort.by(order, order2));
         Page<TFactures> allInvoices = facturesRepository.findByDossierIdWithPagination(dossierId, vcKey, pageable);
-        List<InvoiceDTO> invoiceDTOList = !CollectionUtils.isEmpty(allInvoices.getContent()) ? entityToInvoiceConverter.convertToList(allInvoices.getContent()) : new ArrayList<>();
+        List<InvoiceDTO> invoiceDTOList = !CollectionUtils.isEmpty(allInvoices.getContent()) ? entityToInvoiceConverter.convertToList(allInvoices.getContent(), true) : new ArrayList<>();
 
         return new PageImpl<>(invoiceDTOList, Pageable.unpaged(), allInvoices.getTotalElements());
     }
@@ -128,7 +135,7 @@ public class InvoiceServiceImpl implements InvoiceService {
 
         log.debug("Get all Invoices with user {} ", vcKey);
         List<TFactures> allInvoices = facturesRepository.findAll(vcKey);
-        List<InvoiceDTO> invoiceDTOList = entityToInvoiceConverter.convertToList(allInvoices);
+        List<InvoiceDTO> invoiceDTOList = entityToInvoiceConverter.convertToList(allInvoices, false);
 
         List<InvoiceDTO> resultList = invoiceDTOList;
         if (searchCriteria != null && !searchCriteria.isEmpty()) {
@@ -198,16 +205,15 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Override
     public InvoiceDTO getInvoiceById(Long invoiceId, String vcKey) {
         log.debug("Entering getInvoiceById with invoiceId {} ", invoiceId);
-        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         InvoiceDTO invoiceDTO = null;
         Optional<TFactures> facturesOptional = facturesRepository.findByIdFactureAndVcKey(invoiceId, vcKey);
 
-        if (!facturesOptional.isPresent()) {
+        if (facturesOptional.isEmpty()) {
             log.warn("invoice is not existing invoiceId {}", invoiceId);
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "invoice is not existing");
         } else {
 
-            invoiceDTO = entityToInvoiceConverter.apply(facturesOptional.get());
+            invoiceDTO = entityToInvoiceConverter.apply(facturesOptional.get(), false);
 
             List<ItemVatDTO> vats = searchService.getVats(facturesOptional.get().getVcKey());
 
@@ -410,6 +416,8 @@ public class InvoiceServiceImpl implements InvoiceService {
             tFacturesOptional.get().getTFactureTimesheetList().clear();
         }
 
+        tFacturesOptional.get().setMontant(invoiceDTO.getMontant() != null ? invoiceDTO.getMontant() : BigDecimal.ZERO);
+
         tFacturesOptional.get().setDateValue(invoiceDTO.getDateValue());
         tFacturesOptional.get().setDateEcheance(invoiceDTO.getDateEcheance());
 
@@ -524,7 +532,7 @@ public class InvoiceServiceImpl implements InvoiceService {
 
         Optional<TFactures> tFacturesOptional = facturesRepository.findByIdFactureAndVcKey(invoiceId, vcKey);
 
-        if (!tFacturesOptional.isPresent()) {
+        if (tFacturesOptional.isEmpty()) {
             log.warn("invoice does not exist {}", invoiceId);
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "invoice does not exist");
         }
@@ -533,7 +541,7 @@ public class InvoiceServiceImpl implements InvoiceService {
             log.warn("invoice is already valid {}", invoiceId);
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "invoice is already valid");
         } else {
-            if (tFacturesOptional.get().getIdFactureType().getId() == 3) {
+            if (tFacturesOptional.get().getIdFactureType().equals(EnumFactureType.TEMP)) {
 
                 tFacturesOptional.get().setIdFactureType(EnumFactureType.SELL);
 
@@ -541,7 +549,7 @@ public class InvoiceServiceImpl implements InvoiceService {
                 Integer numFacture = facturesRepository.getMaxNumFacture(vcKey, tFacturesOptional.get().getIdFactureType(), yearFacture);
                 Optional<LawfirmDTO> lawfirmDTOOptional = lawfirmRepository.findLawfirmDTOByVckey(vcKey);
 
-                if (!lawfirmDTOOptional.isPresent()) {
+                if (lawfirmDTOOptional.isEmpty()) {
                     throw new ResponseStatusException(HttpStatus.NOT_FOUND, "lawfirm is not found");
                 }
 
@@ -554,6 +562,7 @@ public class InvoiceServiceImpl implements InvoiceService {
 
                 String factureRef = InvoicesUtils.getInvoiceReference(yearFacture, tFacturesOptional.get().getNumFacture(), tFacturesOptional.get().getIdFactureType());
                 tFacturesOptional.get().setFactureRef(factureRef);
+                tFacturesOptional.get().setYearFacture(yearFacture);
             }
 
             tFacturesOptional.get().setNumFactTemp(0);
@@ -582,7 +591,7 @@ public class InvoiceServiceImpl implements InvoiceService {
 
         Optional<TFactures> tFacturesOptional = facturesRepository.findByIdFactureAndVcKey(invoiceId, lawfirmToken.getVcKey());
 
-        if (!tFacturesOptional.isPresent()) {
+        if (tFacturesOptional.isEmpty()) {
             log.warn("invoice does not exist {}", invoiceId);
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "invoice does not exist");
         }
@@ -595,12 +604,31 @@ public class InvoiceServiceImpl implements InvoiceService {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         Optional<TFactures> tFacturesOptional = facturesRepository.findByIdFactureAndVcKey(invoiceId, lawfirmToken.getVcKey());
-        if (!tFacturesOptional.isPresent()) {
+        if (tFacturesOptional.isEmpty()) {
             log.warn("invoice is not found");
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "invoice is not found");
         }
         facturesRepository.delete(tFacturesOptional.get());
         return invoiceId;
+    }
+
+    @Override
+    public InvoiceDTO totalInvoiceByDossierId(Long dossierId) {
+        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        log.info("Entering totalInvoiceByDossierId {} and vckey {}", dossierId, lawfirmToken.getVcKey());
+        InvoiceDTO invoiceDTO = new InvoiceDTO();
+
+        // sum of all invoice per dossier
+        BigDecimal tvacInvoiceByVcKey = facturesRepository.sumTvacInvoiceByVcKey(lawfirmToken.getVcKey(), dossierId);
+        invoiceDTO.setMontant(tvacInvoiceByVcKey);
+        log.debug("Total {} (invoice) found in the vckey {} and dossierId {}", tvacInvoiceByVcKey, lawfirmToken.getVcKey(), dossierId);
+
+        // sum of all invoice paid (honoraire) per dossier
+        BigDecimal sumAllHonoByVcKey = fraisRepository.sumAllHonoTtcOnlyInvoiceByVcKey(dossierId, lawfirmToken.getVcKey());
+        invoiceDTO.setTotalHonoraire(sumAllHonoByVcKey);
+        log.debug("Total {} (invoice) found in the vckey {} and dossierId {}", sumAllHonoByVcKey, lawfirmToken.getVcKey(), dossierId);
+
+        return invoiceDTO;
     }
 
     private void sendInvoiceToDrive(LawfirmToken lawfirmToken, Long invoiceId, String factureRef, Integer yearFacture) {

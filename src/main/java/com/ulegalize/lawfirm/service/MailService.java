@@ -60,27 +60,32 @@ public class MailService {
         EnumLanguage enumLanguage = EnumLanguage.fromshortCode(language);
         log.debug("language {}", enumLanguage);
 
+        String subjectFr = (String) context.get("appointment_type") + " - " + type.getSubjectFr();
+        String subjectEn = (String) context.get("appointment_type") + " - " + type.getSubjectEn();
+        String subjectNl = (String) context.get("appointment_type") + " - " + type.getSubjectNl();
+
         switch (type) {
             case MAILAPPOINTMENT_ADDED_NOTIFICATION:
+                organizer = (String) context.get("lawyer_email");
+
+                subject = context.get("title") != null && !((String) context.get("title")).isEmpty() ? (String) context.get("title") : Utils.getLabel(enumLanguage, subjectFr, subjectEn, subjectNl);
+                break;
             case MAILAPPOINTMENT_CANCEL_NOTIFICATION:
             case MAILAPPOINTMENTCONFIRMEDTEMPLATE:
             case MAILNEWAPPOINTMENTREQUESTTEMPLATE: {
                 organizer = (String) context.get("lawyer_email");
             }
             case MAILAPPOINTMENTREGISTEREDTEMPLATE: {
-                String subjectFr = (String) context.get("appointment_type") + " - " + type.getSubjectFr();
-                String subjectEn = (String) context.get("appointment_type") + " - " + type.getSubjectEn();
-                String subjectNl = (String) context.get("appointment_type") + " - " + type.getSubjectNl();
                 subject = Utils.getLabel(enumLanguage, subjectFr, subjectEn, subjectNl);
                 break;
             }
             case MAILSHAREDFOLDERUSERTEMPLATE: {
-                subject = Utils.getLabel(enumLanguage, type.getSubjectFr(), type.getSubjectEn(), type.getSubjectNl()) + (String) context.get("dossier");
+                subject = Utils.getLabel(enumLanguage, subjectFr, subjectEn, subjectNl) + (String) context.get("dossier");
 
                 break;
             }
             case MAILSHAREDUSERSECURITYTEMPLATE: {
-                subject = Utils.getLabel(enumLanguage, type.getSubjectFr(), type.getSubjectEn(), type.getSubjectNl()) + (String) context.get("vckey");
+                subject = Utils.getLabel(enumLanguage, subjectFr, subjectEn, subjectNl) + (String) context.get("vckey");
 
                 break;
             }

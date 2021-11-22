@@ -1,8 +1,10 @@
 package com.ulegalize.lawfirm.service.impl;
 
 import com.ulegalize.dto.ComptaDTO;
+import com.ulegalize.dto.InvoiceDTO;
 import com.ulegalize.dto.ItemBigDecimalDto;
 import com.ulegalize.dto.ItemDto;
+import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.converter.DTOToFraisEntityConverter;
 import com.ulegalize.lawfirm.model.converter.EntityToComptaDTOConverter;
 import com.ulegalize.lawfirm.model.entity.*;
@@ -16,6 +18,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -161,6 +164,20 @@ public class ComptaServiceImpl implements ComptaService {
         return tVirtualcabVatOptional.map(tVirtualcabVat -> new ItemBigDecimalDto(tVirtualcabVat.getVAT(), tVirtualcabVat.getVAT().toString())).orElse(null);
     }
 
+    @Override
+    public InvoiceDTO totalHonoraireByDossierId(Long dossierId) {
+        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        log.info("Entering totalHonoraireByDossierId {} and vckey {}", dossierId, lawfirmToken.getVcKey());
+        InvoiceDTO invoiceDTO = new InvoiceDTO();
+
+        // sum of all invoice paid (honoraire) per dossier
+        BigDecimal sumAllHonoByVcKey = tFraisRepository.sumAllHonoTtcByVcKey(dossierId, lawfirmToken.getVcKey());
+        invoiceDTO.setTotalHonoraire(sumAllHonoByVcKey);
+        log.debug("Total {} (invoice) found in the vckey {} and dossierId {}", sumAllHonoByVcKey, lawfirmToken.getVcKey(), dossierId);
+
+        return invoiceDTO;
+    }
+
     private void commonRuleToSave(ComptaDTO comptaDTO) {
         if (comptaDTO == null) {
             log.warn("Compta is not filled in");
@@ -168,20 +185,20 @@ public class ComptaServiceImpl implements ComptaService {
         }
 
         Optional<TGrid> gridOptional = tGridRepository.findById(comptaDTO.getGridId());
-        if (!gridOptional.isPresent()) {
+        if (gridOptional.isEmpty()) {
             log.warn("Grid is not found {} ", comptaDTO.getGridId());
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Grid is not found");
         }
 
         Optional<RefCompte> refCompte = refCompteRepository.findById(comptaDTO.getIdCompte());
-        if (!refCompte.isPresent()) {
+        if (refCompte.isEmpty()) {
             log.warn("Account is not found {} ", comptaDTO.getIdCompte());
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Account is not found");
         }
 
         if (comptaDTO.getIdDoss() != null) {
             Optional<TDossiers> tDossiers = dossierRepository.findById(comptaDTO.getIdDoss());
-            if (!tDossiers.isPresent()) {
+            if (tDossiers.isEmpty()) {
                 log.warn("Dossier is not found {} ", comptaDTO.getIdDoss());
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Dossier is not found");
             }
@@ -189,7 +206,7 @@ public class ComptaServiceImpl implements ComptaService {
 
         if (comptaDTO.getIdFacture() != null) {
             Optional<TFactures> tFactures = tFacturesRepository.findById(comptaDTO.getIdFacture());
-            if (!tFactures.isPresent()) {
+            if (tFactures.isEmpty()) {
                 log.warn("Invoice is not found {} ", comptaDTO.getIdFacture());
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Invoice is not found");
             }
@@ -197,26 +214,26 @@ public class ComptaServiceImpl implements ComptaService {
 
         if (comptaDTO.getIdUser() != null) {
             Optional<TClients> tClients = clientRepository.findById(comptaDTO.getIdUser());
-            if (!tClients.isPresent()) {
+            if (tClients.isEmpty()) {
                 log.warn("CLient is not found {} ", comptaDTO.getIdUser());
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Client is not found");
             }
         }
 
         Optional<RefPoste> refPoste = refPosteRepository.findById(comptaDTO.getIdPost());
-        if (!refPoste.isPresent()) {
+        if (refPoste.isEmpty()) {
             log.warn("Post is not found {} ", comptaDTO.getIdPost());
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Post is not found");
         }
 
         Optional<EnumRefTransaction> enumRefTransaction = Optional.ofNullable(EnumRefTransaction.fromId(comptaDTO.getIdTransaction()));
-        if (!enumRefTransaction.isPresent()) {
+        if (enumRefTransaction.isEmpty()) {
             log.warn("Transaction is not found {} ", comptaDTO.getIdTransaction());
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Transaction is not found");
         }
 
         Optional<EnumTType> enumTType = Optional.ofNullable(EnumTType.fromId(comptaDTO.getIdType()));
-        if (!enumTType.isPresent()) {
+        if (enumTType.isEmpty()) {
             log.warn("Type is not found {} ", comptaDTO.getIdType());
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Type is not found");
         }

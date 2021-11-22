@@ -35,4 +35,6 @@ public interface InvoiceService {
     ByteArrayResource downloadInvoice(Long id);
 
     Long deleteInvoiceById(Long invoiceId);
+
+    InvoiceDTO totalInvoiceByDossierId(Long dossierId);
 }

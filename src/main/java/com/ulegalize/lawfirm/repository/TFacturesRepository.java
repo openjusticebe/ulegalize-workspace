@@ -59,7 +59,8 @@ public interface TFacturesRepository extends JpaRepository<TFactures, Long>, Jpa
     @Query(value = "SELECT d from TFactures d where d.vcKey = ?1")
     List<TFactures> findAll(String vcKey);
 
-    @Query(value = "SELECT d from TFactures d where d.idDoss = ?1 and d.vcKey = ?2 order by d.valid asc, d.idFacture desc",
+    @Query(value = "SELECT d from TFactures d " +
+            " where d.idDoss = ?1 and d.vcKey = ?2 order by d.valid asc, d.idFacture desc",
             countQuery = "SELECT count(d) from TFactures d where d.idDoss = ?1 and d.vcKey = ?2")
     Page<TFactures> findByDossierIdWithPagination(Long dossierId, String vcKey, Pageable pageable);
 
@@ -81,4 +82,17 @@ public interface TFacturesRepository extends JpaRepository<TFactures, Long>, Jpa
     @Query(value = "SELECT max(t.numFacture) from TFactures t where t.vcKey = ?1 and t.idFactureType = ?2 and t.yearFacture = ?3 and t.valid = true")
     Integer getMaxNumFacture(String vcKey, EnumFactureType factureType, Integer yearFacture);
 
+
+    @Query(value = "SELECT COALESCE(sum( fd.htva ), 0) " +
+            " from TFactures t " +
+            " join t.tFactureDetailsList fd " +
+            " where t.vcKey = ?1 " +
+            " and t.idDoss = ?2 ")
+    BigDecimal sumHtvaInvoiceByVcKey(String vcKey, Long dossierId);
+
+    @Query(value = "SELECT COALESCE(sum(t.montant), 0) " +
+            " from TFactures t " +
+            " where t.vcKey = ?1 " +
+            " and t.idDoss = ?2 ")
+    BigDecimal sumTvacInvoiceByVcKey(String vcKey, Long dossierId);
 }

@@ -97,7 +97,7 @@ public class DossierV2Controller {
         ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.ok();
         if (vcKey != null && vcKey.equalsIgnoreCase(lawfirmToken.getVcKey())) {
             responseBuilder
-                    .cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS));
+                    .cacheControl(CacheControl.maxAge(20, TimeUnit.SECONDS));
         }
         return responseBuilder
                 .body(dossierV2Service.getAllAffaires(limit, offset, lawfirmToken.getUserId(), lawfirmToken.getVcKey(), List.of(EnumVCOwner.OWNER_VC, EnumVCOwner.NOT_OWNER_VC),

@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -22,6 +23,7 @@ import java.util.*;
 public abstract class EntityTest extends ConfigureTest {
     protected static String USER = "BEST";
     protected static String EMAIL = "my@gmail.com";
+    protected static BigDecimal VAT = BigDecimal.valueOf(21);
     @Autowired
     protected TestEntityManager testEntityManager;
 
@@ -261,7 +263,7 @@ public abstract class EntityTest extends ConfigureTest {
         tFrais.setRatio(BigDecimal.valueOf(121));
         tFrais.setRef("");
         tFrais.setDateValue(LocalDate.now());
-        tFrais.setTva(21);
+        tFrais.setTva(VAT.intValue());
         TGrid grids = createGrids();
         tFrais.setGridId(grids.getID());
         tFrais.setDateUpd(LocalDateTime.now());
@@ -500,7 +502,7 @@ public abstract class EntityTest extends ConfigureTest {
         tTimesheet.setTsType(tTimesheetType.getIdTs());
         tTimesheet.setDateAction(ZonedDateTime.now());
         tTimesheet.setDateUpd(LocalDateTime.now());
-        tTimesheet.setVat(new BigDecimal(21));
+        tTimesheet.setVat(VAT);
         tTimesheet.setCouthoraire(145);
         tTimesheet.setForfait(true);
         tTimesheet.setForfaitHt(new BigDecimal(100));
@@ -515,7 +517,7 @@ public abstract class EntityTest extends ConfigureTest {
     }
 
     protected TFactures createFacture(LawfirmEntity lawfirm) {
-        TVirtualcabVat virtualcabVat = createVirtualcabVat(lawfirm, BigDecimal.valueOf(21));
+        TVirtualcabVat virtualcabVat = createVirtualcabVat(lawfirm, VAT);
 
         TFactures tFactures = new TFactures();
         tFactures.setYearFacture(LocalDate.now().getYear());
@@ -565,8 +567,8 @@ public abstract class EntityTest extends ConfigureTest {
     protected TFactureDetails createTFactureDetails(TFactures tFactures, TVirtualcabVat virtualcabVat) {
         TFactureDetails factureDetails = new TFactureDetails();
         factureDetails.setDescription(" new details");
-        factureDetails.setHtva(BigDecimal.valueOf(100));
-        factureDetails.setTtc(BigDecimal.valueOf(121));
+        factureDetails.setHtva(tFactures.getMontant().setScale(2, RoundingMode.HALF_UP).divide(virtualcabVat.getVAT(), 2, RoundingMode.HALF_UP));
+        factureDetails.setTtc(tFactures.getMontant());
         factureDetails.setTva(virtualcabVat.getVAT());
         factureDetails.setDateUpd(LocalDateTime.now());
         factureDetails.setUserUpd(USER);
@@ -640,7 +642,7 @@ public abstract class EntityTest extends ConfigureTest {
     protected VatCountry createVatCountry() {
         VatCountry entity = new VatCountry();
 
-        entity.setVat(new BigDecimal("21"));
+        entity.setVat(VAT);
         entity.setIsDefault(true);
         entity.setIdCountryAlpha2("BE");
         testEntityManager.persist(entity);

@@ -431,8 +431,10 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
                 break;
             case AUD:
             case OTH:
-            case TASK:
                 createEvent(lawfirmToken.getUsername(), lawfirmToken.getLanguage(), vcKey, startime, endtime, calendarEvent, true, lawfirmToken.getClientFrom());
+                break;
+            case TASK:
+                createEvent(lawfirmToken.getUsername(), lawfirmToken.getLanguage(), vcKey, startime, null, calendarEvent, true, lawfirmToken.getClientFrom());
 
                 break;
             default:
@@ -480,7 +482,13 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
 
         // recalculate the start and end date
         calendarEvent.setStart(CalendarEventsUtil.convertToDateViaInstant(startDate));
-        calendarEvent.setEnd(CalendarEventsUtil.convertToDateViaInstant(endDate));
+
+        if (endDate != null) {
+            calendarEvent.setEnd(CalendarEventsUtil.convertToDateViaInstant(endDate));
+        } else {
+            calendarEvent.setEnd(CalendarEventsUtil.convertToDateViaInstant(startDate));
+
+        }
         TCalendarEvent entity = null;
 
         boolean calendarCreated = false;
@@ -515,6 +523,7 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
             // if it's empty create for vkey
             entity.setVcKey(vcKey);
         }
+        entity.setNote(calendarEvent.getNote());
         entity.setUpdateUser(username);
         entity.setApproved(approved); //all events created here are obviously approved
 
@@ -627,7 +636,7 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
 
 //        // send notification to the lawyer
         mailService.sendMail(EnumMailTemplate.MAILAPPOINTMENT_ADDED_NOTIFICATION,
-                EmailUtils.prepareContextNotificationEmail(language, savedEvent, emailContact, phoneContact, portalUrl, emailContact, clientFrom),
+                EmailUtils.prepareContextNotificationEmail(language, savedEvent, CalendarEventsUtil.convertToDateViaInstant(startDate), CalendarEventsUtil.convertToDateViaInstant(endDate), emailContact, phoneContact, portalUrl, emailContact, clientFrom),
                 language,
                 startDate,
                 endDate, roomAttached, true, savedEvent.getRoomName());
@@ -636,7 +645,7 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
         for (String email : emailAdded) {
             // send notification to the participants
             mailService.sendMail(EnumMailTemplate.MAILAPPOINTMENT_ADDED_NOTIFICATION,
-                    EmailUtils.prepareContextNotificationEmail(language, savedEvent, emailContact, phoneContact, portalUrl, email, clientFrom),
+                    EmailUtils.prepareContextNotificationEmail(language, savedEvent, CalendarEventsUtil.convertToDateViaInstant(startDate), CalendarEventsUtil.convertToDateViaInstant(endDate), emailContact, phoneContact, portalUrl, email, clientFrom),
                     language,
                     startDate,
                     endDate, roomAttached, false, savedEvent.getRoomName());
@@ -646,7 +655,7 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
         for (String email : emailRemoved) {
             // send notification to the participants
             mailService.sendMailWithoutMeeting(EnumMailTemplate.MAILAPPOINTMENT_CANCEL_NOTIFICATION,
-                    EmailUtils.prepareContextNotificationEmail(language, savedEvent, emailContact, phoneContact, portalUrl, email, clientFrom),
+                    EmailUtils.prepareContextNotificationEmail(language, savedEvent, CalendarEventsUtil.convertToDateViaInstant(startDate), CalendarEventsUtil.convertToDateViaInstant(endDate), emailContact, phoneContact, portalUrl, email, clientFrom),
                     language,
                     startDate,
                     endDate);

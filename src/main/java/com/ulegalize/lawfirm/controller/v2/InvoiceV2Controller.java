@@ -71,12 +71,22 @@ public class InvoiceV2Controller {
         }
 
         ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.ok();
-        if (vcKey != null && vcKey.equalsIgnoreCase(lawfirmToken.getVcKey())) {
-            responseBuilder
-                    .cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS));
-        }
         return responseBuilder
                 .body(allInvoices);
+
+    }
+
+    @GetMapping(value = "/dossier/{dossierId}/total")
+    public ResponseEntity<InvoiceDTO> totalInvoiceByDossierId(@PathVariable Long dossierId) {
+        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        log.debug("totalInvoice for vckey {} and dossierId {}", lawfirmToken.getVcKey(), dossierId);
+
+        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+        InvoiceDTO invoiceDTO = invoiceService.totalInvoiceByDossierId(dossierId);
+
+        ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.ok();
+        return responseBuilder
+                .body(invoiceDTO);
 
     }
 

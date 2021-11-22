@@ -1,6 +1,7 @@
 package com.ulegalize.lawfirm.controller.v2;
 
 import com.ulegalize.dto.ComptaDTO;
+import com.ulegalize.dto.InvoiceDTO;
 import com.ulegalize.dto.ItemBigDecimalDto;
 import com.ulegalize.dto.ItemDto;
 import com.ulegalize.lawfirm.model.LawfirmToken;
@@ -9,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -118,5 +120,20 @@ public class ComptaV2Controller {
 
         Long comptaId = comptaService.createCompta(comptaDTO, lawfirmToken.getVcKey());
         return comptaService.getComptaById(comptaId, lawfirmToken.getVcKey());
+    }
+
+
+    @GetMapping(value = "/dossier/{dossierId}/total")
+    public ResponseEntity<InvoiceDTO> totalHonoraireByDossierId(@PathVariable Long dossierId) {
+        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        log.debug("totalHonoraireByDossierId for vckey {} and dossierId {}", lawfirmToken.getVcKey(), dossierId);
+
+        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+        InvoiceDTO invoiceDTO = comptaService.totalHonoraireByDossierId(dossierId);
+
+        ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.ok();
+        return responseBuilder
+                .body(invoiceDTO);
+
     }
 }

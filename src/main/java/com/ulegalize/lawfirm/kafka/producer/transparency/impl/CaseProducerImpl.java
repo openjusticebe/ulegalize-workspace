@@ -53,7 +53,6 @@ public class CaseProducerImpl implements ICaseProducer {
     public void createLawfirmMessage(LawfirmToken lawfirmToken, String newVcKey, String userEmail, String language, long userId) {
         log.debug("Entering createLawfirmMessage lawfirmToken {}, newVcKey {} and userEmail {}", lawfirmToken, newVcKey, userEmail);
         if (!activeProfile.equalsIgnoreCase("integrationtest")
-                && !activeProfile.equalsIgnoreCase("test")
                 && !activeProfile.equalsIgnoreCase("devDocker")) {
             try {
                 ProfileDTO profileDTO = new ProfileDTO();

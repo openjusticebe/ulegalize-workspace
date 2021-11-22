@@ -34,7 +34,34 @@ public interface TFraisRepository extends JpaRepository<TFrais, Long>, JpaSpecif
             "where d.idDoss = ?1 and d.vcKey = ?2 " +
             "and poste.honoraires = true " +
             "and compte.accountTypeId = 1")
-    BigDecimal sumAllHonoByVcKey(Long dossierId, String vcKey);
+    BigDecimal sumAllHonoHtvaByVcKey(Long dossierId, String vcKey);
+
+    @Query(value = "SELECT COALESCE(sum( CASE WHEN (d.idType > 1) THEN d.montant ELSE (-d.montant) END), 0) " +
+            " from TFrais d " +
+            " join d.refPoste poste " +
+            " join d.refCompte compte " +
+            " where d.idDoss = ?1 and d.vcKey = ?2 " +
+            " and poste.honoraires = true " +
+            " and compte.accountTypeId = 1 ")
+    BigDecimal sumAllHonoTtcByVcKey(Long dossierId, String vcKey);
+
+    @Query(value = "SELECT COALESCE(sum( CASE WHEN (d.idType > 1) THEN d.montant ELSE (-d.montant) END), 0) " +
+            " from TFrais d " +
+            " join d.refPoste poste " +
+            " join d.refCompte compte " +
+            " where d.idDoss = ?1 and d.vcKey = ?2 " +
+            " and poste.honoraires = true " +
+            " and compte.accountTypeId = 1 " +
+            " and d.idFacture is not null")
+    BigDecimal sumAllHonoTtcOnlyInvoiceByVcKey(Long dossierId, String vcKey);
+
+    @Query(value = "SELECT COALESCE(sum( CASE WHEN (d.idType > 1) THEN d.montant ELSE (-d.montant) END), 0) from TFrais d " +
+            "join d.refPoste poste " +
+            "join d.refCompte compte " +
+            "where d.idFacture = ?1 and d.vcKey = ?2 " +
+            "and poste.honoraires = true " +
+            "and compte.accountTypeId = 1")
+    BigDecimal sumAllHonoTtcByInvoiceId(Long invoiceId, String vcKey);
 
     @Query(value = "SELECT COALESCE(sum( CASE WHEN (d.idType > 1) THEN d.montant ELSE (-d.montant) END), 0) from TFrais d " +
             "join d.refPoste poste " +
