@@ -12,10 +12,10 @@ import com.ulegalize.lawfirm.repository.TDossierRightsRepository;
 import com.ulegalize.lawfirm.service.v2.DossierV2Service;
 import com.ulegalize.security.EnumRights;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Before;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -29,10 +29,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Transactional
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodOrderer.MethodName.class)
 @Slf4j
 public class DossierV2ServiceTests extends EntityTest {
 
@@ -44,7 +44,7 @@ public class DossierV2ServiceTests extends EntityTest {
     private EntityToDossierConverter entityToDossierConverter;
     private LawfirmEntity lawfirm;
 
-    @Before
+    @BeforeEach
     public void setupAuthenticate() {
         lawfirm = createLawfirm();
         Long userId = lawfirm.getLawfirmUsers().get(0).getUser().getId();
@@ -173,7 +173,7 @@ public class DossierV2ServiceTests extends EntityTest {
         assertEquals(dossierContactClient.get().getClients().getId_client(), updateAffaire.getIdClient());
     }
 
-    @Test(expected = ResponseStatusException.class)
+    @Test
     public void test_F_updateAffaire_party_exception() {
         String email = "my@gmail.com";
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
@@ -190,8 +190,9 @@ public class DossierV2ServiceTests extends EntityTest {
 
         // clientList is empty
         dossierDTO.setClientList(new ArrayList<>());
-
-        DossierDTO updateAffaire = dossierV2Service.updateAffaire(dossierDTO, userId, USER, vcKey);
+        assertThrows(ResponseStatusException.class, () -> {
+            DossierDTO updateAffaire = dossierV2Service.updateAffaire(dossierDTO, userId, USER, vcKey);
+        });
     }
 
     @Test

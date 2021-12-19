@@ -7,10 +7,10 @@ import com.ulegalize.lawfirm.model.entity.*;
 import com.ulegalize.lawfirm.model.enumeration.EnumRefTransaction;
 import com.ulegalize.lawfirm.model.enumeration.EnumTType;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Before;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,11 +18,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 
 @Transactional
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodOrderer.MethodName.class)
 @Slf4j
 public class ComptaServiceTests extends EntityTest {
 
@@ -31,7 +31,7 @@ public class ComptaServiceTests extends EntityTest {
     private TDossiers dossier;
     private LawfirmEntity lawfirm;
 
-    @Before
+    @BeforeEach
     public void init() {
         lawfirm = createLawfirm();
         dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);

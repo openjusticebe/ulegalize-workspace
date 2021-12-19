@@ -7,6 +7,16 @@ import com.ulegalize.lawfirm.model.LawfirmToken;
 import java.util.List;
 
 public interface SecurityGroupService {
+    /**
+     * must be used to verified emails
+     *
+     * @param email
+     * @param token
+     * @param withSecurity
+     * @return
+     */
+    LawfirmToken getUnverifiedUserProfile(String email, String token, boolean withSecurity);
+
     LawfirmToken getUserProfile(String email, String token, boolean withSecurity);
 
     LawfirmToken getSimpleUserProfile(String email, String token);

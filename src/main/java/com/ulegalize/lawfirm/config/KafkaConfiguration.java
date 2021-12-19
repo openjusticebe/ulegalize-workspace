@@ -48,6 +48,8 @@ public class KafkaConfiguration {
     private String topicSwitchLawfirm;
     @Value("${tpd.updateLawfirmNotification-topic-name}")
     private String updateNotificationLawfirmTopic;
+    @Value("${tpd.createInvoiceRecord-topic-name}")
+    private String createInvoiceRecordTopic;
 
     @Bean
     public KafkaAdmin kafkaAdmin() {
@@ -147,6 +149,14 @@ public class KafkaConfiguration {
     @Bean
     public NewTopic updateNotificationLawfirmTopic() {
         return TopicBuilder.name(updateNotificationLawfirmTopic)
+                .partitions(1)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    public NewTopic createInvoiceRecordTopic() {
+        return TopicBuilder.name(createInvoiceRecordTopic)
                 .partitions(1)
                 .replicas(1)
                 .build();

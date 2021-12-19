@@ -3,6 +3,8 @@ package com.ulegalize.lawfirm.repository;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
+import java.util.Optional;
+
 public class OffsetBasedPageRequest implements Pageable {
     private int limit;
     private int offset;
@@ -28,6 +30,16 @@ public class OffsetBasedPageRequest implements Pageable {
     }
 
     @Override
+    public boolean isPaged() {
+        return Pageable.super.isPaged();
+    }
+
+    @Override
+    public boolean isUnpaged() {
+        return Pageable.super.isUnpaged();
+    }
+
+    @Override
     public int getPageNumber() {
         return offset / limit;
     }
@@ -45,6 +57,11 @@ public class OffsetBasedPageRequest implements Pageable {
     @Override
     public Sort getSort() {
         return sort;
+    }
+
+    @Override
+    public Sort getSortOr(Sort sort) {
+        return Pageable.super.getSortOr(sort);
     }
 
     @Override
@@ -70,7 +87,17 @@ public class OffsetBasedPageRequest implements Pageable {
     }
 
     @Override
+    public Pageable withPage(int pageNumber) {
+        return null;
+    }
+
+    @Override
     public boolean hasPrevious() {
         return offset > limit;
+    }
+
+    @Override
+    public Optional<Pageable> toOptional() {
+        return Pageable.super.toOptional();
     }
 }

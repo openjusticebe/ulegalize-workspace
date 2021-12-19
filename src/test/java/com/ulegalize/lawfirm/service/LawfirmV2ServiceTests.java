@@ -11,10 +11,9 @@ import com.ulegalize.lawfirm.model.entity.LawfirmEntity;
 import com.ulegalize.lawfirm.service.v2.LawfirmV2Service;
 import com.ulegalize.security.EnumRights;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Assert;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -22,9 +21,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 
 @Transactional
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodOrderer.MethodName.class)
 @Slf4j
 public class LawfirmV2ServiceTests extends EntityTest {
 
@@ -48,7 +50,7 @@ public class LawfirmV2ServiceTests extends EntityTest {
         user.setGivenName("first");
         Boolean tempVc = lawfirmV2Service.deleteTempVcKey(lawfirm.getVckey());
 
-        Assert.assertTrue(tempVc);
+        assertTrue(tempVc);
 
     }
 
@@ -66,8 +68,8 @@ public class LawfirmV2ServiceTests extends EntityTest {
 
         LawfirmDTO lawfirmDTO = lawfirmV2Service.getLawfirmInfoByVcKey(lawfirmToken.getVcKey());
 
-        Assert.assertNotNull(lawfirmDTO);
-        Assert.assertNotNull(lawfirmDTO.getVckey());
+        assertNotNull(lawfirmDTO);
+        assertNotNull(lawfirmDTO.getVckey());
 
     }
 

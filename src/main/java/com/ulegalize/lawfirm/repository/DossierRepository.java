@@ -31,7 +31,7 @@ public interface DossierRepository extends JpaRepository<TDossiers, Long> {
     @Query(nativeQuery = true, value = "select tdossiers0_.id_doss as id, tdossiers0_.year_doss as year, tdossiers0_.num_doss as num, users.initiales," +
             " tclients2_.f_prenom as firstnameClient, tclients2_.f_nom as lastnameClient, tclients2_.f_company as companyClient, tclients2_.id_client as idClient, " +
             " tclients3_.f_prenom as adverseFirstnameClient, tclients3_.f_nom as adverseLastnameClient, tclients3_.f_company as adverseCompanyClient, tclients3_.id_client as adverseIdClient, " +
-            " round(ifnull(presta.cout,0), 2)+ ifnull(fraisadmin.cout,0)+ ifnull(fraisProcedure.cout,0)+ ifnull(fraisCollaboration.cout,0) - ifnull(honoraire.cout,0) balance," +
+            " round(ifnull(presta.cout,0), 2)+ifnull(fraisadmin.cout,0)+ ifnull(fraisProcedure.cout,0)+ ifnull(fraisCollaboration.cout,0) - round(ifnull(t_factures.cout,0), 2) balance," +
             " owner.vc_key as vckeyOwner," +
             " tdossiers0_.date_close as closeDossier," +
             " tdossiers0_.doss_type as type," +
@@ -52,6 +52,11 @@ public interface DossierRepository extends JpaRepository<TDossiers, Long> {
             " left join t_clients as tclients3_ on t_dossier_contact2.client_id = tclients3_.id_client" +
             " left join t_dossier_contact as t_dossier_contact3 on t_dossier_contact3.dossier_id = tdossiers0_.id_doss and t_dossier_contact3.contact_type_id = 3" +
             " left join t_clients as tclients4_ on t_dossier_contact3.client_id = tclients4_.id_client" +
+            "  left join (" +
+            " select id_doss,sum(tfd.htva) cout FROM" +
+            " t_factures " +
+            " inner join t_facture_details tfd on t_factures.id_facture = tfd.id_facture" +
+            " group by id_doss) t_factures on dossierrig1_.DOSSIER_ID= t_factures.id_doss" +
             " left join (select id_doss,sum(cout) cout FROM ( " +
             " SELECT d.id_doss, round(COALESCE(( CASE WHEN (d.is_forfait = 1) THEN d.forfait_ht ELSE (( (( (d.dh * 60) + d.dm ) / 60 ) * d.couthoraire ) ) END), 0), 2) cout " +
             " from t_timesheet d) xx group by id_doss" +
@@ -97,8 +102,8 @@ public interface DossierRepository extends JpaRepository<TDossiers, Long> {
             ") " +
             "   and (tdossiers0_.year_doss like COALESCE(CONCAT('%', ?4, '%'), '%') and tdossiers0_.num_doss like COALESCE(CONCAT(?5, '%'), '%')) " +
             " and users.initiales like CONCAT('%', ?6, '%')" +
-            "  and (case when ?7 = 1 then round(ifnull(presta.cout,0), 2)+ ifnull(fraisadmin.cout,0)+ ifnull(fraisProcedure.cout,0)+ ifnull(fraisCollaboration.cout,0) + ifnull(honoraire.cout,0) <> 0 " +
-            " when ?7 = 0 then round(ifnull(presta.cout,0), 2)+ ifnull(fraisadmin.cout,0)+ ifnull(fraisProcedure.cout,0)+ ifnull(fraisCollaboration.cout,0)+ ifnull(honoraire.cout,0) =0 else 1=1 end)" +
+            "  and (case when ?7 = 1 then round(ifnull(presta.cout,0), 2)+ifnull(fraisadmin.cout,0)+ ifnull(fraisProcedure.cout,0)+ ifnull(fraisCollaboration.cout,0) - round(ifnull(t_factures.cout,0), 2) <> 0 " +
+            " when ?7 = 0 then round(ifnull(presta.cout,0), 2)+ifnull(fraisadmin.cout,0)+ ifnull(fraisProcedure.cout,0)+ ifnull(fraisCollaboration.cout,0) - round(ifnull(t_factures.cout,0), 2) =0 else 1=1 end)" +
             "  and (case when ?8 = 0 then tdossiers0_.date_close is null " +
             " when ?8 = 1 then tdossiers0_.date_close is not null else 1=1 end) " +
             " group by tdossiers0_.id_doss   ," +
@@ -132,6 +137,11 @@ public interface DossierRepository extends JpaRepository<TDossiers, Long> {
                     " left join t_clients as tclients3_ on t_dossier_contact2.client_id = tclients3_.id_client" +
                     " left join t_dossier_contact as t_dossier_contact3 on t_dossier_contact3.dossier_id = tdossiers0_.id_doss and t_dossier_contact3.contact_type_id = 3" +
                     " left join t_clients as tclients4_ on t_dossier_contact3.client_id = tclients4_.id_client" +
+                    "  left join (" +
+                    " select id_doss,sum(tfd.htva) cout FROM" +
+                    " t_factures " +
+                    " inner join t_facture_details tfd on t_factures.id_facture = tfd.id_facture" +
+                    " group by id_doss) t_factures on dossierrig1_.DOSSIER_ID= t_factures.id_doss" +
                     " left join (select id_doss,sum(cout) cout FROM ( " +
                     " SELECT d.id_doss, round(COALESCE(( CASE WHEN (d.is_forfait = 1) THEN d.forfait_ht ELSE (( (( (d.dh * 60) + d.dm ) / 60 ) * d.couthoraire ) ) END), 0), 2) cout " +
                     " from t_timesheet d) xx group by id_doss" +
@@ -175,10 +185,10 @@ public interface DossierRepository extends JpaRepository<TDossiers, Long> {
                     " or tclients3_.f_prenom like CONCAT('%', ?3, '%') or tclients3_.f_nom like CONCAT('%', ?3, '%') " +
                     " or tclients4_.f_prenom like CONCAT('%', ?3, '%') or tclients4_.f_nom like CONCAT('%', ?3, '%') " +
                     ") " +
-                    "   and (tdossiers0_.year_doss like COALESCE(CONCAT('%',?4, '%'), '%') and tdossiers0_.num_doss like COALESCE(CONCAT(?5, '%'), '%')) " +
+                    "   and (tdossiers0_.year_doss like COALESCE(CONCAT('%', ?4, '%'), '%') and tdossiers0_.num_doss like COALESCE(CONCAT(?5, '%'), '%')) " +
                     " and users.initiales like CONCAT('%', ?6, '%')" +
-                    "  and (case when ?7 = 1 then round(ifnull(presta.cout,0), 2)+ ifnull(fraisadmin.cout,0)+ ifnull(fraisProcedure.cout,0)+ ifnull(fraisCollaboration.cout,0) + ifnull(honoraire.cout,0) <> 0 " +
-                    " when ?7 = 0 then round(ifnull(presta.cout,0), 2)+ ifnull(fraisadmin.cout,0)+ ifnull(fraisProcedure.cout,0)+ ifnull(fraisCollaboration.cout,0)+ ifnull(honoraire.cout,0) =0 else 1=1 end)" +
+                    "  and (case when ?7 = 1 then round(ifnull(presta.cout,0), 2)+ifnull(fraisadmin.cout,0)+ ifnull(fraisProcedure.cout,0)+ ifnull(fraisCollaboration.cout,0) - round(ifnull(t_factures.cout,0), 2) <> 0 " +
+                    " when ?7 = 0 then round(ifnull(presta.cout,0), 2)+ifnull(fraisadmin.cout,0)+ ifnull(fraisProcedure.cout,0)+ ifnull(fraisCollaboration.cout,0) - round(ifnull(t_factures.cout,0), 2) =0 else 1=1 end)" +
                     "  and (case when ?8 = 0 then tdossiers0_.date_close is null " +
                     " when ?8 = 1 then tdossiers0_.date_close is not null else 1=1 end)" +
                     " group by tdossiers0_.id_doss")

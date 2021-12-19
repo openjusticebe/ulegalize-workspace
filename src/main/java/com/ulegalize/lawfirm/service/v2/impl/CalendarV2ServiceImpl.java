@@ -8,6 +8,7 @@ import com.ulegalize.enumeration.EnumClientType;
 import com.ulegalize.enumeration.EnumDossierType;
 import com.ulegalize.enumeration.EnumLanguage;
 import com.ulegalize.lawfirm.exception.LawfirmBusinessException;
+import com.ulegalize.lawfirm.kafka.producer.payment.IPaymentProducer;
 import com.ulegalize.lawfirm.kafka.producer.transparency.ICaseProducer;
 import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.LawyerDuty;
@@ -19,6 +20,7 @@ import com.ulegalize.lawfirm.repository.*;
 import com.ulegalize.lawfirm.service.MailService;
 import com.ulegalize.lawfirm.service.v2.CalendarV2Service;
 import com.ulegalize.lawfirm.utils.CalendarEventsUtil;
+import com.ulegalize.lawfirm.utils.DriveUtils;
 import com.ulegalize.lawfirm.utils.EmailUtils;
 import com.ulegalize.mail.transparency.EnumMailTemplate;
 import lombok.extern.slf4j.Slf4j;
@@ -58,6 +60,7 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
     private final ClientRepository clientRepository;
     private final LawfirmRepository lawfirmRepository;
     private final ICaseProducer caseProducer;
+    private final IPaymentProducer paymentProducer;
     private final DossierRepository dossierRepository;
 
     private final EntityToCalendarConverter entityToCalendarConverter;
@@ -71,7 +74,7 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
                                  ClientRepository clientRepository,
                                  LawfirmRepository lawfirmRepository,
                                  ICaseProducer caseProducer,
-                                 DossierRepository dossierRepository,
+                                 IPaymentProducer paymentProducer, DossierRepository dossierRepository,
                                  CalendarToEntityConverter calendarToEntityConverter, MailService mailService) {
         this.calendarEventRepository = calendarEventRepository;
         this.lawfirmUserRepository = lawfirmUserRepository;
@@ -80,6 +83,7 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
         this.clientRepository = clientRepository;
         this.lawfirmRepository = lawfirmRepository;
         this.caseProducer = caseProducer;
+        this.paymentProducer = paymentProducer;
         this.dossierRepository = dossierRepository;
         this.calendarToEntityConverter = calendarToEntityConverter;
         this.mailService = mailService;
@@ -96,7 +100,7 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
         if (userId != 0) {
             Optional<LawfirmUsers> lawfirmUsers = lawfirmUserRepository.findLawfirmUsersByVcKeyAndUserId(lawfirmToken.getVcKey(), userId);
 
-            if (!lawfirmUsers.isPresent()) {
+            if (lawfirmUsers.isEmpty()) {
                 log.warn("Lawfirm {} is not present for this user id {}", lawfirmToken.getVcKey(), userId);
                 return new ArrayList<>();
             }
@@ -437,6 +441,14 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
                 createEvent(lawfirmToken.getUsername(), lawfirmToken.getLanguage(), vcKey, startime, null, calendarEvent, true, lawfirmToken.getClientFrom());
 
                 break;
+            case RECORD:
+                // this the storing folder
+                calendarEvent.setPathFile(DriveUtils.TMP_PATH + "/" + calendarEvent.getPathFile());
+                createEvent(lawfirmToken.getUsername(), lawfirmToken.getLanguage(), vcKey, startime, null, calendarEvent, true, lawfirmToken.getClientFrom());
+
+                paymentProducer.sendPayment(lawfirmToken, calendarEvent);
+
+                break;
             default:
                 break;
         }
@@ -613,6 +625,7 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
 
         TCalendarEvent savedEvent = calendarEventRepository.save(entity);
 
+        calendarEvent.setId(savedEvent.getId());
 
         // send email cancellation and enroll email
         log.debug("Send email cancellation and enroll email");

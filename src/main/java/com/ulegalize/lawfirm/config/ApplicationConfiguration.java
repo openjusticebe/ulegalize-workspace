@@ -21,4 +21,6 @@ public class ApplicationConfiguration {
     public String getSchedulerValue() {
         return schedulerCalendar;
     }
+
+
 }

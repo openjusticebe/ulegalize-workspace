@@ -88,6 +88,26 @@ public class TCalendarEvent extends BaseEntity {
     @Setter
     private String roomName;
 
+    @Column(name = "path_file")
+    @Getter
+    @Setter
+    private String pathFile;
+
+    @Column(name = "micro_text")
+    @Getter
+    @Setter
+    private String microText;
+
+    @Column(name = "audio_text")
+    @Getter
+    @Setter
+    private String audioText;
+
+    @Column(name = "speech_to_text_activated")
+    @Getter
+    @Setter
+    private boolean speechToTextActivated = false;
+
     @OneToMany(mappedBy = "tCalendarEvent", cascade = CascadeType.ALL, orphanRemoval = true)
     @Getter
     @Setter
@@ -97,14 +117,13 @@ public class TCalendarEvent extends BaseEntity {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
         TCalendarEvent that = (TCalendarEvent) o;
-        return approved == that.approved && Objects.equals(id, that.id) && Objects.equals(dossier, that.dossier) && Objects.equals(tUsers, that.tUsers) && Objects.equals(vcKey, that.vcKey) && Objects.equals(contact, that.contact) && Objects.equals(title, that.title) && Objects.equals(note, that.note) && Objects.equals(location, that.location) && eventType == that.eventType && Objects.equals(start, that.start) && Objects.equals(end, that.end);
+        return approved == that.approved && Objects.equals(id, that.id) && Objects.equals(dossier, that.dossier) && Objects.equals(tUsers, that.tUsers) && Objects.equals(vcKey, that.vcKey) && Objects.equals(contact, that.contact) && Objects.equals(title, that.title) && Objects.equals(note, that.note) && Objects.equals(location, that.location) && eventType == that.eventType && Objects.equals(start, that.start) && Objects.equals(end, that.end) && Objects.equals(roomName, that.roomName) && Objects.equals(pathFile, that.pathFile) && Objects.equals(microText, that.microText) && Objects.equals(audioText, that.audioText);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), id, dossier, tUsers, vcKey, contact, title, note, location, eventType, approved, start, end);
+        return Objects.hash(super.hashCode(), id, dossier, tUsers, vcKey, contact, title, note, location, eventType, approved, start, end, pathFile, microText);
     }
 
     @Override
@@ -121,6 +140,8 @@ public class TCalendarEvent extends BaseEntity {
                 ", approved=" + approved +
                 ", start=" + start +
                 ", end=" + end +
+                ", pathFile=" + pathFile +
+                ", microText=" + microText +
                 '}';
     }
 

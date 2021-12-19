@@ -7,6 +7,7 @@ import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.converter.EntityToSecurityGroupConverter;
 import com.ulegalize.lawfirm.model.converter.EntityToUserConverter;
 import com.ulegalize.lawfirm.model.entity.*;
+import com.ulegalize.lawfirm.model.enumeration.EnumValid;
 import com.ulegalize.lawfirm.repository.*;
 import com.ulegalize.lawfirm.service.MailService;
 import com.ulegalize.lawfirm.service.SecurityGroupService;
@@ -77,19 +78,26 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
     }
 
     @Override
+    public LawfirmToken getUnverifiedUserProfile(String userEmail, String token, boolean withSecurity) {
+        log.debug("Entering getUserProfile email {}", userEmail);
+        return profile(userEmail, token, withSecurity, EnumValid.UNVERIFIED);
+
+    }
+
+    @Override
     public LawfirmToken getUserProfile(String userEmail, String token, boolean withSecurity) {
         log.debug("Entering getUserProfile email {}", userEmail);
-        return profile(userEmail, token, withSecurity);
+        return profile(userEmail, token, withSecurity, EnumValid.VERIFIED);
 
     }
 
     @Override
     public LawfirmToken getSimpleUserProfile(String email, String token) {
         log.debug("Entering getSimpleUserProfile email {}", email);
-        return profile(email, token, false);
+        return profile(email, token, false, EnumValid.VERIFIED);
     }
 
-    private LawfirmToken profile(String email, String token, boolean fullProfile) {
+    private LawfirmToken profile(String email, String token, boolean fullProfile, EnumValid enumValid) {
 
         Optional<LawyerDTO> usersOptional = tUsersRepository.findDTOByEmail(email);
 
@@ -240,7 +248,7 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
         // add this new member to vc key
         Optional<TStripeSubscribers> stripeSubscribers = tStripeSubscribersRepository.findByIdUser(user.getId());
 
-        if (!stripeSubscribers.isPresent()) {
+        if (stripeSubscribers.isEmpty()) {
             // init stripe user
             TStripeSubscribers tStripeSubscribers = new TStripeSubscribers();
             tStripeSubscribers.setIdUser(user.getId());
@@ -261,7 +269,7 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
         // add security group
         Optional<TSecurityGroups> securityGroupsOptional = tSecurityGroupsRepository.findById(securityGroupUserDTO.getSecurityGroupId());
 
-        if (!securityGroupsOptional.isPresent()) {
+        if (securityGroupsOptional.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Security group not found");
         }
 
@@ -274,7 +282,7 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
 
         Optional<LawfirmEntity> lawfirmEntityOptional = lawfirmRepository.findLawfirmByVckey(lawfirmToken.getVcKey());
 
-        if (!lawfirmEntityOptional.isPresent()) {
+        if (lawfirmEntityOptional.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "BIG ISSUE MOTHERFUCKER");
         }
         LawfirmUsers lawfirmUsers = new LawfirmUsers();

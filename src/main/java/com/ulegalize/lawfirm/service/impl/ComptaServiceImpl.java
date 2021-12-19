@@ -107,8 +107,8 @@ public class ComptaServiceImpl implements ComptaService {
     public Page<ComptaDTO> getAllCompta(int limit, int offset, String vcKey, String searchCriteriaClient, String searchCriteriaYear, Long searchCriteriaNumber, String searchCriteriaPoste) {
         log.debug("Get all Compta with user {} limit {} and offset {}", vcKey, limit, offset);
 
-        Sort.Order order = new Sort.Order(Sort.Direction.ASC, "id_poste");
-        Sort.Order order2 = new Sort.Order(Sort.Direction.DESC, "id_frais");
+        Sort.Order order = new Sort.Order(Sort.Direction.DESC, "id_frais");
+        Sort.Order order2 = new Sort.Order(Sort.Direction.ASC, "id_poste");
         Pageable pageable = new OffsetBasedPageRequest(limit, offset, Sort.by(order, order2));
         String year = searchCriteriaYear != null ? searchCriteriaYear : "";
         String client = searchCriteriaClient != null && !searchCriteriaClient.isEmpty() ? searchCriteriaClient : "";

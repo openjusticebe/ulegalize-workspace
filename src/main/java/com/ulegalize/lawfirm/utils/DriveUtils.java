@@ -5,5 +5,6 @@ public class DriveUtils {
     public static String DOSSIER_PATH = "dossiers/";
     public static String INVOICE_PATH = "factures/";
     public static String TEMPLATE_PATH = "templates/";
+    public static String TMP_PATH = "tmp/";
 
 }

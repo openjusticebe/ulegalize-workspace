@@ -9,9 +9,9 @@ import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.entity.*;
 import com.ulegalize.security.EnumRights;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -20,10 +20,10 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Transactional
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodOrderer.MethodName.class)
 @Slf4j
 public class SecurityGroupServiceTests extends EntityTest {
     @Autowired
@@ -137,7 +137,7 @@ public class SecurityGroupServiceTests extends EntityTest {
 
     }
 
-    @Test(expected = ResponseStatusException.class)
+    @Test
     public void test_E_addRightSecurity_forbidden() throws Exception {
         String email = "my@gmail.com";
         LawfirmEntity lawfirm = createLawfirm();
@@ -150,12 +150,10 @@ public class SecurityGroupServiceTests extends EntityTest {
 
         TSecurityGroups tSecurityGroups = createTSecurityGroups(lawfirm, true);
         LawfirmUsers lawfirmUsers = createLawfirmUsers(lawfirm, "newSecu@gmail.com");
-        Long aLong = securityGroupService.addRightSecurity(tSecurityGroups.getId(), tSecurityGroups.getTSecurityGroupRightsList().get(0).getIdRight().getId());
+        assertThrows(ResponseStatusException.class, () -> {
+            Long aLong = securityGroupService.addRightSecurity(tSecurityGroups.getId(), tSecurityGroups.getTSecurityGroupRightsList().get(0).getIdRight().getId());
+        });
 
-        assertNotNull(aLong);
-
-        TSecurityGroupRights securityGroupRights = testEntityManager.find(TSecurityGroupRights.class, aLong);
-        assertNotNull(securityGroupRights);
 
     }
 
@@ -184,7 +182,7 @@ public class SecurityGroupServiceTests extends EntityTest {
 
     }
 
-    @Test(expected = ResponseStatusException.class)
+    @Test
     public void test_G_deleteSecurityGroupById_forbidden() throws Exception {
         String email = "my@gmail.com";
         LawfirmEntity lawfirm = createLawfirm();
@@ -196,8 +194,11 @@ public class SecurityGroupServiceTests extends EntityTest {
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         TSecurityGroups tSecurityGroups = createTSecurityGroups(lawfirm, true);
+
         LawfirmUsers lawfirmUsers = createLawfirmUsers(lawfirm, "newSecu@gmail.com");
-        Long aLong = securityGroupService.deleteSecurityGroupById(tSecurityGroups.getTSecurityGroupUsersList().get(0).getId());
+        assertThrows(ResponseStatusException.class, () -> {
+            Long aLong = securityGroupService.deleteSecurityGroupById(tSecurityGroups.getTSecurityGroupUsersList().get(0).getId());
+        });
 
     }
 }
