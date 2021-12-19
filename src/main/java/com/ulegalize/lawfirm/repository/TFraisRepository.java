@@ -73,20 +73,20 @@ public interface TFraisRepository extends JpaRepository<TFrais, Long>, JpaSpecif
     BigDecimal sumAllTiersByVcKey(Long dossierId, String vcKey);
 
     @Query(nativeQuery = true, value = "SELECT * from t_frais d" +
-            " left join t_clients client on client.id_client = d.id_client" +
-            " left join t_dossiers dossier on dossier.id_doss = d.id_doss" +
+            " left join t_clients client on client.id_client = d.id_client " +
+            "     and (client.f_nom like concat('%', ?2, '%')" +
+            "        or client.f_prenom like concat('%', ?2, '%') )" +
+            " left join t_dossiers dossier on dossier.id_doss = d.id_doss " +
+            " and (dossier.year_doss like COALESCE(CONCAT('%', ?3, '%'), '%') and dossier.num_doss like COALESCE(CONCAT(?4, '%'), '%'))" +
             " where d.vc_key = ?1" +
-            " and (client.f_nom like concat('%', ?2, '%') " +
-            " or client.f_prenom like concat('%', ?2, '%') )" +
-            " and (dossier.year_doss like COALESCE(CONCAT('%', ?3, '%'), '%') and dossier.num_doss like COALESCE(CONCAT(?4, '%'), '%')) " +
             " and d.id_poste like coalesce(?5, '%')",
             countQuery = "SELECT count(*) from t_frais d" +
                     " left join t_clients client on client.id_client = d.id_client" +
-                    " left join t_dossiers dossier on dossier.id_doss = d.id_doss" +
+                    "     and (client.f_nom like concat('%', ?2, '%')" +
+                    "        or client.f_prenom like concat('%', ?2, '%') )" +
+                    " left join t_dossiers dossier on dossier.id_doss = d.id_doss " +
+                    " and (dossier.year_doss like COALESCE(CONCAT('%', ?3, '%'), '%') and dossier.num_doss like COALESCE(CONCAT(?4, '%'), '%'))" +
                     " where d.vc_key = ?1" +
-                    " and (client.f_nom like concat('%', ?2, '%') " +
-                    " or client.f_prenom like concat('%', ?2, '%') )" +
-                    " and (dossier.year_doss like COALESCE(CONCAT('%', ?3, '%'), '%') and dossier.num_doss like COALESCE(CONCAT(?4, '%'), '%')) " +
                     " and d.id_poste like coalesce(?5, '%')")
     Page<TFrais> findAllWithPagination(String vcKey, String searchCriteriaClient, String searchCriteriaYear, Long searchCriteriaNumber, String searchCriteriaPoste, Pageable pageable);
 

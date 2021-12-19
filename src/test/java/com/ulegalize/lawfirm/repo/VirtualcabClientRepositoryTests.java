@@ -7,10 +7,10 @@ import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.entity.*;
 import com.ulegalize.lawfirm.repository.VirtualcabClientRepository;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Before;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,10 +18,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Transactional
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodOrderer.MethodName.class)
 @Slf4j
 public class VirtualcabClientRepositoryTests extends EntityTest {
     @Autowired
@@ -39,7 +39,7 @@ public class VirtualcabClientRepositoryTests extends EntityTest {
         }
     }
 
-    @Before
+    @BeforeEach
     public void setupAuthenticate() {
         lawfirm = createLawfirm();
         Long userId = lawfirm.getLawfirmUsers().get(0).getUser().getId();

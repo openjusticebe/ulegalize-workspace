@@ -40,6 +40,8 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -72,6 +74,10 @@ public class DossierV2ServiceImpl implements DossierV2Service {
     // api
     private final ICaseProducer caseProducer;
     private final IAffaireProducer affaireProducer;
+
+    private String REGEX = "^[a-zA-Z0-9_!#$%&'*+/=?`{|}~^.-]+@[a-zA-Z0-9.-]+$";
+    //Compile regular expression to get the pattern
+    private Pattern pattern = Pattern.compile(REGEX);
 
     public DossierV2ServiceImpl(EntityToDossierConverter entityToDossierConverter,
                                 DossierRepository dossierRepository,
@@ -430,13 +436,28 @@ public class DossierV2ServiceImpl implements DossierV2Service {
                 break;
         }
 
+        // check there is at least one contact
+        // check if the email's contact exist for transparency
         if (!CollectionUtils.isEmpty(contactSummaryList)) {
-            CaseCreationDTO caseCreationDTO = new CaseCreationDTO();
-            caseCreationDTO.setDossier(dossierDTO);
-            caseCreationDTO.setContactSummaryList(new ArrayList<>());
-            caseCreationDTO.getContactSummaryList().addAll(contactSummaryList);
+            boolean anyMatch = contactSummaryList.stream().anyMatch(contactSummary -> {
+                if (contactSummary.getEmail() != null) {
+                    Matcher matcher = pattern.matcher(contactSummary.getEmail().toLowerCase());
+                    return matcher.matches();
+                } else {
+                    return false;
+                }
+            });
+            // Check if any emails are valid
+            if (anyMatch) {
+                CaseCreationDTO caseCreationDTO = new CaseCreationDTO();
+                caseCreationDTO.setDossier(dossierDTO);
+                caseCreationDTO.setContactSummaryList(new ArrayList<>());
+                caseCreationDTO.getContactSummaryList().addAll(contactSummaryList);
 
-            caseProducer.createCaseMessage(caseCreationDTO, lawfirmToken);
+                caseProducer.createCaseMessage(caseCreationDTO, lawfirmToken);
+            } else {
+                log.warn("The contact email has not been fill in.");
+            }
         } else {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No contact with email for transparency");
         }

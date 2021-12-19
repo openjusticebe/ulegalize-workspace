@@ -14,7 +14,6 @@ import com.ulegalize.enumeration.EnumRefCurrency;
 import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.service.SecurityGroupService;
 import com.ulegalize.security.EnumRights;
-import io.jsonwebtoken.Claims;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,9 +31,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 
 @Slf4j
 public class AuthenticationFilter extends OncePerRequestFilter {
@@ -45,10 +42,6 @@ public class AuthenticationFilter extends OncePerRequestFilter {
     private String lawfirmUrl;
 
     private final String authHeader = "x-access-token";
-    @Autowired
-    private JWTUtil jwtUtil;
-    //    @Autowired
-//    private TSecurityGroupRights tRightsRepository;
     @Value("${app.auth0.domain}")
     private String AUTH0_DOMAIN;
 
@@ -154,40 +147,6 @@ public class AuthenticationFilter extends OncePerRequestFilter {
                     userProfile.setClientFrom(clientFrom);
 
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userProfile, null, userProfile.getAuthorities());
-                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
-                } catch (Exception e) {
-                    log.error("ERROR ", e);
-                }
-            }
-        } else if (authHeader != null && !authHeader.isEmpty()) {
-            String token = authHeader;
-            if (jwtUtil.validateToken(token)) {
-                try {
-                    Claims claims = jwtUtil.getAllClaimsFromToken(token);
-
-                    String vckey = jwtUtil.getVckeyFromToken(token);
-                    Long userId = jwtUtil.getUserIdFromToken(token);
-                    String username = jwtUtil.getUsernameFromToken(token);
-                    String userEmail = jwtUtil.getUserEmailFromToken(token);
-                    List<String> rolesString = claims.get("role", List.class);
-                    Boolean enabled = claims.get("enabled", Boolean.class);
-
-                    List<EnumRights> roles = new ArrayList<>();
-                    // if the jwt is verified and vckey is not empty => role by default
-                    // Once the avonodestack refator -> add roles as below
-//					for (String r : rolesString) {
-//						roles.add(Role.valueOf(r));
-//					}
-                    if (vckey != null) {
-//                        TRightsRepository.f
-//                        roles.add(EnumRole.);
-                    }
-
-                    LawfirmToken u = new LawfirmToken(userId, username, userEmail, vckey, null, enabled, roles, token, false, EnumLanguage.FR.getShortCode(),
-                            EnumRefCurrency.EUR.getSymbol(), userEmail, DriveType.openstack, "");
-
-                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(u, null, u.getAuthorities());
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 } catch (Exception e) {

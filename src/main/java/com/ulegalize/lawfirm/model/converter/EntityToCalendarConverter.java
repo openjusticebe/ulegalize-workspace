@@ -44,6 +44,11 @@ public class EntityToCalendarConverter implements SuperTriConverter<TCalendarEve
         event.setStart(entity.getStart());
         event.setEnd(entity.getEnd());
         event.setEventType(entity.getEventType());
+        event.setPathFile(entity.getPathFile());
+        event.setMicroText(entity.getMicroText());
+        event.setAudioText(entity.getAudioText());
+        event.setSpeechToTextActivated(entity.isSpeechToTextActivated());
+
         if (entity.getEventType() != null) {
             EnumLanguage enumLanguage = EnumLanguage.fromshortCode(language);
             ItemEventDto itemStringDto = new ItemEventDto(entity.getEventType().getCode(),

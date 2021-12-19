@@ -79,10 +79,6 @@ public class PrestationV2Controller {
         log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
         ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.ok();
-        if (vcKey != null && vcKey.equalsIgnoreCase(lawfirmToken.getVcKey())) {
-            responseBuilder
-                    .cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS));
-        }
         return responseBuilder
                 .body(prestationService.countAllPrestationByVcKey(dossierId, lawfirmToken.getUserId(), lawfirmToken.getVcKey()));
 

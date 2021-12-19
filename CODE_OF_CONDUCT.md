@@ -44,10 +44,10 @@ event. Representation of a project may be further defined and clarified by proje
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be reported by contacting the project team at
-[julien.fumanti@finauxa.com](mailto:julien.fumanti@finauxa.com). All complaints will be
-reviewed and investigated and will result in a response that is deemed necessary and appropriate to the circumstances.
-The project team is obligated to maintain confidentiality with regard to the reporter of an incident. Further details of
-specific enforcement policies may be posted separately.
+[julien.fumanti@finauxa.com](mailto:julien.fumanti@finauxa.com). All complaints will be reviewed and investigated and
+will result in a response that is deemed necessary and appropriate to the circumstances. The project team is obligated
+to maintain confidentiality with regard to the reporter of an incident. Further details of specific enforcement policies
+may be posted separately.
 
 Project maintainers who do not follow or enforce the Code of Conduct in good faith may face temporary or permanent
 repercussions as determined by other members of the project's leadership.
@@ -58,4 +58,5 @@ This Code of Conduct is adapted from the [Contributor Covenant][homepage], versi
 [https://contributor-covenant.org/version/1/4][version].
 
 [homepage]: https://contributor-covenant.org
+
 [version]: https://contributor-covenant.org/version/1/4/

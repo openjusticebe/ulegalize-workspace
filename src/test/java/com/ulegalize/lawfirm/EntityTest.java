@@ -63,6 +63,7 @@ public abstract class EntityTest extends ConfigureTest {
         lawfirmUsers.setUser_upd(USER);
         lawfirmUsers.setPublic(true);
         lawfirmUsers.setSelected(true);
+        lawfirmUsers.setActive(true);
         lawfirmEntity.getLawfirmUsers().add(lawfirmUsers);
 
         TUsers user = createUser(email);

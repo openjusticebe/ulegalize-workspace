@@ -11,9 +11,9 @@ import com.ulegalize.lawfirm.model.entity.*;
 import com.ulegalize.lawfirm.model.enumeration.EnumFactureType;
 import com.ulegalize.security.EnumRights;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -27,10 +27,10 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Transactional
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodOrderer.MethodName.class)
 @Slf4j
 public class InvoiceServiceTests extends EntityTest {
 
@@ -213,7 +213,7 @@ public class InvoiceServiceTests extends EntityTest {
 
     }
 
-    @Test(expected = ResponseStatusException.class)
+    @Test
     public void test_B3_createInvoice_forbidden() {
 
         LawfirmEntity lawfirm = createLawfirm();
@@ -294,11 +294,13 @@ public class InvoiceServiceTests extends EntityTest {
         invoiceDTO.getFraisCollaborationIdList().add(fraisCol.getIdFrais());
 
         invoiceDTO.setMontant(BigDecimal.TEN);
+        assertThrows(ResponseStatusException.class, () -> {
+            Long invoiceId = invoiceService.createInvoice(invoiceDTO, lawfirm.getVckey());
 
-        Long invoiceId = invoiceService.createInvoice(invoiceDTO, lawfirm.getVckey());
+        });
     }
 
-    @Test(expected = ResponseStatusException.class)
+    @Test
     public void test_C_updateInvoice_frais_notlink_exception() {
         LawfirmEntity lawfirm = createLawfirm();
 
@@ -317,8 +319,10 @@ public class InvoiceServiceTests extends EntityTest {
         InvoiceDTO invoiceDTO = invoiceService.getInvoiceById(tFactures.getIdFacture(), lawfirm.getVckey());
 
         invoiceDTO.setDateValue(ZonedDateTime.now().minusDays(1));
+        assertThrows(ResponseStatusException.class, () -> {
+            invoiceService.updateInvoice(invoiceDTO, lawfirm.getVckey());
 
-        invoiceService.updateInvoice(invoiceDTO, lawfirm.getVckey());
+        });
 
     }
 

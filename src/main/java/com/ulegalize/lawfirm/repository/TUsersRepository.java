@@ -25,6 +25,9 @@ public interface TUsersRepository extends CrudRepository<TUsers, Long> {
     @Query("select new com.ulegalize.dto.LawyerDTO(u.id, u.idUser, u.email, u.language, u.fullname) from TUsers u where u.email = :email")
     Optional<LawyerDTO> findDTOByEmail(String email);
 
+    @Query("select new com.ulegalize.dto.LawyerDTO(u.id, u.idUser, u.email, u.language, u.fullname) from TUsers u where u.email = :email and u.idValid = :idValid")
+    Optional<LawyerDTO> findDTOByEmailAndValid(String email, EnumValid idValid);
+
     Optional<TUsers> findByEmail(String email);
 
     @Query("select u from TUsers u" +
