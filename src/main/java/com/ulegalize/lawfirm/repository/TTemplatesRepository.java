@@ -24,10 +24,10 @@ public interface TTemplatesRepository extends JpaRepository<TTemplates, Long>, J
             "    CONCAT_WS(' ', a.f_num, a.f_rue, a.f_cp, a.f_ville) as _Client_Adresse," +
             "    CONCAT_WS(' ', tv.street, tv.cp, tv.city) as _Cabinet_Adresse," +
             "    DATE_FORMAT(CURDATE(),'%d/%m/%Y') AS _Date, " +
-            "    if(a.id_title='M','Cher,','Chère') as _Client_FormuleAppel, tc.title as _PartieAdv_Titre, " +
+//            "    if(a.id_title='M','Cher,','Chère') as _Client_FormuleAppel, tc.title as _PartieAdv_Titre, " +
             " c.f_nom as _PartieAdv_Nom, c.f_prenom as _PartieAdv_Prenom," +
-            " c.f_company as _PartieAdv_NomEntreprise, a.f_tva as _PartieAdv_NumTva, a.f_email _PartieAdv_Email, " +
-            "    if(c.id_title='M','Cher,','Chère') as _PartieAdv_FormuleAppel, lpad(b.num_doss,4,'0') as _Dossier_Numero, b.year_doss as _Dossier_Annee " +
+            " c.f_company as _PartieAdv_NomEntreprise, a.f_tva as _PartieAdv_NumTva, a.f_email _PartieAdv_Email " +
+//            "    if(c.id_title='M','Cher,','Chère') as _PartieAdv_FormuleAppel, lpad(b.num_doss,4,'0') as _Dossier_Numero, b.year_doss as _Dossier_Annee " +
             "    from t_dossiers b " +
             " inner join t_dossier_rights dr on b.id_doss = dr.dossier_id " +
             " inner join t_virtualcab_users vcu on vcu.id = dr.VC_USER_ID " +
@@ -66,8 +66,8 @@ public interface TTemplatesRepository extends JpaRepository<TTemplates, Long>, J
             " inner join t_title as tc on tc.id_title=c.id_title " +
             " inner join t_users tu on tu.id = b.id_user_resp " +
             " inner join t_virtualcab tv on tv.key=vcu.vc_key " +
-            " WHERE vcu.vc_key= ?2  " +
-            " AND vcu.id_user= ?3 " +
+            " WHERE vcu.vc_key= ?1  " +
+            " AND vcu.id_user= ?2 " +
             " LIMIT 1 ")
     JSONObject getTemplatData(String vcKey, Long userId);
 }

@@ -3,7 +3,9 @@ package com.ulegalize.lawfirm.model;
 import com.ulegalize.enumeration.DriveType;
 import com.ulegalize.security.EnumRights;
 import com.ulegalize.security.UlegalizeToken;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.ToString;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -18,12 +20,15 @@ import java.util.List;
 public class LawfirmToken extends UlegalizeToken implements UserDetails {
 
     private static final long serialVersionUID = 1L;
+    @Getter
+    @Setter
+    private boolean verified;
 
     public LawfirmToken(Long userId, String username, String userEmail,
                         String vcKey, String password, Boolean enabled,
                         List<EnumRights> enumRights, String token, Boolean temporary,
                         String language, String symbolCurrency, String fullname,
-                        DriveType driveType, String dropboxToken) {
+                        DriveType driveType, String dropboxToken, boolean verified) {
         this.userId = userId;
         this.username = username;
         this.userEmail = userEmail;
@@ -38,6 +43,7 @@ public class LawfirmToken extends UlegalizeToken implements UserDetails {
         this.fullname = fullname;
         this.driveType = driveType;
         this.dropboxToken = dropboxToken;
+        this.verified = verified;
     }
 
     @Override

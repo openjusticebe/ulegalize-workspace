@@ -8,6 +8,7 @@ import com.ulegalize.lawfirm.kafka.producer.transparency.ICaseProducer;
 import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.converter.EntityToDossierConverter;
 import com.ulegalize.lawfirm.model.entity.*;
+import com.ulegalize.lawfirm.model.enumeration.EnumValid;
 import com.ulegalize.lawfirm.repository.*;
 import com.ulegalize.lawfirm.rest.DriveFactory;
 import com.ulegalize.lawfirm.service.MailService;
@@ -1155,11 +1156,18 @@ public class DossierV2ServiceImpl implements DossierV2Service {
             if (createVcKey) {
                 lawfirmV2Service.createTempVc(partieDTO.getEmail(), lawfirmToken.getClientFrom());
                 Optional<TUsers> usersOptional = tUsersRepository.findByEmail(partieDTO.getEmail());
-                Optional<LawfirmUsers> optionalLawfirmUsers = usersOptional.get().getLawfirmUsers().stream().findFirst();
-                vckey = optionalLawfirmUsers.get().getLawfirm().getVckey();
+
+                // must be present because it has been created
+                if (usersOptional.isPresent()) {
+                    usersOptional.get().setIdValid(EnumValid.VERIFIED);
+                    usersOptional.get().setHashkey("");
+
+                    tUsersRepository.save(usersOptional.get());
+                    Optional<LawfirmUsers> optionalLawfirmUsers = usersOptional.get().getLawfirmUsers().stream().findFirst();
+                    vckey = optionalLawfirmUsers.get().getLawfirm().getVckey();
+                }
                 log.info("Create temp vc key  {}", vckey);
             }
-
 
             Optional<TUsers> usersOptional = tUsersRepository.findByEmail(partieDTO.getEmail());
 

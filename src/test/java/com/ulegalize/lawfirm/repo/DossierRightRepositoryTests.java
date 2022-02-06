@@ -30,6 +30,6 @@ public class DossierRightRepositoryTests extends EntityTest {
         Long dossiersOptional = dossierRightsRepository.countByDossierIdAndVcOwnerAndVcKey(dossier.getIdDoss(), lawfirm.getVckey());
         assertNotNull(dossiersOptional);
 
-        assertEquals(new Long(1), dossiersOptional);
+        assertEquals(1L, dossiersOptional);
     }
 }

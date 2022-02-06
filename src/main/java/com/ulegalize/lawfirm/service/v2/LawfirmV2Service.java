@@ -36,4 +36,6 @@ public interface LawfirmV2Service {
     String uploadImageVirtualcab(byte[] bytes);
 
     LawfirmDriveDTO updateToken(LawfirmDriveDTO lawfirmDTO);
+
+    String registerUser(String userEmail, String clientFrom);
 }

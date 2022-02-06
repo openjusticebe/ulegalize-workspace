@@ -127,7 +127,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
                         } catch (ResponseStatusException rse) {
                             userProfile = new LawfirmToken(0L, email, email, "NO", "", true, Collections.singletonList(EnumRights.ADMINISTRATEUR), token, appMetadata.getSignedup_submitted(),
                                     EnumLanguage.FR.getShortCode(),
-                                    EnumRefCurrency.EUR.getSymbol(), email, DriveType.onedrive, "");
+                                    EnumRefCurrency.EUR.getSymbol(), email, DriveType.openstack, "", false);
                         }
                         // unauthorized
                     } else if (request.getRequestURI().equalsIgnoreCase("/v2/lawfirm/users/list")

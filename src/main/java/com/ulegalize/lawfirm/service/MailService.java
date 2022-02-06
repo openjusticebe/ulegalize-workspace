@@ -47,7 +47,7 @@ public class MailService {
 
     public void sendMail(EnumMailTemplate type, Map<String, Object> context, String language, ZonedDateTime start, ZonedDateTime end, boolean roomAttached, boolean isModerator, String roomName) {
         if (activeProfile.equalsIgnoreCase("integrationtest")
-//				|| activeProfile.equalsIgnoreCase("dev")
+                || activeProfile.equalsIgnoreCase("dev")
                 || activeProfile.equalsIgnoreCase("devDocker")) {
             return;
         }
@@ -59,10 +59,22 @@ public class MailService {
         log.info("Sending mail {} and to {} ", type, emailTo);
         EnumLanguage enumLanguage = EnumLanguage.fromshortCode(language);
         log.debug("language {}", enumLanguage);
+        String appointmentType = (String) context.get("appointment_type");
 
-        String subjectFr = (String) context.get("appointment_type") + " - " + type.getSubjectFr();
-        String subjectEn = (String) context.get("appointment_type") + " - " + type.getSubjectEn();
-        String subjectNl = (String) context.get("appointment_type") + " - " + type.getSubjectNl();
+        String subjectFr = "";
+        String subjectEn = "";
+        String subjectNl = "";
+
+        if (appointmentType != null) {
+            subjectFr = appointmentType + " - ";
+            subjectEn = appointmentType + " - ";
+            subjectNl = appointmentType + " - ";
+        }
+
+        subjectFr += type.getSubjectFr();
+        subjectEn += type.getSubjectEn();
+        subjectNl += type.getSubjectNl();
+
 
         switch (type) {
             case MAILAPPOINTMENT_ADDED_NOTIFICATION:
@@ -86,6 +98,11 @@ public class MailService {
             }
             case MAILSHAREDUSERSECURITYTEMPLATE: {
                 subject = Utils.getLabel(enumLanguage, subjectFr, subjectEn, subjectNl) + (String) context.get("vckey");
+
+                break;
+            }
+            case MAILVERIFYTEMPLATE: {
+                subject = Utils.getLabel(enumLanguage, subjectFr, subjectEn, subjectNl);
 
                 break;
             }

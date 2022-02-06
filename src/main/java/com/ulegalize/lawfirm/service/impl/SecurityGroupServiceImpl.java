@@ -99,34 +99,36 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
 
     private LawfirmToken profile(String email, String token, boolean fullProfile, EnumValid enumValid) {
 
-        Optional<LawyerDTO> usersOptional = tUsersRepository.findDTOByEmail(email);
+        Optional<LawyerDTO> lawyerDTOOptional = tUsersRepository.findDTOByEmail(email);
 
-        if (usersOptional.isEmpty()) {
+        if (lawyerDTOOptional.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is unknown");
         }
         String vcKey = "";
         String dropboxToken = "";
         Boolean temporaryVc = false;
+        boolean verified = false;
         String currency = EnumRefCurrency.EUR.getSymbol();
         DriveType driveType = DriveType.openstack;
         List<EnumRights> roleIdList = new ArrayList<>();
 
         if (fullProfile) {
 
-            List<LawfirmUsers> users = lawfirmUserRepository.findLawfirmUsersByUserIdAndIsSelected(usersOptional.get().getId(), true);
+            List<LawfirmUsers> lawfirmUsersList = lawfirmUserRepository.findLawfirmUsersByUserIdAndIsSelected(lawyerDTOOptional.get().getId(), true);
 
-            if (users == null || users.isEmpty()) {
+            if (lawfirmUsersList == null || lawfirmUsersList.isEmpty()) {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No User registred for a virtual cab");
             }
             // get the first to be sure
-            LawfirmEntity lawfirmEntity = users.get(0).getLawfirm();
+            LawfirmEntity lawfirmEntity = lawfirmUsersList.get(0).getLawfirm();
+            verified = lawfirmUsersList.get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
             vcKey = lawfirmEntity.getVckey();
             dropboxToken = lawfirmEntity.getDropboxToken();
             temporaryVc = lawfirmEntity.getTemporaryVc();
             currency = lawfirmEntity.getCurrency().getSymbol();
             driveType = lawfirmEntity.getDriveType();
 
-            List<TSecurityGroupRights> securityGroupRights = tSecurityGroupUsersRepository.findByIdUserAndVckey(usersOptional.get().getId(), lawfirmEntity.getVckey(), List.of(EnumSecurityAppGroups.ADMIN, EnumSecurityAppGroups.OTHER, EnumSecurityAppGroups.USER));
+            List<TSecurityGroupRights> securityGroupRights = tSecurityGroupUsersRepository.findByIdUserAndVckey(lawyerDTOOptional.get().getId(), lawfirmEntity.getVckey(), List.of(EnumSecurityAppGroups.ADMIN, EnumSecurityAppGroups.OTHER, EnumSecurityAppGroups.USER));
 
             if (securityGroupRights == null || securityGroupRights.isEmpty()) {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User does not have the rights");
@@ -136,13 +138,13 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
                     .map(TSecurityGroupRights::getIdRight).collect(Collectors.toList());
         }
 
-        return new LawfirmToken(usersOptional.get().getId(), usersOptional.get().getIdUser(),
-                usersOptional.get().getEmail(), vcKey, "", true, roleIdList, token,
+        return new LawfirmToken(lawyerDTOOptional.get().getId(), lawyerDTOOptional.get().getIdUser(),
+                lawyerDTOOptional.get().getEmail(), vcKey, "", true, roleIdList, token,
                 temporaryVc,
-                usersOptional.get().getLanguage(),
+                lawyerDTOOptional.get().getLanguage(),
                 currency,
-                usersOptional.get().getFullName(),
-                driveType, dropboxToken);
+                lawyerDTOOptional.get().getFullName(),
+                driveType, dropboxToken, verified);
     }
 
     @Override

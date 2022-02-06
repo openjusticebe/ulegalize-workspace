@@ -13,14 +13,17 @@ change `gradle.properties` version
 commit your change add a new tag and push all
 
 ```
-git tag 2.15.6  
-git push origin 2.15.6
+git tag 2.15.10  
+git push origin 2.15.10
 
 ```
 
 #### DEV
 
 run gradle to deploy
+
+you can access REST :  
+http://localhost:8989/swagger-ui/index.html#/
 
 #### PROD
 
@@ -55,19 +58,19 @@ docker-compose up -d
 
 https://stackoverflow.com/questions/31324981/how-to-access-host-port-from-docker-container/61424570#61424570   
 `
-docker run --name ulegalize-lawfirm --network="host" --restart always -p 127.0.0.1:8989:8989 -it finauxa/ulegalize-lawfirm:2.15.6 --spring.profiles.active=test --server.use-forward-headers=true  
+docker run --name ulegalize-lawfirm --network="host" --restart always -p 127.0.0.1:8989:8989 -it finauxa/ulegalize-lawfirm:2.15.10 --spring.profiles.active=test --server.use-forward-headers=true  
 `
 
 ###### dev
 
 `
-docker run --name ulegalize-lawfirm --restart always -p 127.0.0.1:8989:8989 -it finauxa/ulegalize-lawfirm:2.15.6 --spring.profiles.active=devDocker --server.use-forward-headers=true
+docker run --name ulegalize-lawfirm --restart always -p 127.0.0.1:8989:8989 -it finauxa/ulegalize-lawfirm:2.15.10 --spring.profiles.active=devDocker --server.use-forward-headers=true
 `
 
 ###### prod
 
 `
-docker run --name ulegalize-lawfirm --restart always -p 127.0.0.1:8989:8989 -it finauxa/ulegalize-lawfirm:2.15.6 --spring.profiles.active=prod --server.use-forward-headers=true
+docker run --name ulegalize-lawfirm --restart always -p 127.0.0.1:8989:8989 -it finauxa/ulegalize-lawfirm:2.15.10 --spring.profiles.active=prod --server.use-forward-headers=true
 `
 
 ## more info
@@ -79,18 +82,25 @@ https://ulegalize.atlassian.net/l/c/AY0FkzHX
 build the app
 
 ```
-docker build -t finauxa/ulegalize-lawfirm:2.15.6 .  
-docker push finauxa/ulegalize-lawfirm:2.15.6  
+docker build -t finauxa/ulegalize-lawfirm:2.15.10 .  
+docker push finauxa/ulegalize-lawfirm:2.15.10  
 ```
 
 ```
 docker stop ulegalize-lawfirm   
 docker rm ulegalize-lawfirm  
 docker rmi $(docker images finauxa/ulegalize-lawfirm -q)  
-docker pull finauxa/ulegalize-lawfirm:2.15.6  
+docker pull finauxa/ulegalize-lawfirm:2.15.10  
 ```
 
 ## mysql 5.6
+
+### docker
+
+install the docker from kibana project  
+https://github.com/openjusticebe/ulegalize-deploy
+
+### brew
 
 cd /Applications/MAMP/bin/ ./stopMysql.sh  
 brew install mysql@5.6  

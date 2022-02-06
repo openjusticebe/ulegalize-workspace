@@ -46,6 +46,9 @@ public interface LawfirmUserRepository extends CrudRepository<LawfirmUsers, Long
     @Query(value = "SELECT l from LawfirmUsers l where l.user.id = :userId and l.lawfirm.temporaryVc = :temporary")
     List<LawfirmUsers> findLawfirmUsersByUserIdAndTemporary(Long userId, Boolean temporary);
 
+    /*
+    must be an optional , to avoid issue get a list
+     */
     @Query(value = "SELECT l from LawfirmUsers l join fetch l.user u where u.id = ?1 and l.isSelected = ?2 and l.isActive = true")
     List<LawfirmUsers> findLawfirmUsersByUserIdAndIsSelected(Long userId, Boolean selected);
 

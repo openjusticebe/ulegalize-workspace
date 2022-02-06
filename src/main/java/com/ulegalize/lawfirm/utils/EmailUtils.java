@@ -5,7 +5,6 @@ import com.ulegalize.enumeration.EnumLanguage;
 import com.ulegalize.lawfirm.model.LawyerDutyRequest;
 import com.ulegalize.lawfirm.model.entity.LawfirmUsers;
 import com.ulegalize.lawfirm.model.entity.TCalendarEvent;
-import com.ulegalize.utils.ClientsUtils;
 import com.ulegalize.utils.DossiersUtils;
 import com.ulegalize.utils.Utils;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,12 +21,11 @@ public class EmailUtils {
     private static String PORTAL_URL;
 
     public static Map<String, Object> prepareContextForRegisteredAppointmentEmail(String language, LawyerDutyRequest appointment, EnumCalendarEventType eventType, LawfirmUsers lawyer, String portalUrl, String clientFrom) {
-        Map<String, Object> model = communPrepareContext(clientFrom, portalUrl);
+        Map<String, Object> model = communPrepareContext(clientFrom, portalUrl, appointment.getEmail());
         EnumLanguage enumLanguage = EnumLanguage.fromshortCode(language);
         model.put("portalUrlLogin", portalUrl + "login");
 
         model.put("fullname", appointment.getFirstName() + " " + appointment.getLastName());
-        model.put("to", appointment.getEmail());
         model.put("lawyer_fullname", lawyer.getUser().getFullname());
 
         model.put("lawfirm_email", lawyer.getLawfirm().getEmail());
@@ -43,30 +41,35 @@ public class EmailUtils {
     }
 
     public static Map<String, Object> prepareContextForSharedFolderUser(String emails, String dossier, String userDetails, String vcKey, String clientFrom) {
-        Map<String, Object> model = communPrepareContext(clientFrom, "");
+        Map<String, Object> model = communPrepareContext(clientFrom, "", emails);
         model.put("user_details", userDetails);
         model.put("vckey", vcKey);
         model.put("dossier", dossier);
 
-        model.put("to", emails);
         return model;
     }
 
     public static Map<String, Object> prepareContextForSharedUserSecurity(String emails, String vcKey, String clientFrom) {
-        Map<String, Object> model = communPrepareContext(clientFrom, "");
+        Map<String, Object> model = communPrepareContext(clientFrom, "", emails);
         model.put("vckey", vcKey);
 
-        model.put("to", emails);
+        return model;
+    }
+
+    public static Map<String, Object> prepareContextVerifyUser(String emailTo, String verifyUrl, String clientFrom) {
+        Map<String, Object> model = communPrepareContext(clientFrom, "", emailTo);
+
+        model.put("verifyUrl", verifyUrl);
+
         return model;
     }
 
     public static Map<String, Object> prepareContextForNewAppointmentEmail(String language, LawyerDutyRequest appointment, EnumCalendarEventType eventType, LawfirmUsers lawyer, String portalUrl, String clientFrom) {
 
-        Map<String, Object> model = communPrepareContext(clientFrom, portalUrl);
+        Map<String, Object> model = communPrepareContext(clientFrom, portalUrl, lawyer.getUser().getEmail());
         EnumLanguage enumLanguage = EnumLanguage.fromshortCode(language);
 
         model.put("fullname", appointment.getFirstName() + " " + appointment.getLastName());
-        model.put("to", lawyer.getUser().getEmail());
 
         model.put("lawyer_fullname", lawyer.getUser().getFullname());
         model.put("lawyer_email", lawyer.getUser().getEmail());
@@ -83,14 +86,11 @@ public class EmailUtils {
 
     public static Map<String, Object> prepareContextForAppointmentConfirmedEmail(String language, String emailTo, TCalendarEvent appointment, LawfirmUsers lawyer, String portalUrl, String clientFrom) {
 
-        Map<String, Object> model = communPrepareContext(clientFrom, portalUrl);
+        Map<String, Object> model = communPrepareContext(clientFrom, portalUrl, emailTo);
         model.put("portalUrlLogin", portalUrl + "login");
-        String fullname = ClientsUtils.getFullname(appointment.getContact().getF_nom(), appointment.getContact().getF_prenom(), appointment.getContact().getF_company());
         EnumLanguage enumLanguage = EnumLanguage.fromshortCode(language);
         String location = appointment.getLocation() != null ? appointment.getLocation() : null;
 
-        model.put("fullname", fullname);
-        model.put("to", emailTo);
         model.put("location", location);
 
         model.put("lawyer_fullname", lawyer.getUser().getFullname());
@@ -110,13 +110,11 @@ public class EmailUtils {
 
     public static Map<String, Object> prepareContextNotificationEmail(String language, TCalendarEvent appointment, Date startDate, Date endDate, String emailContact, String phoneContact, String portalUrl, String emailTo, String clientFrom) {
 
-        Map<String, Object> model = communPrepareContext(clientFrom, portalUrl);
+        Map<String, Object> model = communPrepareContext(clientFrom, portalUrl, emailTo);
 
         String dossierReference = appointment.getDossier() != null ? DossiersUtils.getDossierLabelItem(appointment.getDossier().getYear_doss(), appointment.getDossier().getNum_doss()) : null;
         String location = appointment.getLocation() != null ? appointment.getLocation() : null;
         String note = appointment.getNote() != null ? appointment.getNote() : null;
-
-        model.put("to", emailTo);
 
         model.put("lawfirm_email", emailContact);
         model.put("lawfirm_phone", phoneContact);
@@ -136,7 +134,7 @@ public class EmailUtils {
         return model;
     }
 
-    private static Map<String, Object> communPrepareContext(String clientFrom, String portalUrl) {
+    private static Map<String, Object> communPrepareContext(String clientFrom, String portalUrl, String emailTo) {
 
         Map<String, Object> model = new HashMap<>();
 
@@ -146,6 +144,8 @@ public class EmailUtils {
         model.put("lawfirmUrl", "https://" + clientFrom + "." + DOMAIN_URL);
 
         model.put("clientFrom", clientFrom);
+
+        model.put("to", emailTo);
 
         return model;
     }

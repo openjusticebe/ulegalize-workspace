@@ -11,6 +11,7 @@ import com.ulegalize.lawfirm.rest.DriveFactory;
 import com.ulegalize.lawfirm.rest.v2.SlackApi;
 import com.ulegalize.lawfirm.service.SecurityGroupService;
 import com.ulegalize.lawfirm.service.v2.LawfirmV2Service;
+import com.ulegalize.lawfirm.service.v2.UserV2Service;
 import com.ulegalize.lawfirm.utils.DriveUtils;
 import com.ulegalize.security.EnumRights;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +42,8 @@ public class LoginV2Controller {
     private SlackApi slackApi;
     @Autowired
     private ICaseProducer caseProducer;
+    @Autowired
+    private UserV2Service userV2Service;
 
     @PostMapping(value = "/user")
     @ApiIgnore
@@ -48,7 +51,7 @@ public class LoginV2Controller {
         log.debug("registerUser()");
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+        log.info("Lawfirm connected user {}", lawfirmToken.getUsername());
         try {
             LawfirmToken userProfile = securityGroupService.getSimpleUserProfile(lawfirmToken.getUserEmail(), lawfirmToken.getToken());
 
@@ -59,7 +62,7 @@ public class LoginV2Controller {
         } catch (ResponseStatusException rse) {
             log.debug("registerUser with UNKNOWN user profile({})", lawfirmToken.getUserEmail());
 
-            return lawfirmV2Service.createTempVc(lawfirmToken.getUserEmail(), lawfirmToken.getClientFrom());
+            return lawfirmV2Service.registerUser(lawfirmToken.getUserEmail(), lawfirmToken.getClientFrom());
         } finally {
             slackApi.sendSensitiveNotification("A new user create his lawfirm. :ok_hand: ", lawfirmToken.getUserEmail(), EnumSlackUrl.NEW_ARRIVAL);
         }
@@ -78,7 +81,7 @@ public class LoginV2Controller {
                         userProfile.getTemporary(), lawfirmToken.getLanguage(), userProfile.getSymbolCurrency(),
                         userProfile.getUserId(),
                         userProfile.getEnumRights().stream().map(EnumRights::getId).collect(Collectors.toList()),
-                        userProfile.getDriveType(), userProfile.getDropboxToken()));
+                        userProfile.getDriveType(), userProfile.getDropboxToken(), userProfile.isVerified()));
 
     }
 
@@ -97,7 +100,7 @@ public class LoginV2Controller {
                         userProfile.getTemporary(), lawfirmToken.getLanguage(), userProfile.getSymbolCurrency(),
                         userProfile.getUserId(),
                         userProfile.getEnumRights().stream().map(EnumRights::getId).collect(Collectors.toList()),
-                        userProfile.getDriveType(), userProfile.getDropboxToken()));
+                        userProfile.getDriveType(), userProfile.getDropboxToken(), userProfile.isVerified()));
 
     }
 
@@ -113,7 +116,7 @@ public class LoginV2Controller {
                 userProfile.getTemporary(), lawfirmToken.getLanguage(), userProfile.getSymbolCurrency(),
                 userProfile.getUserId(),
                 userProfile.getEnumRights().stream().map(EnumRights::getId).collect(Collectors.toList()),
-                userProfile.getDriveType(), userProfile.getDropboxToken());
+                userProfile.getDriveType(), userProfile.getDropboxToken(), userProfile.isVerified());
     }
 
     @PostMapping(value = "/validate/user")
@@ -148,4 +151,11 @@ public class LoginV2Controller {
         return profileDTO;
     }
 
+
+    @RequestMapping(method = RequestMethod.GET, path = "/verifyUser")
+    public Boolean verifyUser(@RequestParam("email") String email, @RequestParam("key") String hashkey) {
+        log.debug("verifyUser()");
+
+        return userV2Service.verifyUser(email, hashkey);
+    }
 }

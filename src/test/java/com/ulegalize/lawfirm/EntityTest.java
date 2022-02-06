@@ -217,7 +217,6 @@ public abstract class EntityTest extends ConfigureTest {
         TCalendarEvent calendarEvent = new TCalendarEvent();
         calendarEvent.setDossier(dossier);
         TClients client = createClient(lawfirmEntity);
-        calendarEvent.setContact(client);
         calendarEvent.setApproved(false);
         calendarEvent.setEventType(calendarEventType);
         calendarEvent.setStart(start);

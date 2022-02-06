@@ -2,13 +2,16 @@ package com.ulegalize.lawfirm.service;
 
 import com.ulegalize.dto.DossierDTO;
 import com.ulegalize.dto.ItemLongDto;
+import com.ulegalize.dto.ItemPartieDTO;
 import com.ulegalize.dto.ShareAffaireDTO;
 import com.ulegalize.enumeration.*;
 import com.ulegalize.lawfirm.EntityTest;
 import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.converter.EntityToDossierConverter;
 import com.ulegalize.lawfirm.model.entity.*;
+import com.ulegalize.lawfirm.model.enumeration.EnumValid;
 import com.ulegalize.lawfirm.repository.TDossierRightsRepository;
+import com.ulegalize.lawfirm.repository.TUsersRepository;
 import com.ulegalize.lawfirm.service.v2.DossierV2Service;
 import com.ulegalize.security.EnumRights;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +44,8 @@ public class DossierV2ServiceTests extends EntityTest {
     @Autowired
     private TDossierRightsRepository dossierRightsRepository;
     @Autowired
+    private TUsersRepository usersRepository;
+    @Autowired
     private EntityToDossierConverter entityToDossierConverter;
     private LawfirmEntity lawfirm;
 
@@ -50,7 +55,8 @@ public class DossierV2ServiceTests extends EntityTest {
         Long userId = lawfirm.getLawfirmUsers().get(0).getUser().getId();
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         String usermail = lawfirm.getLawfirmUsers().get(0).getUser().getEmail();
-        LawfirmToken lawfirmToken = new LawfirmToken(userId, usermail, usermail, lawfirm.getVckey(), null, true, new ArrayList<>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "");
+        boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
+        LawfirmToken lawfirmToken = new LawfirmToken(userId, usermail, usermail, lawfirm.getVckey(), null, true, new ArrayList<>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", verifyUser);
 
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -63,8 +69,9 @@ public class DossierV2ServiceTests extends EntityTest {
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         String vcKey = lawfirm.getVckey();
         Long userId = lawfirm.getLawfirmUsers().get(0).getUser().getId();
+        boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
 
-        LawfirmToken lawfirmToken = new LawfirmToken(userId, email, email, vcKey, null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "");
+        LawfirmToken lawfirmToken = new LawfirmToken(userId, email, email, vcKey, null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", verifyUser);
 
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -89,8 +96,9 @@ public class DossierV2ServiceTests extends EntityTest {
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         String vcKey = lawfirm.getVckey();
         Long userId = lawfirm.getLawfirmUsers().get(0).getUser().getId();
+        boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
 
-        LawfirmToken lawfirmToken = new LawfirmToken(userId, email, email, vcKey, null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "");
+        LawfirmToken lawfirmToken = new LawfirmToken(userId, email, email, vcKey, null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", verifyUser);
 
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -148,8 +156,9 @@ public class DossierV2ServiceTests extends EntityTest {
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         String vcKey = lawfirm.getVckey();
         Long userId = lawfirm.getLawfirmUsers().get(0).getUser().getId();
+        boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
 
-        LawfirmToken lawfirmToken = new LawfirmToken(userId, email, email, lawfirm.getVckey(), null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "");
+        LawfirmToken lawfirmToken = new LawfirmToken(userId, email, email, lawfirm.getVckey(), null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", verifyUser);
 
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -201,8 +210,9 @@ public class DossierV2ServiceTests extends EntityTest {
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         String vcKey = lawfirm.getVckey();
         Long userId = lawfirm.getLawfirmUsers().get(0).getUser().getId();
+        boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
 
-        LawfirmToken lawfirmToken = new LawfirmToken(userId, email, email, lawfirm.getVckey(), null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "");
+        LawfirmToken lawfirmToken = new LawfirmToken(userId, email, email, lawfirm.getVckey(), null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", verifyUser);
 
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -234,8 +244,9 @@ public class DossierV2ServiceTests extends EntityTest {
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         String vcKey = lawfirm.getVckey();
         Long userId = lawfirm.getLawfirmUsers().get(0).getUser().getId();
+        boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
 
-        LawfirmToken lawfirmToken = new LawfirmToken(userId, email, email, lawfirm.getVckey(), null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "");
+        LawfirmToken lawfirmToken = new LawfirmToken(userId, email, email, lawfirm.getVckey(), null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", verifyUser);
 
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -257,6 +268,35 @@ public class DossierV2ServiceTests extends EntityTest {
         List<ShareAffaireDTO> tDossiersnew = dossierRightsRepository.findShareUserByAffaireId(dossier.getIdDoss());
 
         assertEquals(2, tDossiersnew.size());
+
+    }
+
+    @Test
+    public void test_I_inviteConseil_withnewVcKey() {
+        createTSequences();
+        String email = "my@gmail.com";
+        String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
+        String vcKey = lawfirm.getVckey();
+        Long userId = lawfirm.getLawfirmUsers().get(0).getUser().getId();
+        boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
+
+        LawfirmToken lawfirmToken = new LawfirmToken(userId, email, email, lawfirm.getVckey(), null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", verifyUser);
+
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
+
+        ItemPartieDTO itemPartieDTO = new ItemPartieDTO();
+        itemPartieDTO.setEmail("unknownUser@gmail.com");
+        itemPartieDTO.setLitigant(false);
+
+        String tDossiersnew = dossierV2Service.inviteConseil(dossier.getIdDoss(), itemPartieDTO);
+
+        Optional<TUsers> newInvitedUser = usersRepository.findByEmail("unknownUser@gmail.com");
+
+        assertTrue(newInvitedUser.isPresent());
+        assertEquals(EnumValid.VERIFIED, newInvitedUser.get().getIdValid());
 
     }
 }
