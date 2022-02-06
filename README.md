@@ -7,7 +7,18 @@ https://ulegalize.atlassian.net/wiki/spaces/UC/pages/793378817/Open+source
 
 Don't hesitate to create PR in order to change something in the project
 
-### Workspace
+## how to develop
+The profile used to develop is the '_dev_'
+1. copy paste the `application-dev.default.properties` to `application-dev.properties`
+2. change values (ask to the administrator or use it yours locally:
+    * IP_MYSQL
+    * PORT_MYSQL
+    * IP_KAFKA
+    * PORT_KAFKA
+3. Ask to change if it necessary the username/pwd
+   `spring.kafka.properties.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username='admin' password='admin-secret';
+   `
+## deploy
 
 change `gradle.properties` version  
 commit your change add a new tag and push all
