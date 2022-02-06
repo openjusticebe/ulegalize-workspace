@@ -38,7 +38,7 @@ dependencies {
     }
     // loggin stuff
     implementation 'org.springframework.cloud:spring-cloud-starter-sleuth'
-    implementation 'net.logstash.logback:logstash-logback-encoder:6.6'
+    implementation "net.logstash.logback:logstash-logback-encoder:${logstashVersion}"
     implementation "ch.qos.logback:logback-core:${logBackVersion}"
     implementation "ch.qos.logback:logback-classic:${logBackVersion}"
     implementation "ch.qos.logback:logback-access:${logBackVersion}"
