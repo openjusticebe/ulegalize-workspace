@@ -19,25 +19,30 @@ begin
     where t_sec_groups_id in (select id from t_security_groups where vc_key like cabname);
     delete from t_security_groups where vc_key like cabname;
     delete from avogest.t_templates where vc_key like cabname;
-    delete
-    from avogest.t_timesheet_type
-    where vc_key = cabname;
-    delete
-    from avogest.t_debour_type
-    where vc_key = cabname;
-    delete
-    from avogest.ref_poste
-    where vc_key = cabname;
+delete
+from avogest.t_timesheet_type
+where vc_key = cabname;
+delete
+from avogest.t_debour_type
+where vc_key = cabname;
+delete
+from avogest.ref_poste
+where vc_key = cabname;
 
-    DELETE
-    FROM `avogest`.`t_dossier_contact`
-    WHERE dossier_id in (
-        select DOSSIER_ID
-        from `t_dossier_rights`
-        WHERE VC_USER_ID in (
-            select id
-            FROM `avogest`.`t_virtualcab_users`
-            WHERE vc_key like cabname
+
+DELETE
+FROM avogest.ref_compte
+WHERE vc_key = cabname;
+
+DELETE
+FROM `avogest`.`t_dossier_contact`
+WHERE dossier_id in (
+    select DOSSIER_ID
+    from `t_dossier_rights`
+    WHERE VC_USER_ID in (
+        select id
+        FROM `avogest`.`t_virtualcab_users`
+        WHERE vc_key like cabname
         )
     );
     DELETE
