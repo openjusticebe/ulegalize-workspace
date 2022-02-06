@@ -16,24 +16,146 @@ begin
                                        );
 
     DECLARE cursor_name_1 CURSOR FOR
-        select fd.id as fd_id
-        from avogest.t_facture_details fd
-                 left join avogest.t_factures tf on fd.id_facture = tf.id_facture
-        where tf.id_facture is null;
+select fd.id as fd_id
+from avogest.t_facture_details fd
+         left join avogest.t_factures tf on fd.id_facture = tf.id_facture
+where tf.id_facture is null;
 
 
 -- declare NOT FOUND handler
-    DECLARE CONTINUE HANDLER
+DECLARE
+CONTINUE HANDLER
         FOR NOT FOUND SET finished = 1;
 
-    OPEN cursor_name;
-    getEmail:
+truncate table back_ref_poste;
+
+truncate table hist_ref_compte;
+
+truncate table hist_ref_poste;
+
+truncate table hist_t_clients;
+
+truncate table hist_t_debour;
+
+truncate table hist_t_debour_type;
+
+truncate table hist_t_dossiers;
+
+truncate table hist_t_echeancier;
+
+truncate table hist_t_frais;
+
+truncate table hist_t_timesheet;
+
+truncate table hist_t_timesheet_type;
+truncate table ref_compte_delegate;
+truncate table t_calendar;
+truncate table t_calendar_doss_subscribers;
+truncate table t_calendar_virtuel_cab;
+truncate table t_calendar_vc_subscribers;
+#
+truncate table t_calendar_participants;
+#
+delete
+from t_calendar_event;
+truncate table t_cloud_files;
+truncate table t_delegate;
+#
+truncate table t_dossier_contact;
+truncate table t_dossier_gestionnaires;
+
+#
+truncate table t_dossier_rights;
+#
+truncate table t_dossier_contact;
+commit;
+#
+delete
+from t_dossiers;
+truncate table t_echeancier;
+#
+truncate table t_facture_details;
+#
+truncate table t_facture_echeance;
+#
+truncate table t_facture_frais_admin;
+#
+truncate table t_facture_frais_collaboration;
+#
+truncate table t_facture_frais_debours;
+#
+truncate table t_facture_timesheet;
+#
+delete
+from t_debour;
+#
+delete
+from t_factures;
+truncate table t_first_time;
+#
+delete
+from t_frais;
+truncate table t_jobs;
+truncate table t_message_user;
+delete
+from t_obj_shared;
+truncate table t_obj_shared_with;
+#
+delete
+from t_clients;
+truncate table t_procedures;
+truncate table t_procedures_type;
+truncate table t_schema_version;
+#
+truncate table t_security_group_rights;
+#
+truncate table t_security_group_users;
+#
+delete
+from t_security_groups;
+truncate table t_stripe_subscribers;
+truncate table t_templates;
+#
+truncate table t_timesheet;
+#
+truncate table t_timesheet_type;
+truncate table t_user_preference;
+#
+truncate table t_vc_groupment;
+#
+truncate table t_virtualcab_client;
+#
+truncate table t_virtualcab_config;
+#
+truncate table t_virtualcab_vat;
+#
+truncate table t_virtualcab_website;
+#
+delete
+from t_virtualcab_users;
+#
+commit ;
+#
+delete
+from t_virtualcab;
+#
+truncate table t_users_roles;
+#
+delete
+from t_users;
+
+
+
+OPEN cursor_name;
+getEmail
+:
     LOOP
 
         FETCH cursor_name INTO vcKey;
-        IF finished = 1 THEN
+        IF
+finished = 1 THEN
             LEAVE getEmail;
-        END IF;
+END IF;
 
         DELETE
         FROM avogest.t_facture_details
