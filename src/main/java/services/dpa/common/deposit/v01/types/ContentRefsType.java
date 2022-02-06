@@ -38,7 +38,7 @@ import java.util.List;
 public class ContentRefsType {
 
     @XmlElement(required = true)
-    protected List<Content> content;
+    protected List<ContentRefsType.Content> content;
 
     /**
      * Gets the value of the content property.
@@ -58,11 +58,11 @@ public class ContentRefsType {
      *
      * <p>
      * Objects of the following type(s) are allowed in the list
-     * {@link Content }
+     * {@link ContentRefsType.Content }
      */
-    public List<Content> getContent() {
+    public List<ContentRefsType.Content> getContent() {
         if (content == null) {
-            content = new ArrayList<Content>();
+            content = new ArrayList<ContentRefsType.Content>();
         }
         return this.content;
     }

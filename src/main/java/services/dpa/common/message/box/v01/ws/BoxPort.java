@@ -21,7 +21,7 @@ import javax.xml.bind.annotation.XmlSeeAlso;
 @WebService(name = "BoxPort", targetNamespace = "http://common.dpa.services/message/box/v01/ws")
 @SOAPBinding(parameterStyle = SOAPBinding.ParameterStyle.BARE)
 @XmlSeeAlso({
-        ObjectFactory.class,
+        services.dpa.common.message.box.v01.messages.ObjectFactory.class,
         services.dpa.common.message.box.v01.types.ObjectFactory.class,
         services.dpa.common.addressbook.base.v01.types.ObjectFactory.class,
         services.dpa.common.global.v01.messages.ObjectFactory.class,
