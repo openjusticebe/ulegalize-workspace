@@ -8,6 +8,7 @@ import com.ulegalize.lawfirm.model.converter.EntityToLawfirmPublicConverter;
 import com.ulegalize.lawfirm.model.converter.EntityToLawfirmUserDTOConverter;
 import com.ulegalize.lawfirm.model.entity.LawfirmEntity;
 import com.ulegalize.lawfirm.model.entity.LawfirmUsers;
+import com.ulegalize.lawfirm.model.entity.TUsers;
 import com.ulegalize.lawfirm.repository.LawfirmRepository;
 import com.ulegalize.lawfirm.repository.LawfirmUserRepository;
 import com.ulegalize.lawfirm.service.LawfirmUserService;
@@ -73,6 +74,8 @@ public class LawfirmUserServiceImpl implements LawfirmUserService {
             lawfirmUsersOptional.get().setPublic(Boolean.parseBoolean(isPublic));
             lawfirmUserRepository.save(lawfirmUsersOptional.get());
             lawfirmUserDTO = entityToLawfirmUserDTOConverter.apply(lawfirmUsersOptional.get());
+            TUsers user = lawfirmUsersOptional.get().getUser();
+            user.setSpecialities(user.getSpecialities() != null ? user.getSpecialities() : "");
         } else {
             log.warn("LawfirmUser does not exist {}", userId);
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "LawfirmUser does not exist");

@@ -6,6 +6,7 @@ import com.ulegalize.lawfirm.model.enumeration.EnumValid;
 import com.ulegalize.lawfirm.repository.TUsersRepository;
 import com.ulegalize.lawfirm.repository.VirtualRepository;
 import com.ulegalize.lawfirm.service.v2.UserV2Service;
+import com.ulegalize.lawfirm.utils.Utils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -62,8 +64,8 @@ public class UserV2ServiceImpl implements UserV2Service {
         user.setInitiales("");
         // temporary
         user.setIdUser("ul" + String.valueOf(UUID.randomUUID()).substring(0, 4));
-        user.setHashkey("");
-        user.setIdValid(EnumValid.UNVERIFIED);
+        user.setHashkey(Utils.generateHashkey());
+        user.setIdValid(EnumValid.VERIFIED);
         user.setLoginCount(0L);
         user.setUserpass("");
         String alias = userEmail.toLowerCase().substring(0, userEmail.indexOf("@"));
@@ -88,5 +90,32 @@ public class UserV2ServiceImpl implements UserV2Service {
                 || activeProfile.equalsIgnoreCase("test")) {
             virtualRepository.deleteUser(userId);
         }
+    }
+
+    @Override
+    public boolean verifyUser(String email, String hashkey) {
+        log.info("Entering verifyUser email {} and hashkey {}", email, hashkey);
+        if (email.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Email not found");
+        }
+        if (hashkey.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Hashkey not found");
+        }
+        Optional<TUsers> usersOptional = tUsersRepository.findByEmail(email);
+
+        if (usersOptional.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User is unknown");
+        }
+
+        TUsers tUsers = usersOptional.get();
+        boolean resultHashkey = Objects.equals(tUsers.getHashkey(), hashkey);
+        log.info("Result hashkey {}, hashkey is : {} and your hashkey is : {}", resultHashkey, tUsers.getHashkey(), hashkey);
+
+        if (resultHashkey) {
+            tUsers.setIdValid(EnumValid.VERIFIED);
+            tUsersRepository.save(tUsers);
+        }
+
+        return resultHashkey;
     }
 }

@@ -49,6 +49,7 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 
     testImplementation 'com.h2database:h2'
+    testImplementation 'org.mvnsearch:h2-functions-4-mysql:1.0.0'
     implementation 'org.springframework.boot:spring-boot-starter-tomcat'
 
     testImplementation "org.springframework.security:spring-security-test:${springSecurity}"

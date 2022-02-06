@@ -9,4 +9,6 @@ public interface UserV2Service {
     TUsers createUsers(String userEmail, String clientFrom, EnumLanguage language);
 
     void deleteUser(Long userId);
+
+    boolean verifyUser(String email, String hashkey);
 }

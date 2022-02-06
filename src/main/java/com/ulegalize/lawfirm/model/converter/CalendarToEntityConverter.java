@@ -2,7 +2,6 @@ package com.ulegalize.lawfirm.model.converter;
 
 import com.ulegalize.dto.LawfirmCalendarEventDTO;
 import com.ulegalize.lawfirm.model.entity.TCalendarEvent;
-import com.ulegalize.lawfirm.model.entity.TClients;
 import com.ulegalize.lawfirm.model.entity.TDossiers;
 import com.ulegalize.lawfirm.utils.SuperTriConverter;
 import org.springframework.stereotype.Component;
@@ -24,18 +23,6 @@ public class CalendarToEntityConverter implements SuperTriConverter<LawfirmCalen
             TDossiers dossier = new TDossiers();
             dossier.setIdDoss(event.getDossierId());
             entity.setDossier(dossier);
-        }
-
-        // TODO must remove otherwise it insert a new client
-        if (event.getContact() != null) {
-            TClients contact = new TClients();
-            contact.setId_client(event.getContact().getId());
-            entity.setContact(contact);
-        }
-        if (event.getContactId() != null) {
-            TClients contact = new TClients();
-            contact.setId_client(event.getContactId());
-            entity.setContact(contact);
         }
 
         entity.setNote(event.getNote());

@@ -19,4 +19,14 @@ public class Utils {
         return codeOptional.orElse("BE");
 
     }
+
+    public static String generateHashkey() {
+        // remove 0.
+        // 2 power 31 => 10 digit : 2147483648
+        String random = String.valueOf((Math.random())).substring(2);
+        // to be sure that the number is not greather than 9 (10 - 1 security digit)
+        int maxLength = Math.min(random.length(), 9);
+        random = random.substring(0, maxLength);
+        return Integer.toString(Integer.parseInt(random), 36);
+    }
 }

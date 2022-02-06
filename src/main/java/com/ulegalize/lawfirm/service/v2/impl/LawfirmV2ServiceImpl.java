@@ -13,11 +13,14 @@ import com.ulegalize.lawfirm.model.entity.*;
 import com.ulegalize.lawfirm.model.enumeration.EnumSequenceType;
 import com.ulegalize.lawfirm.model.enumeration.EnumValid;
 import com.ulegalize.lawfirm.repository.*;
+import com.ulegalize.lawfirm.service.MailService;
 import com.ulegalize.lawfirm.service.SearchService;
 import com.ulegalize.lawfirm.service.v2.LawfirmV2Service;
 import com.ulegalize.lawfirm.service.v2.UserV2Service;
 import com.ulegalize.lawfirm.utils.DefaultLawfirm;
+import com.ulegalize.lawfirm.utils.EmailUtils;
 import com.ulegalize.lawfirm.utils.Utils;
+import com.ulegalize.mail.transparency.EnumMailTemplate;
 import com.ulegalize.security.EnumRights;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateUtils;
@@ -44,6 +47,8 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
     @Value("${name-temporary-vckey}")
     private String TEMP_VCKEY;
 
+    private final MailService mailService;
+
     private final LawfirmRepository lawfirmRepository;
     private final TUsersRepository tUsersRepository;
     private final TSequenceRepository tSequenceRepository;
@@ -60,6 +65,8 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
     private final ILawfirmProducer lawfirmProducer;
     private final EntityToLawfirmPublicConverter entityToLawfirmPublicConverter;
     private final SearchService searchService;
+    @Value("${app.lawfirm.url.verify}")
+    String verifyUrl;
 
     public LawfirmV2ServiceImpl(LawfirmRepository lawfirmRepository,
                                 TUsersRepository tUsersRepository,
@@ -73,7 +80,7 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
                                 TSecurityGroupsRepository tSecurityGroupsRepository,
                                 TDossierRightsRepository tDossierRightsRepository, LawfirmUserRepository lawfirmUserRepository,
                                 UserV2Service userV2Service, ILawfirmProducer lawfirmProducer,
-                                EntityToLawfirmPublicConverter entityToLawfirmPublicConverter, SearchService searchService) {
+                                EntityToLawfirmPublicConverter entityToLawfirmPublicConverter, SearchService searchService, MailService mailService) {
         this.lawfirmRepository = lawfirmRepository;
         this.tUsersRepository = tUsersRepository;
         this.tSequenceRepository = tSequenceRepository;
@@ -90,6 +97,7 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
         this.lawfirmProducer = lawfirmProducer;
         this.entityToLawfirmPublicConverter = entityToLawfirmPublicConverter;
         this.searchService = searchService;
+        this.mailService = mailService;
     }
 
 
@@ -145,14 +153,17 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
 
         // verify the user
         Optional<TUsers> usersOptional = tUsersRepository.findByEmail(userEmail);
-        usersOptional.ifPresent(tUsers -> {
-            tUsers.setIdValid(EnumValid.VERIFIED);
-            tUsersRepository.save(tUsers);
-        });
+
 
         if (usersOptional.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User is unknown");
         }
+
+        TUsers users = usersOptional.get();
+        if (!users.getIdValid().equals(EnumValid.VERIFIED)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not verified");
+        }
+
         Optional<LawfirmEntity> lawfirmEntityOptional = lawfirmRepository.findLawfirmByVckey(newVcKey);
 
         if (lawfirmEntityOptional.isEmpty()) {
@@ -183,7 +194,7 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
                 lawfirmEntityOptional.get().getCurrency().getSymbol(),
                 usersOptional.get().getId(),
                 null,
-                lawfirmEntityOptional.get().getDriveType(), lawfirmEntityOptional.get().getDropboxToken());
+                lawfirmEntityOptional.get().getDriveType(), lawfirmEntityOptional.get().getDropboxToken(), usersOptional.get().getIdValid().equals(EnumValid.VERIFIED));
     }
 
     @Override
@@ -532,6 +543,31 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
             lawfirm.setDropboxToken(lawfirmDriveDTO.getDropboxToken());
         });
         return lawfirmDriveDTO;
+    }
+
+    @Override
+    public String registerUser(String userEmail, String clientFrom) {
+        log.debug("Entering registerUser userEmail {} and clientFrom {}", userEmail, clientFrom);
+
+        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        String verifiedEnum = createTempVc(lawfirmToken.getUserEmail(), lawfirmToken.getClientFrom());
+
+        String language = lawfirmToken.getLanguage() != null ? lawfirmToken.getLanguage().toLowerCase() : EnumLanguage.FR.getShortCode();
+
+        Optional<TUsers> usersOptional = tUsersRepository.findByEmail(userEmail);
+        // send email in order verify user
+        usersOptional.ifPresent(
+                tUsers -> mailService.sendMailWithoutMeetingAndIcs(EnumMailTemplate.MAILVERIFYTEMPLATE,
+                        EmailUtils.prepareContextVerifyUser(
+                                tUsers.getEmail(),
+                                verifyUrl + "?email=" + tUsers.getEmail() + "&key=" + tUsers.getHashkey() + "&language=" + tUsers.getLanguage(),
+                                lawfirmToken.getClientFrom()),
+                        language
+                ));
+
+        return verifiedEnum;
+
     }
 
     @Override

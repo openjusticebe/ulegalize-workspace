@@ -16,7 +16,10 @@ public interface TUsersRepository extends CrudRepository<TUsers, Long> {
     @Query(value = "SELECT lu.user from LawfirmUsers lu where lu.isPublic = true group by lu.user.id")
     List<TUsers> findAllByPublic();
 
-    @Query("select u from TUsers u inner join u.lawfirmUsers lu where u.fullname like CONCAT('%', :fullName,'%') and u.specialities like CONCAT('%',:specialities,'%') and lu.isPublic = true group by u.id")
+    @Query("select u from TUsers u inner join u.lawfirmUsers lu" +
+            " where UPPER(u.fullname) like CONCAT('%', :fullName,'%') " +
+            " and UPPER(u.specialities) like CONCAT('%',:specialities,'%')" +
+            " and lu.isPublic = true group by u.id")
     List<TUsers> findUsersByFullName(@Param("fullName") String fullName, @Param("specialities") String specialities);
 
     @Query("select u from TUsers u inner join u.lawfirmUsers lu where u.aliasPublic = :aliasPublic and lu.isPublic = true")
@@ -36,4 +39,5 @@ public interface TUsersRepository extends CrudRepository<TUsers, Long> {
             " and (u.fullname like CONCAT('%', :searchValue,'%') " +
             " or u.email like CONCAT('%', :searchValue,'%') )")
     List<TUsers> findBySearchAndIdValidAndValid(String searchValue, EnumValid enumValid, boolean isValid);
+
 }

@@ -47,7 +47,7 @@ public class LawyerV2ServiceImpl implements LawyerV2Service {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         log.info("Entering updateLawyer {}", lawfirmToken.getUserId());
         Optional<TUsers> userOptional = userRepository.findById(lawyerDTO.getId());
-        if (!userOptional.isPresent()) {
+        if (userOptional.isEmpty()) {
             log.error("Unknown user {} ", lawfirmToken.getUserId());
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Unknown user " + lawfirmToken.getUserId());
         }

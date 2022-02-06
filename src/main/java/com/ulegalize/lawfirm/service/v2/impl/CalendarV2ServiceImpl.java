@@ -1,6 +1,7 @@
 package com.ulegalize.lawfirm.service.v2.impl;
 
 import com.ulegalize.dto.CaseCreationDTO;
+import com.ulegalize.dto.ContactSummary;
 import com.ulegalize.dto.LawfirmCalendarEventDTO;
 import com.ulegalize.dto.LawfirmDTO;
 import com.ulegalize.enumeration.EnumCalendarEventType;
@@ -132,11 +133,11 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
             log.warn("Event id {} not found ", eventId);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Event not found");
         }
-        if (eventEntityOptional.get().getContact() == null || eventEntityOptional.get().getContact().getF_email() == null || eventEntityOptional.get().getContact().getF_email().isEmpty()) {
-            String email = eventEntityOptional.get().getContact() != null ? eventEntityOptional.get().getContact().getF_email() : "";
-            log.warn("event {} Client email {} not found ", eventEntityOptional.get().getId(), email);
+
+        if (CollectionUtils.isEmpty(eventEntityOptional.get().getTCalendarParticipants())) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Client email not found ");
         }
+
         if (eventEntityOptional.get().getTUsers() == null && eventEntityOptional.get().getVcKey() == null) {
             log.warn("event {} user nor vckey found ", eventEntityOptional.get().getId());
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "event {} user nor vckey found");
@@ -174,15 +175,7 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
 
             String language = lawyer.getUser().getLanguage() != null ? lawyer.getUser().getLanguage().toLowerCase() : EnumLanguage.FR.getShortCode();
 
-            // mail to contact
-            mailService.sendMail(EnumMailTemplate.MAILAPPOINTMENTCONFIRMEDTEMPLATE,
-                    EmailUtils.prepareContextForAppointmentConfirmedEmail(language, savedEvent.getContact().getF_email(), savedEvent, lawyer, portalUrl, lawfirmToken.getClientFrom()),
-                    language,
-                    CalendarEventsUtil.convertToZoneDateTimeViaInstant(savedEvent.getStart()),
-                    CalendarEventsUtil.convertToZoneDateTimeViaInstant(savedEvent.getEnd())
-                    , true, false, eventEntity.getRoomName());
-
-            // mail to mediator
+            // mail to jitsi mediator (visio)
             String emailTo;
             if (eventEntityOptional.get().getTUsers() != null) {
                 emailTo = eventEntityOptional.get().getTUsers().getEmail();
@@ -191,12 +184,28 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
 
                 emailTo = lawfirmDTOOptional.get().getEmail();
             }
+            // mail to jitsi mediator (visio)
             mailService.sendMail(EnumMailTemplate.MAILAPPOINTMENTCONFIRMEDTEMPLATE,
                     EmailUtils.prepareContextForAppointmentConfirmedEmail(language, emailTo, savedEvent, lawyer, portalUrl, lawfirmToken.getClientFrom()),
                     language,
                     CalendarEventsUtil.convertToZoneDateTimeViaInstant(savedEvent.getStart()),
                     CalendarEventsUtil.convertToZoneDateTimeViaInstant(savedEvent.getEnd())
                     , true, true, eventEntity.getRoomName());
+
+            for (TCalendarParticipants tCalendarParticipant : eventEntityOptional.get().getTCalendarParticipants()) {
+                // mail to jitsi mediator (visio)
+                if (!emailTo.equalsIgnoreCase(tCalendarParticipant.getUserEmail())) {
+                    // mail to contact
+                    mailService.sendMail(EnumMailTemplate.MAILAPPOINTMENTCONFIRMEDTEMPLATE,
+                            EmailUtils.prepareContextForAppointmentConfirmedEmail(language, tCalendarParticipant.getUserEmail(), savedEvent, lawyer, portalUrl, lawfirmToken.getClientFrom()),
+                            language,
+                            CalendarEventsUtil.convertToZoneDateTimeViaInstant(savedEvent.getStart()),
+                            CalendarEventsUtil.convertToZoneDateTimeViaInstant(savedEvent.getEnd())
+                            , true, false, eventEntity.getRoomName());
+                }
+
+            }
+
         }
         return lawfirmCalendarEventDTO;
     }
@@ -375,9 +384,6 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
 
         Optional<LawfirmUsers> lawfirmUsers = userOptional.get().getLawfirmUsers().stream().findFirst();
 
-        // use last client we should have a contact not link to a lawfirm
-        appointmentEvent.setContact(lawfirmClient);
-
         calendarEventRepository.save(appointmentEvent);
 
         if (!activeProfile.equalsIgnoreCase("integrationtest") && lawfirmUsers.isPresent()) {
@@ -467,7 +473,16 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
         caseCreationDTO.setDossier(lawfirmCalendarEventDTO.getDossier());
         caseCreationDTO.setNote(lawfirmCalendarEventDTO.getNote());
         caseCreationDTO.setContactSummaryList(new ArrayList<>());
-        caseCreationDTO.getContactSummaryList().add(lawfirmCalendarEventDTO.getContact());
+
+        for (String emailContact : lawfirmCalendarEventDTO.getParticipantsEmail()) {
+            ContactSummary contactSummary = new ContactSummary();
+            contactSummary.setEmail(emailContact);
+//            contactSummary.setLastname();
+//            contactSummary.setFirstname();
+//            contactSummary.setLanguage();
+            caseCreationDTO.getContactSummaryList().add(contactSummary);
+        }
+
         if (lawfirmCalendarEventDTO.getDossier() != null && lawfirmCalendarEventDTO.getDossier().getType() != null) {
             caseCreationDTO.setAssistanceJuridique(lawfirmCalendarEventDTO.getDossier().getType().equals(EnumDossierType.BA));
         }
@@ -532,10 +547,7 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
             Optional<TDossiers> dossiersOptional = dossierRepository.findById(calendarEvent.getDossierId());
             dossiersOptional.ifPresent(entity::setDossier);
         }
-        if (calendarEvent.getContactId() != null) {
-            Optional<TClients> clientsOptional = clientRepository.findById(calendarEvent.getContactId());
-            clientsOptional.ifPresent(entity::setContact);
-        }
+
         if (calendarEvent.getUserId() != null && calendarEvent.getUserId() != 0) {
             Optional<TUsers> usersOptional = userRepository.findById(calendarEvent.getUserId());
             usersOptional.ifPresent(entity::setTUsers);

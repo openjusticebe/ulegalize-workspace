@@ -10,6 +10,7 @@ import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.entity.LawfirmEntity;
 import com.ulegalize.lawfirm.model.entity.TDossiers;
 import com.ulegalize.lawfirm.model.entity.TFrais;
+import com.ulegalize.lawfirm.model.enumeration.EnumValid;
 import com.ulegalize.security.EnumRights;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
@@ -54,10 +55,11 @@ public class ComptaV2ControllerTests extends EntityTest {
         Long userId = lawfirm.getLawfirmUsers().get(0).getUser().getId();
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         String usermail = lawfirm.getLawfirmUsers().get(0).getUser().getEmail();
+        boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
         // "support@ulegalize.com";
         lawfirmToken = new LawfirmToken(userId, usermail, usermail, lawfirm.getVckey(), null, true, new ArrayList<>(),
                 "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname,
-                DriveType.openstack, "");
+                DriveType.openstack, "", verifyUser);
 
         lawfirmToken.getEnumRights().add(EnumRights.ADMINISTRATEUR);
         authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());

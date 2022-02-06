@@ -43,7 +43,9 @@ public class LawyerServiceImpl implements LawyerService {
         if (search != null && search.equalsIgnoreCase("all")) {
             userList = userRepository.findAllByPublic();
         } else {
-            userList = userRepository.findUsersByFullName(name, pref);
+            String specialities = pref != null ? pref.toUpperCase() : "";
+            String fullname = name != null ? name.toUpperCase() : "";
+            userList = userRepository.findUsersByFullName(fullname, specialities);
         }
         userList.stream().forEach(user -> {
             List<LawfirmUsers> lawfirmUsersList = lawfirmUserRepository.findPublicUsersByUserId(user.getId());

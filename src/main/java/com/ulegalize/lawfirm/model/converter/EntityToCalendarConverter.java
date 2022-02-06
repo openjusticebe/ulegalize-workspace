@@ -30,13 +30,6 @@ public class EntityToCalendarConverter implements SuperTriConverter<TCalendarEve
             event.setDossierItem(new ItemLongDto(ds.getId(), DossiersUtils.getDossierLabelItem(entity.getDossier().getYear_doss(), entity.getDossier().getNum_doss())));
         }
 
-        if (entity.getContact() != null) {
-            ContactSummary cs = entityToContactSummaryConverter.apply(entity.getContact());
-            event.setContact(cs);
-            event.setContactId(cs.getId());
-            event.setContactItem(new ItemLongDto(cs.getId(), cs.getFullName(), cs.getEmail()));
-        }
-
         event.setId(entity.getId());
         event.setTitle(entity.getTitle());
         event.setNote(entity.getNote());

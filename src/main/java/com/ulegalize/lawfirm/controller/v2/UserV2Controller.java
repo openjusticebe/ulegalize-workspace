@@ -45,7 +45,7 @@ public class UserV2Controller {
                 userProfile.getSymbolCurrency(),
                 userProfile.getUserId(),
                 userProfile.getEnumRights().stream().map(EnumRights::getId).collect(Collectors.toList()),
-                userProfile.getDriveType(), userProfile.getDropboxToken());
+                userProfile.getDriveType(), userProfile.getDropboxToken(), userProfile.isVerified());
     }
 
     @PostMapping(value = "/language", consumes = MediaType.TEXT_PLAIN_VALUE)
@@ -76,7 +76,7 @@ public class UserV2Controller {
                     userProfile.getSymbolCurrency(),
                     userProfile.getUserId(),
                     userProfile.getEnumRights().stream().map(EnumRights::getId).collect(Collectors.toList()),
-                    userProfile.getDriveType(), userProfile.getDropboxToken()));
+                    userProfile.getDriveType(), userProfile.getDropboxToken(), userProfile.isVerified()));
         } else {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not authorized REST");
         }
