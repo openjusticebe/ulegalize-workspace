@@ -41,7 +41,6 @@ public class AuthenticationFilter extends OncePerRequestFilter {
     @Value("${app.lawfirm.url}")
     private String lawfirmUrl;
 
-    private final String authHeader = "x-access-token";
     @Value("${app.auth0.domain}")
     private String AUTH0_DOMAIN;
 
@@ -66,11 +65,10 @@ public class AuthenticationFilter extends OncePerRequestFilter {
 
             response.addHeader("Access-Control-Max-Age", "3600");
         }
+
         final String authBearerHeader = request.getHeader(this.AUTHORIZATION_HEADER);
 
-        final String authHeader = request.getHeader(this.authHeader);
-
-        log.debug(" {} Authorization token", authBearerHeader);
+        log.debug(" {} Authorization token and url request {}", authBearerHeader, request.getRequestURI());
         if (authBearerHeader != null && !authBearerHeader.isEmpty()) {
             String token = authBearerHeader.replace(BEARER, "");
 

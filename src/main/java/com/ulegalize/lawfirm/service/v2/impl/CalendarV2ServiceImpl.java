@@ -297,7 +297,7 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
                     && EnumCalendarEventType.PERM.equals(e.getEventType());
         }).findFirst();
 
-        if (!eventOptional.isPresent()) {
+        if (eventOptional.isEmpty()) {
             log.warn("Event is null with start {}, end {}, user id {} , cal type {}", appointment.getStart(), appointment.getEnd(), userOptional.get().getId(), EnumCalendarEventType.PERM);
             throw new LawfirmBusinessException("");
         }
@@ -315,6 +315,7 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
         appointmentEvent.setStart(appointment.getStart());
         appointmentEvent.setEnd(appointment.getEnd());
 
+        // add the lawyer email
         TCalendarParticipants tCalendarParticipants = new TCalendarParticipants();
         tCalendarParticipants.setTCalendarEvent(appointmentEvent);
         tCalendarParticipants.setUserEmail(userOptional.get().getEmail());
@@ -322,6 +323,14 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
 
         appointmentEvent.setTCalendarParticipants(new ArrayList<>());
         appointmentEvent.getTCalendarParticipants().add(tCalendarParticipants);
+
+        // add requester email
+        TCalendarParticipants tCalendarParticipantsClient = new TCalendarParticipants();
+        tCalendarParticipantsClient.setTCalendarEvent(appointmentEvent);
+        tCalendarParticipantsClient.setUserEmail(appointment.getEmail());
+        tCalendarParticipantsClient.setCreUser(appointment.getLastName());
+
+        appointmentEvent.getTCalendarParticipants().add(tCalendarParticipantsClient);
 
         log.debug("New event {}", appointmentEvent);
 
@@ -342,7 +351,6 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
             lawfirmClient.setF_tel(appointment.getPhone());
             lawfirmClient.setClient_type(EnumClientType.NATURAL_PERSON);
             lawfirmClient.setId_lg(EnumLanguage.FR.getShortCode());
-//            lawfirmClient.setVc_key(null);
             // link to user id
             lawfirmClient.setUser_id(userOptional.get().getId());
             // use the last one to send an email
@@ -653,6 +661,31 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
                 language,
                 startDate,
                 endDate, roomAttached, true, savedEvent.getRoomName());
+
+        // the rest except of the list lawyer
+        // if no added and no removed
+        if (!participantEmailList.isEmpty()) {
+            log.debug("email into list {}", participantEmailList);
+            List<String> emailToRemove = new ArrayList<>(emailAdded);
+            emailToRemove.addAll(emailRemoved);
+            participantEmailList.removeAll(emailToRemove);
+            log.debug("email list after removed emailAdded and removed, it remains {}", participantEmailList);
+
+            if (!participantEmailList.isEmpty()) {
+                for (String email : participantEmailList) {
+                    if (!email.equalsIgnoreCase(emailContact)) {
+                        // email in the list but not added or removed
+                        log.info("email in the list but not added or removed {}", email);
+                        mailService.sendMail(EnumMailTemplate.MAILAPPOINTMENT_ADDED_NOTIFICATION,
+                                EmailUtils.prepareContextNotificationEmail(language, savedEvent, CalendarEventsUtil.convertToDateViaInstant(startDate), CalendarEventsUtil.convertToDateViaInstant(endDate), emailContact, phoneContact, portalUrl, email, clientFrom),
+                                language,
+                                startDate,
+                                endDate, roomAttached, false, savedEvent.getRoomName());
+                    }
+
+                }
+            }
+        }
 
 
         for (String email : emailAdded) {
