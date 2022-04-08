@@ -26,7 +26,7 @@ public class TDebourTypeRepositoryTests extends EntityTest {
 
     @Test
     public void test_A_findAllByVcKeyAndArchived() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
 
         TDebourType tDebourType = createTDebourType(lawfirm);
 
@@ -39,7 +39,7 @@ public class TDebourTypeRepositoryTests extends EntityTest {
 
     @Test
     public void test_B_getFraisMatiere() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
 
         TDebourType tDebourType = createTDebourType(lawfirm);
 

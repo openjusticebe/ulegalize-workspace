@@ -33,7 +33,7 @@ public class ComptaServiceTests extends EntityTest {
 
     @BeforeEach
     public void init() {
-        lawfirm = createLawfirm();
+        lawfirm = createLawfirm("MYLAW");
         dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
 
     }

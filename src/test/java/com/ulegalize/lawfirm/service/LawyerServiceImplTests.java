@@ -26,7 +26,7 @@ public class LawyerServiceImplTests extends EntityTest {
 
     @Test
     void test_A_getFilterLawyer() throws LawfirmBusinessException {
-        LawfirmEntity lawfirmEntity = createLawfirm();
+        LawfirmEntity lawfirmEntity = createLawfirm("MYLAW");
         TUsers user = lawfirmEntity.getLawfirmUsers().get(0).getUser();
 
         List<LawyerDTO> filterLawyer = lawyerService.getFilterLawyer(user.getFullname().substring(0, 3), null, null);

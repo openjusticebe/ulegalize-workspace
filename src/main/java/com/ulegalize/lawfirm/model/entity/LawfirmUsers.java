@@ -11,6 +11,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import javax.persistence.*;
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.List;
 import java.util.Objects;
 
 @Entity
@@ -95,6 +96,13 @@ public class LawfirmUsers {
     @Getter
     @Setter
     private String lawyerAlias;
+
+    @OneToMany
+    @JoinColumn(name = "vc_user_id")
+    @JsonIgnore
+    @Getter
+    @Setter
+    private List<TDossierRights> dossierRightsList;
 
     @Override
     public boolean equals(Object o) {

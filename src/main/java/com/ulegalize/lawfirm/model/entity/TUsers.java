@@ -162,6 +162,9 @@ public class TUsers implements Serializable {
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     private List<LawfirmUsers> lawfirmUsers;
 
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    private Set<TSecurityGroupUsers> securityGroupUsers;
+
     @OneToMany(mappedBy = "tUsers")
     private Set<TTimesheet> tTimesheetList;
 
@@ -175,6 +178,15 @@ public class TUsers implements Serializable {
 
     public void setLawfirmUsers(List<LawfirmUsers> lawfirmUsers) {
         this.lawfirmUsers = lawfirmUsers;
+    }
+
+    @JsonIgnore
+    public Set<TSecurityGroupUsers> getSecurityGroupUsers() {
+        return securityGroupUsers;
+    }
+
+    public void setSecurityGroupUsers(Set<TSecurityGroupUsers> securityGroupUsers) {
+        this.securityGroupUsers = securityGroupUsers;
     }
 
     @JsonIgnore
@@ -239,5 +251,4 @@ public class TUsers implements Serializable {
         result = 31 * result + Arrays.hashCode(avatar);
         return result;
     }
-
 }

@@ -28,7 +28,7 @@ public class RefCompteRepositoryTests extends EntityTest {
 
     @Test
     public void test_A_getRefCompte() {
-        LawfirmEntity lawfirmEntity = createLawfirm();
+        LawfirmEntity lawfirmEntity = createLawfirm("MYLAW");
         RefCompte refCompte = createRefCompte(lawfirmEntity);
 
         List<ItemDto> refCompteList = refCompteRepository.findAllOrderBy(lawfirmEntity.getVckey());
@@ -42,7 +42,7 @@ public class RefCompteRepositoryTests extends EntityTest {
 
     @Test
     public void test_B_findAllItemByVcKey() {
-        LawfirmEntity lawfirmEntity = createLawfirm();
+        LawfirmEntity lawfirmEntity = createLawfirm("MYLAW");
         RefCompte refCompte = createRefCompte(lawfirmEntity);
 
         List<BankAccountDTO> refCompteList = refCompteRepository.findAllItemByVcKey(lawfirmEntity.getVckey());
@@ -56,7 +56,7 @@ public class RefCompteRepositoryTests extends EntityTest {
 
     @Test
     public void test_C_findDTOById() {
-        LawfirmEntity lawfirmEntity = createLawfirm();
+        LawfirmEntity lawfirmEntity = createLawfirm("MYLAW");
         RefCompte refCompte = createRefCompte(lawfirmEntity);
 
         BankAccountDTO bankAccountDTO = refCompteRepository.findDTOById(lawfirmEntity.getVckey(), refCompte.getIdCompte());
@@ -69,7 +69,7 @@ public class RefCompteRepositoryTests extends EntityTest {
 
     @Test
     public void test_D_findDTOByIdAndAccountTypeId() {
-        LawfirmEntity lawfirmEntity = createLawfirm();
+        LawfirmEntity lawfirmEntity = createLawfirm("MYLAW");
         RefCompte refCompte = createRefCompte(lawfirmEntity);
 
         refCompte.setAccountTypeId(EnumAccountType.PRO_ACCOUNT);
@@ -86,7 +86,7 @@ public class RefCompteRepositoryTests extends EntityTest {
 
     @Test
     public void test_E_findDTOByIdAndAccountTypeId_noresult() {
-        LawfirmEntity lawfirmEntity = createLawfirm();
+        LawfirmEntity lawfirmEntity = createLawfirm("MYLAW");
         RefCompte refCompte = createRefCompte(lawfirmEntity);
 
         refCompte.setAccountTypeId(EnumAccountType.PRO_ACCOUNT);

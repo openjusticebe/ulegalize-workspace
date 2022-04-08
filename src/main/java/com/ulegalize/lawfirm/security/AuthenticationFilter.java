@@ -120,6 +120,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
                     log.info("new user (signup submitted : {}", appMetadata.getSignedup_submitted());
 
                     LawfirmToken userProfile;
+
                     // Except for sign up and first time connection
                     if (appMetadata.getSignedup_submitted()) {
                         try {
@@ -140,8 +141,9 @@ public class AuthenticationFilter extends OncePerRequestFilter {
 
                     } else {
                         log.debug("user connected email : {}, user id {} . Authorized path {}", email, authUserId, request.getRequestURI());
-                        userProfile = securityGroupService.getUserProfile(email, decodedJWT.getToken(), true);
+                        userProfile = securityGroupService.getUserProfile(clientFrom, email, decodedJWT.getToken(), true);
                     }
+
                     userProfile.setClientFrom(clientFrom);
 
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userProfile, null, userProfile.getAuthorities());

@@ -29,7 +29,7 @@ public class PrestationServiceTests extends EntityTest {
     @Test
     public void test_A_getAllPrestationsByDossierId() {
 
-        LawfirmEntity lawfirmEntity = createLawfirm();
+        LawfirmEntity lawfirmEntity = createLawfirm("MYLAW");
         TDossiers dossier = createDossier(lawfirmEntity, EnumVCOwner.OWNER_VC);
         TTimesheet tTimesheet = createTTimesheet(lawfirmEntity, dossier);
 
@@ -46,7 +46,7 @@ public class PrestationServiceTests extends EntityTest {
     @Test
     public void test_B_getAllPrestations() {
 
-        LawfirmEntity lawfirmEntity = createLawfirm();
+        LawfirmEntity lawfirmEntity = createLawfirm("MYLAW");
 
         TDossiers dossier = createDossier(lawfirmEntity, EnumVCOwner.OWNER_VC);
         TTimesheet tTimesheet = createTTimesheet(lawfirmEntity, dossier);
@@ -62,7 +62,7 @@ public class PrestationServiceTests extends EntityTest {
     @Test
     public void test_B_getAllPrestations_zero() {
 
-        LawfirmEntity lawfirmEntity = createLawfirm();
+        LawfirmEntity lawfirmEntity = createLawfirm("MYLAW");
 
         TDossiers dossier = createDossier(lawfirmEntity, EnumVCOwner.NOT_SAME_VC);
         TTimesheet tTimesheet = createTTimesheet(lawfirmEntity, dossier);
@@ -78,7 +78,7 @@ public class PrestationServiceTests extends EntityTest {
     @Test
     public void test_C_getPrestationsByDossierId() {
 
-        LawfirmEntity lawfirmEntity = createLawfirm();
+        LawfirmEntity lawfirmEntity = createLawfirm("MYLAW");
 
         TDossiers dossier = createDossier(lawfirmEntity, EnumVCOwner.OWNER_VC);
         TTimesheet tTimesheet = createTTimesheet(lawfirmEntity, dossier);

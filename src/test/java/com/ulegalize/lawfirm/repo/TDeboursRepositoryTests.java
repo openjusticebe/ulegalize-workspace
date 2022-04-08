@@ -1,6 +1,5 @@
 package com.ulegalize.lawfirm.repo;
 
-import com.ulegalize.dto.FraisAdminDTO;
 import com.ulegalize.enumeration.EnumVCOwner;
 import com.ulegalize.lawfirm.EntityTest;
 import com.ulegalize.lawfirm.model.entity.LawfirmEntity;
@@ -31,7 +30,7 @@ public class TDeboursRepositoryTests extends EntityTest {
 
     @Test
     public void test_A_sumByDossierId() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
 
         TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
         TDebour tDebour = createTDebour(lawfirm, dossier);
@@ -45,7 +44,7 @@ public class TDeboursRepositoryTests extends EntityTest {
 
     @Test
     public void test_B_countAllByIdAndDossierId() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
 
         TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
         TDebour tDebour = createTDebour(lawfirm, dossier);
@@ -58,7 +57,7 @@ public class TDeboursRepositoryTests extends EntityTest {
 
     @Test
     public void test_B1_countAllByIdAndDossierId_zero() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
 
         TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
         TDossiers dossier2 = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
@@ -73,12 +72,12 @@ public class TDeboursRepositoryTests extends EntityTest {
 
     @Test
     public void test_C_findAllByInvoiceIdDossierId() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
 
         TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
         TDebour tDebour = createTDebour(lawfirm, dossier);
 
-        List<FraisAdminDTO> fraisAdminDTOList = tDebourRepository.findAllByInvoiceIdDossierId(tDebour.getIdDebour(), tDebour.getIdDoss(), lawfirm.getLawfirmUsers().get(0).getId());
+        List<Object[]> fraisAdminDTOList = tDebourRepository.findAllByInvoiceIdDossierId(tDebour.getIdDebour(), tDebour.getIdDoss(), lawfirm.getLawfirmUsers().get(0).getId(), null);
 
         assertNotNull(fraisAdminDTOList);
         assertEquals(1, fraisAdminDTOList.size());

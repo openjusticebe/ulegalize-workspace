@@ -40,4 +40,7 @@ public interface TUsersRepository extends CrudRepository<TUsers, Long> {
             " or u.email like CONCAT('%', :searchValue,'%') )")
     List<TUsers> findBySearchAndIdValidAndValid(String searchValue, EnumValid enumValid, boolean isValid);
 
+    @Query("select new com.ulegalize.dto.LawyerDTO(u.id, u.idUser, u.email, u.language, u.fullname) " +
+            " from TUsers u where u.idValid = :idValid and u.valid = true")
+    List<LawyerDTO> findDTOByValid(EnumValid idValid);
 }

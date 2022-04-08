@@ -1,8 +1,6 @@
 package com.ulegalize.lawfirm.controller;
 
-import com.ulegalize.dto.DossierDTO;
 import com.ulegalize.dto.LawfirmDTO;
-import com.ulegalize.enumeration.EnumLanguage;
 import com.ulegalize.lawfirm.exception.LawfirmBusinessException;
 import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.converter.CalendarToEntityConverter;
@@ -12,7 +10,6 @@ import com.ulegalize.lawfirm.model.converter.EntityToLawfirmPrivateConverter;
 import com.ulegalize.lawfirm.model.entity.LawfirmEntity;
 import com.ulegalize.lawfirm.model.entity.LawfirmUsers;
 import com.ulegalize.lawfirm.model.entity.LawfirmWebsiteEntity;
-import com.ulegalize.lawfirm.model.entity.TDossiers;
 import com.ulegalize.lawfirm.repository.DossierRepository;
 import com.ulegalize.lawfirm.repository.LawfirmRepository;
 import com.ulegalize.lawfirm.service.LawfirmService;
@@ -26,7 +23,6 @@ import springfox.documentation.annotations.ApiIgnore;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @RestController
 @ApiIgnore
@@ -61,21 +57,6 @@ public class LawfirmController {
         LawfirmEntity lawfirm = checkLawfirm(vckey);
 
         return entityToLawfirmPrivateConverter.apply(lawfirm);
-
-    }
-
-    @RequestMapping(method = RequestMethod.GET, path = "/{vckey}/dossiers")
-    public List<DossierDTO> findLawfirmDossiers(@PathVariable String vckey, @RequestParam(required = false) String searchCriteria) {
-
-
-        List<TDossiers> dossiers = dossierRepository.findAllByVCKey(vckey.toUpperCase());
-
-        List<DossierDTO> dossierSummaries = dossiers.stream().map(dossier -> entityToDossierConverter.apply(dossier, EnumLanguage.FR)).collect(Collectors.toList());
-        if (searchCriteria != null) {
-            return dossierSummaries.stream().filter(dossier -> dossier.getLabel() != null && dossier.getLabel().toLowerCase().contains(searchCriteria.toLowerCase())).collect(Collectors.toList());
-        }
-
-        return dossierSummaries;
 
     }
 

@@ -32,6 +32,7 @@ public class TDossiers implements Serializable {
     @Getter
     @Setter
     private String year_doss;
+    @Column(columnDefinition = "INTEGER", name = "num_doss")
     @Getter
     @Setter
     private Long num_doss;

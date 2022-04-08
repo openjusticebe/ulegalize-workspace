@@ -29,9 +29,13 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -382,7 +386,7 @@ public class InvoiceServiceImpl implements InvoiceService {
         facturesRepository.save(tFactures);
 
         log.info("invoice saved in repo with id {}: ", tFactures.getIdFacture());
-        log.debug("Leaving createInvoice with {}", invoiceDTO.toString());
+        log.debug("Leaving createInvoice with {}", invoiceDTO);
         return tFactures.getIdFacture();
     }
 
@@ -803,119 +807,199 @@ public class InvoiceServiceImpl implements InvoiceService {
     }
 
     @Override
-    public List<PrestationSummary> getPrestationByDossierId(Long invoiceId, Long dossierId, Long userId, String vcKey) {
+    public List<PrestationSummary> getPrestationByDossierId(Long invoiceId, Long dossierId, Long userId, String vcKey, Boolean filterInvoicePrestation) {
         log.debug("getPrestationByDossierId with user {} and dossierId {}", userId, dossierId);
         Optional<LawfirmUsers> lawfirmUsers = lawfirmUserRepository.findLawfirmUsersByVcKeyAndUserId(vcKey, userId);
 
         if (lawfirmUsers.isPresent()) {
             log.debug("Law firm list {} user id {}", lawfirmUsers.get().getId(), userId);
 
-            List<PrestationSummary> tTimesheetList = timesheetRepository.findAllByInvoiceIdDossierId(invoiceId, dossierId, lawfirmUsers.get().getId());
+            List<Object[]> prestationSummaryList = timesheetRepository.findAllByInvoiceIdDossierId(invoiceId, dossierId, lawfirmUsers.get().getId(), filterInvoicePrestation);
 
-            return tTimesheetList.stream().map(prestationSummary -> {
-                // get facture ts list but not the one linked.
-                List<TFactureTimesheet> factureTimesheets = factureTimesheetRepository.findByTsIdAndNotId(prestationSummary.getFactureTimesheetLinkedId(), prestationSummary.getId());
+            return prestationSummaryList.stream().map(r -> {
+                BigInteger longConvertId = (BigInteger) r[0];
+                BigInteger longConvertDossierId = (BigInteger) r[1];
+                Integer longConvertNumDossier = (Integer) r[3];
+                BigInteger longConvertIdGest = (BigInteger) r[4];
+                Short longConvertTsType = (Short) r[6];
+                Long longConvertTime = r[9] != null ? ((Date) r[9]).getTime() : null;
+                String convertDh = (String) r[10];
+                String convertDm = (String) r[11];
+                BigDecimal convertVAT = (BigDecimal) r[13];
+                Integer convertForfait = (Integer) r[14];
+                boolean boolForfait = convertForfait != null && convertForfait == 1;
+                ZonedDateTime zdt = ZonedDateTime.ofInstant(Instant.ofEpochMilli(longConvertTime),
+                        ZoneId.systemDefault());
+                BigDecimal longConvertForfaitHt = (BigDecimal) r[15];
+                BigInteger longConvertFactureTimesheetId = (BigInteger) r[16];
+                //object is a BigInteger
+                BigInteger convertInvoiceChecked = (BigInteger) r[17];
+                boolean testInvoiceChecked = convertInvoiceChecked != null && convertInvoiceChecked.longValue() != 0;
+                BigInteger convertAlreadyInvoiced = (BigInteger) r[18];
+                boolean testAlreadyInvoiced = convertAlreadyInvoiced != null && convertAlreadyInvoiced.longValue() != 0;
+                String factExtRef = (r[19] != null ? (String) r[19] : null);
+                Long factId = (BigInteger) r[20] != null ? ((BigInteger) r[20]).longValue() : null;
 
-                if (!CollectionUtils.isEmpty(factureTimesheets)) {
-                    // get the first
-                    TFactureTimesheet tFactureTimesheet = factureTimesheets.get(0);
-                    prestationSummary.setAlreadyInvoiced(true);
-                    prestationSummary.setFactureTimesheetExtId(tFactureTimesheet.getID());
-                    prestationSummary.setFactExtId(tFactureTimesheet.getTFactures().getIdFacture());
-                    prestationSummary.setFactExtRef(tFactureTimesheet.getTFactures().getFactureRef());
-                }
+                PrestationSummary prestationSummary = new PrestationSummary(
+                        (longConvertId != null ? longConvertId.longValue() : null),
+                        (longConvertDossierId != null ? longConvertDossierId.longValue() : null),
+                        (r[2] != null ? (String) r[2] : null),
+                        (longConvertNumDossier != null ? longConvertNumDossier.longValue() : null),
+                        (longConvertIdGest != null ? longConvertIdGest.longValue() : null),
+                        (r[5] != null ? (String) r[5] : null),
+                        (longConvertTsType != null ? longConvertTsType.intValue() : null),
+                        (r[7] != null ? (String) r[7] : null),
+                        (r[8] != null ? (Integer) r[8] : null),
+                        zdt,
+                        (convertDh != null ? new BigDecimal(convertDh) : null),
+                        (convertDm != null ? new BigDecimal(convertDm) : null),
+                        (r[12] != null ? (String) r[12] : null),
+                        (convertVAT),
+                        boolForfait,
+                        longConvertForfaitHt,
+                        longConvertFactureTimesheetId != null ? longConvertFactureTimesheetId.longValue() : null,
+                        testInvoiceChecked,
+                        testAlreadyInvoiced,
+                        factId,
+                        factExtRef
+                );
                 return prestationSummary;
             }).collect(Collectors.toList());
-
         }
-
         return new ArrayList<>();
     }
 
     @Override
-    public List<FraisAdminDTO> getFraisAdminByDossierId(Long invoiceId, Long dossierId, Long userId, String vcKey) {
+    public List<FraisAdminDTO> getFraisAdminByDossierId(Long invoiceId, Long dossierId, Long userId, String vcKey, Boolean filterInvoicePrestation) {
         log.debug("getFraisAdminByDossierId with user {} and dossierId {}", userId, dossierId);
         Optional<LawfirmUsers> lawfirmUsers = lawfirmUserRepository.findLawfirmUsersByVcKeyAndUserId(vcKey, userId);
 
         if (lawfirmUsers.isPresent()) {
             log.debug("Law firm list {} user id {}", lawfirmUsers.get().getId(), userId);
 
-            List<FraisAdminDTO> fraisAdminDTOS = tDebourRepository.findAllByInvoiceIdDossierId(invoiceId, dossierId, lawfirmUsers.get().getId());
+            List<Object[]> fraisAdminDTOS = tDebourRepository.findAllByInvoiceIdDossierId(invoiceId, dossierId, lawfirmUsers.get().getId(), filterInvoicePrestation);
 
-            return fraisAdminDTOS.stream().map(fraisAdminDTO -> {
-                // get facture ts list but not the one linked.
-                List<FactureFraisAdmin> factureTimesheets = factureFraisAdminRepository.findByFraisIdAndNotId(fraisAdminDTO.getFactureLinkedFraisId(), fraisAdminDTO.getId());
+            return fraisAdminDTOS.stream().map(r -> {
+                        Long longConvertId = r[0] != null ? ((Integer) r[0]).longValue() : null;
+                        Long longConvertIdDebourType = r[1] != null ? ((Short) r[1]).longValue() : null;
+                        BigDecimal longConvertPricePerUnit = r[3] != null ? BigDecimal.valueOf(((Double) r[3])) : null;
+                        Integer longConvertUnit = r[4] != null ? Integer.valueOf(((Short) r[4])) : null;
+                        Integer longConvertMesureTypeId = r[5] != null ? Integer.valueOf(((Byte) r[5])) : null;
+                        Long longConvertIdDoss = r[7] != null ? ((BigInteger) r[7]).longValue() : null;
+                        Long longConvertNumDossier = r[9] != null ? ((Integer) r[9]).longValue() : null;
+                        Long longConvertTime = r[10] != null ? ((Date) r[10]).getTime() : null;
+                        ZonedDateTime zdt = ZonedDateTime.ofInstant(Instant.ofEpochMilli(longConvertTime),
+                                ZoneId.systemDefault());
 
-                if (!CollectionUtils.isEmpty(factureTimesheets)) {
-                    // get the first
-                    FactureFraisAdmin factureFraisAdmin = factureTimesheets.get(0);
-                    fraisAdminDTO.setAlreadyInvoiced(true);
-                    fraisAdminDTO.setFactureExtFraisId(factureFraisAdmin.getID());
-                    fraisAdminDTO.setFactExtId(factureFraisAdmin.getTFactures().getIdFacture());
-                    fraisAdminDTO.setFactExtRef(factureFraisAdmin.getTFactures().getFactureRef());
-                }
-                return fraisAdminDTO;
-            }).collect(Collectors.toList());
+                        String convertComment = r[11] != null ? ((String) r[11]) : null;
+                        Long convertFactureFraisId = r[12] != null ? ((BigInteger) r[12]).longValue() : null;
+                        boolean testInvoiceChecked = r[13] != null && ((BigInteger) r[13]).longValue() != 0;
+                        boolean testAlreadyInvoiced = r[14] != null && ((BigInteger) r[14]).longValue() != 0;
+                        String factExtRef = (r[15] != null ? (String) r[15] : null);
+                        Long factId = (BigInteger) r[16] != null ? ((BigInteger) r[16]).longValue() : null;
+
+                        return new FraisAdminDTO(
+                                longConvertId,
+                                longConvertIdDebourType,
+                                (r[2] != null ? (String) r[2] : null),
+                                longConvertPricePerUnit,
+                                longConvertUnit,
+                                longConvertMesureTypeId,
+                                (r[6] != null ? (String) r[6] : null),
+                                longConvertIdDoss,
+                                (r[8] != null ? (String) r[8] : null),
+                                longConvertNumDossier,
+                                zdt,
+                                convertComment,
+                                convertFactureFraisId,
+                                testInvoiceChecked,
+                                testAlreadyInvoiced,
+                                factId,
+                                factExtRef
+                        );
+                    })
+                    .collect(Collectors.toList());
         }
 
         return new ArrayList<>();
     }
 
     @Override
-    public List<ComptaDTO> getDeboursByDossierId(Long invoiceId, Long dossierId, Long userId, String vcKey) {
+    public List<ComptaDTO> getDeboursByDossierId(Long invoiceId, Long dossierId, Long userId, String vcKey, Boolean filterInvoicePrestation) {
         log.debug("getDeboursByDossierId with user {} and dossierId {}", userId, dossierId);
         Optional<LawfirmUsers> lawfirmUsers = lawfirmUserRepository.findLawfirmUsersByVcKeyAndUserId(vcKey, userId);
 
         if (lawfirmUsers.isPresent()) {
             log.debug("Law firm list {} user id {}", lawfirmUsers.get().getId(), userId);
 
-            List<ComptaDTO> comptaDTOList = fraisRepository.findAllDeboursByInvoiceIdDossierId(invoiceId, dossierId, lawfirmUsers.get().getId());
+            List<Object[]> comptaDTOList = fraisRepository.findAllDeboursByInvoiceIdDossierId(invoiceId, dossierId, lawfirmUsers.get().getId(), filterInvoicePrestation);
 
-            return comptaDTOList.stream().map(comptaDTO -> {
-                // get facture ts list but not the one linked.
-                List<FactureFraisDebours> factureTimesheets = factureFraisRepository.findByFraisIdAndNotId(comptaDTO.getFactureLinkedFraisId(), comptaDTO.getId());
+            return comptaDTOList.stream().map(r -> {
+                BigInteger longConvertId = (BigInteger) r[0];
+                BigInteger longFactureFraisId = (BigInteger) r[7];
+                BigInteger longConvertInvoiceChecked = (BigInteger) r[9];
+                boolean testInvoiceChecked = longConvertInvoiceChecked != null && longConvertInvoiceChecked.longValue() != 0;
+                BigInteger longConvertAlreadyInvoiced = (BigInteger) r[10];
+                boolean testAlreadyInvoiced = longConvertAlreadyInvoiced != null && longConvertAlreadyInvoiced.longValue() != 0;
+                String factExtRef = (r[12] != null ? (String) r[11] : null);
+                Long factId = (BigInteger) r[12] != null ? ((BigInteger) r[12]).longValue() : null;
 
-                if (!CollectionUtils.isEmpty(factureTimesheets)) {
-                    // get the first
-                    FactureFraisDebours factureFraisDebours = factureTimesheets.get(0);
-                    comptaDTO.setAlreadyInvoiced(true);
-                    comptaDTO.setFactureExtFraisId(factureFraisDebours.getID());
-                    comptaDTO.setFactExtId(factureFraisDebours.getTFactures().getIdFacture());
-                    comptaDTO.setFactExtRef(factureFraisDebours.getTFactures().getFactureRef());
-                }
-                return comptaDTO;
+                return new ComptaDTO(
+                        (longConvertId != null ? longConvertId.longValue() : null),
+                        (r[1] != null ? (String) r[1] : null),
+                        (r[2] != null ? (Integer) r[2] : null),
+                        (r[3] != null ? (String) r[3] : null),
+                        (r[4] != null ? (BigDecimal) r[4] : null),
+                        (r[5] != null ? (BigDecimal) r[5] : null),
+                        (r[6] != null ? (String) r[6] : null),
+                        (longFactureFraisId != null ? longFactureFraisId.longValue() : null),
+                        (testInvoiceChecked),
+                        (testAlreadyInvoiced),
+                        factId,
+                        factExtRef
+                );
+
             }).collect(Collectors.toList());
         }
-
         return new ArrayList<>();
     }
 
     @Override
-    public List<ComptaDTO> getFraisCollabByDossierId(Long invoiceId, Long dossierId, Long userId, String vcKey) {
+    public List<ComptaDTO> getFraisCollabByDossierId(Long invoiceId, Long dossierId, Long userId, String vcKey, Boolean filterInvoicePrestation) {
         log.debug("getFraisCollabByDossierId with user {} and dossierId {}", userId, dossierId);
         Optional<LawfirmUsers> lawfirmUsers = lawfirmUserRepository.findLawfirmUsersByVcKeyAndUserId(vcKey, userId);
 
         if (lawfirmUsers.isPresent()) {
             log.debug("Law firm list {} user id {}", lawfirmUsers.get().getId(), userId);
 
-            List<ComptaDTO> comptaDTOList = fraisRepository.findAllCollabByInvoiceIdDossierId(invoiceId, dossierId, lawfirmUsers.get().getId());
+            List<Object[]> comptaDTOList = fraisRepository.findAllCollabByInvoiceIdDossierId(invoiceId, dossierId, lawfirmUsers.get().getId(), filterInvoicePrestation);
+            return comptaDTOList.stream().map(r -> {
+                BigInteger longConvertId = (BigInteger) r[0];
+                BigInteger longFactureFraisId = (BigInteger) r[7];
+                BigInteger longConvertInvoiceChecked = (BigInteger) r[9];
+                boolean testInvoiceChecked = longConvertInvoiceChecked != null && longConvertInvoiceChecked.longValue() != 0;
+                BigInteger longConvertAlreadyInvoiced = (BigInteger) r[10];
+                boolean testAlreadyInvoiced = longConvertAlreadyInvoiced != null && longConvertAlreadyInvoiced.longValue() != 0;
+                String factExtRef = (r[11] != null ? (String) r[11] : null);
+                Long factId = r[11] != null ? ((BigInteger) r[11]).longValue() : null;
 
-            return comptaDTOList.stream().map(comptaDTO -> {
-                // get facture ts list but not the one linked.
-                List<FactureFraisCollaboration> factureTimesheets = factureFraisCollaboratRepository.findByFraisIdAndNotId(comptaDTO.getFactureLinkedFraisId(), comptaDTO.getId());
+                return new ComptaDTO(
+                        (longConvertId != null ? longConvertId.longValue() : null),
+                        (r[1] != null ? (String) r[1] : null),
+                        (r[2] != null ? (Integer) r[2] : null),
+                        (r[3] != null ? (String) r[3] : null),
+                        (r[4] != null ? (BigDecimal) r[4] : null),
+                        (r[5] != null ? (BigDecimal) r[5] : null),
+                        (r[6] != null ? (String) r[6] : null),
+                        (longFactureFraisId != null ? longFactureFraisId.longValue() : null),
+                        (testInvoiceChecked),
+                        (testAlreadyInvoiced),
+                        factId,
+                        factExtRef
+                );
 
-                if (!CollectionUtils.isEmpty(factureTimesheets)) {
-                    // get the first
-                    FactureFraisCollaboration factureFraisDebours = factureTimesheets.get(0);
-                    comptaDTO.setAlreadyInvoiced(true);
-                    comptaDTO.setFactureExtFraisId(factureFraisDebours.getID());
-                    comptaDTO.setFactExtId(factureFraisDebours.getTFactures().getIdFacture());
-                    comptaDTO.setFactExtRef(factureFraisDebours.getTFactures().getFactureRef());
-                }
-                return comptaDTO;
             }).collect(Collectors.toList());
         }
-
         return new ArrayList<>();
     }
 

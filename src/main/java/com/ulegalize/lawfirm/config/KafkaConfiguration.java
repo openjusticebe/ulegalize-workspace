@@ -42,6 +42,8 @@ public class KafkaConfiguration {
     private String topicAttachAffaire;
     @Value("${tpd.sendMail-topic-name}")
     private String sendMailTopic;
+    @Value("${tpd.sendEvent-topic-name}")
+    private String sendEventTopic;
     @Value("${tpd.updateLawfirm-topic-name}")
     private String topicUpdateLawfirm;
     @Value("${tpd.switchLawfirm-topic-name}")
@@ -125,6 +127,14 @@ public class KafkaConfiguration {
     @Bean
     public NewTopic sendMailTopic() {
         return TopicBuilder.name(sendMailTopic)
+                .partitions(1)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    public NewTopic sendEventTopic() {
+        return TopicBuilder.name(sendEventTopic)
                 .partitions(1)
                 .replicas(1)
                 .build();

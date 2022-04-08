@@ -32,7 +32,7 @@ public class TfraisrRepositoryTests extends EntityTest {
 
     @Test
     public void test_A_sumAllJusticeByVcKey() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
 
         TFrais tFrais = createTFrais(lawfirm, dossier);
@@ -43,12 +43,12 @@ public class TfraisrRepositoryTests extends EntityTest {
         BigDecimal countAllJusticeByVcKey = tFraisRepository.sumAllDeboursByVcKey(tFrais.getIdDoss(), lawfirm.getVckey());
 
         assertNotNull(countAllJusticeByVcKey);
-        assertThat(tFrais.getMontantht(), Matchers.comparesEqualTo(countAllJusticeByVcKey));
+        assertThat(tFrais.getMontantht().negate(), Matchers.comparesEqualTo(countAllJusticeByVcKey));
     }
 
     @Test
     public void test_B_sumAllHtvaCollabByVcKey() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
 
         TFrais tFrais = createTFrais(lawfirm, dossier);
@@ -59,17 +59,17 @@ public class TfraisrRepositoryTests extends EntityTest {
         BigDecimal countAllJusticeByVcKey = tFraisRepository.sumAllCollabByVcKey(tFrais.getIdDoss(), lawfirm.getVckey());
 
         assertNotNull(countAllJusticeByVcKey);
-        assertThat(tFrais.getMontantht(), Matchers.comparesEqualTo(countAllJusticeByVcKey));
+        assertThat(tFrais.getMontantht().negate(), Matchers.comparesEqualTo(countAllJusticeByVcKey));
     }
 
     @Test
     public void test_C_sumAllHtvaHonoByVcKey() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
 
         TFrais tFrais = createTFrais(lawfirm, dossier);
         tFrais.getRefPoste().setHonoraires(true);
-        tFrais.setIdType(EnumTType.SORTIE);
+        tFrais.setIdType(EnumTType.ENTREE);
 
         testEntityManager.persist(tFrais.getRefPoste());
 
@@ -81,12 +81,12 @@ public class TfraisrRepositoryTests extends EntityTest {
 
     @Test
     public void test_D_sumAllHonoTtcByVcKey_negative() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
 
         TFrais tFrais = createTFrais(lawfirm, dossier);
         tFrais.getRefPoste().setHonoraires(true);
-        tFrais.setIdType(EnumTType.ENTREE);
+        tFrais.setIdType(EnumTType.SORTIE);
 
         testEntityManager.persist(tFrais.getRefPoste());
 
@@ -98,12 +98,12 @@ public class TfraisrRepositoryTests extends EntityTest {
 
     @Test
     public void test_E_sumAllHonoTtcByVcKey() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
 
         TFrais tFrais = createTFrais(lawfirm, dossier);
         tFrais.getRefPoste().setHonoraires(true);
-        tFrais.setIdType(EnumTType.SORTIE);
+        tFrais.setIdType(EnumTType.ENTREE);
 
         testEntityManager.persist(tFrais.getRefPoste());
 
@@ -115,12 +115,12 @@ public class TfraisrRepositoryTests extends EntityTest {
 
     @Test
     public void test_F_sumAllHonoTtcOnlyInvoiceByVcKey_withoutInvoice() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
 
         TFrais tFrais = createTFrais(lawfirm, dossier);
         tFrais.getRefPoste().setHonoraires(true);
-        tFrais.setIdType(EnumTType.ENTREE);
+        tFrais.setIdType(EnumTType.SORTIE);
 
         testEntityManager.persist(tFrais.getRefPoste());
 
@@ -132,12 +132,12 @@ public class TfraisrRepositoryTests extends EntityTest {
 
     @Test
     public void test_G_sumAllHonoTtcOnlyInvoiceByVcKey_withInvoice() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
 
         TFrais tFrais = createTFrais(lawfirm, dossier);
         tFrais.getRefPoste().setHonoraires(true);
-        tFrais.setIdType(EnumTType.SORTIE);
+        tFrais.setIdType(EnumTType.ENTREE);
 
         testEntityManager.persist(tFrais.getRefPoste());
 
@@ -157,12 +157,12 @@ public class TfraisrRepositoryTests extends EntityTest {
 
     @Test
     public void test_H_sumAllHonoByVcKey_negative() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
 
         TFrais tFrais = createTFrais(lawfirm, dossier);
         tFrais.getRefPoste().setHonoraires(true);
-        tFrais.setIdType(EnumTType.ENTREE);
+        tFrais.setIdType(EnumTType.SORTIE);
 
         testEntityManager.persist(tFrais.getRefPoste());
 
@@ -174,12 +174,12 @@ public class TfraisrRepositoryTests extends EntityTest {
 
     @Test
     public void test_I_sumAllHonoTtcByInvoiceId() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
 
         TFrais tFrais = createTFrais(lawfirm, dossier);
         tFrais.getRefPoste().setHonoraires(true);
-        tFrais.setIdType(EnumTType.SORTIE);
+        tFrais.setIdType(EnumTType.ENTREE);
         testEntityManager.persist(tFrais.getRefPoste());
 
         TFactures facture = createFacture(lawfirm);
@@ -196,12 +196,12 @@ public class TfraisrRepositoryTests extends EntityTest {
 
     @Test
     public void test_J_sumAllHonoTtcByInvoiceId_equals() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
 
         TFrais tFrais = createTFrais(lawfirm, dossier);
         tFrais.getRefPoste().setHonoraires(true);
-        tFrais.setIdType(EnumTType.SORTIE);
+        tFrais.setIdType(EnumTType.ENTREE);
         testEntityManager.persist(tFrais.getRefPoste());
 
         TFactures facture = createFacture(lawfirm);
@@ -220,12 +220,12 @@ public class TfraisrRepositoryTests extends EntityTest {
 
     @Test
     public void test_K_countAllFraisDeboursByIdAndDossierId() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
 
         TFrais tFrais = createTFrais(lawfirm, dossier);
         tFrais.getRefPoste().setFraisProcedure(true);
-        tFrais.setIdType(EnumTType.SORTIE);
+        tFrais.setIdType(EnumTType.ENTREE);
         testEntityManager.persist(tFrais.getRefPoste());
         TFactures facture = createFacture(lawfirm);
         tFrais.setIdFacture(facture.getIdFacture());
@@ -243,12 +243,12 @@ public class TfraisrRepositoryTests extends EntityTest {
 
     @Test
     public void test_K1_fraisDeboursByIdAndDossierId_zero() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
         TFrais tFrais = createTFrais(lawfirm, dossier);
         // frais collaboration error
         tFrais.getRefPoste().setFraisCollaboration(true);
-        tFrais.setIdType(EnumTType.SORTIE);
+        tFrais.setIdType(EnumTType.ENTREE);
         testEntityManager.persist(tFrais.getRefPoste());
         TFactures facture = createFacture(lawfirm);
         tFrais.setIdFacture(facture.getIdFacture());
@@ -266,11 +266,11 @@ public class TfraisrRepositoryTests extends EntityTest {
 
     @Test
     public void test_K2_fraisDeboursByIdAndDossierId_zero() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
         TFrais tFrais = createTFrais(lawfirm, dossier);
         tFrais.getRefPoste().setFraisProcedure(true);
-        tFrais.setIdType(EnumTType.SORTIE);
+        tFrais.setIdType(EnumTType.ENTREE);
         testEntityManager.persist(tFrais.getRefPoste());
         TFactures facture = createFacture(lawfirm);
         tFrais.setIdFacture(facture.getIdFacture());
@@ -291,12 +291,12 @@ public class TfraisrRepositoryTests extends EntityTest {
 
     @Test
     public void test_L_countAllFraisCollaByIdAndDossierId() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
 
         TFrais tFrais = createTFrais(lawfirm, dossier);
         tFrais.getRefPoste().setFraisCollaboration(true);
-        tFrais.setIdType(EnumTType.SORTIE);
+        tFrais.setIdType(EnumTType.ENTREE);
         testEntityManager.persist(tFrais.getRefPoste());
         TFactures facture = createFacture(lawfirm);
         tFrais.setIdFacture(facture.getIdFacture());
@@ -314,12 +314,12 @@ public class TfraisrRepositoryTests extends EntityTest {
 
     @Test
     public void test_L1_countAllFraisCollaByIdAndDossierId_zero() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
         TFrais tFrais = createTFrais(lawfirm, dossier);
         // frais collaboration error
         tFrais.getRefPoste().setFraisProcedure(true);
-        tFrais.setIdType(EnumTType.SORTIE);
+        tFrais.setIdType(EnumTType.ENTREE);
         testEntityManager.persist(tFrais.getRefPoste());
         TFactures facture = createFacture(lawfirm);
         tFrais.setIdFacture(facture.getIdFacture());
@@ -337,11 +337,11 @@ public class TfraisrRepositoryTests extends EntityTest {
 
     @Test
     public void test_L2_countAllFraisCollaByIdAndDossierId_zero() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
         TFrais tFrais = createTFrais(lawfirm, dossier);
         tFrais.getRefPoste().setFraisCollaboration(true);
-        tFrais.setIdType(EnumTType.SORTIE);
+        tFrais.setIdType(EnumTType.ENTREE);
         testEntityManager.persist(tFrais.getRefPoste());
         TFactures facture = createFacture(lawfirm);
         tFrais.setIdFacture(facture.getIdFacture());

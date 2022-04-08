@@ -9,7 +9,22 @@ import java.util.List;
 public interface DossierV2Service {
     DossierDTO getDossierById(Long id_doss);
 
-    public Page<DossierDTO> getAllAffaires(int limit, int offset, Long userId, String vcKey, List<EnumVCOwner> enumVCOwner, String searchCriteriaClient, String searchCriteriaYear, Long searchCriteriaNumber, Boolean searchCriteriaBalance, String searchCriteriaInitiale, Boolean searchArchived);
+    /**
+     * @param limit
+     * @param offset
+     * @param userId
+     * @param vcKey
+     * @param enumVCOwner
+     * @param searchCriteriaClient
+     * @param searchCriteriaYear
+     * @param searchCriteriaNumber
+     * @param searchCriteriaBalance
+     * @param searchCriteriaInitiale
+     * @param searchArchived
+     * @param sortOpenDate           0 is desc , 1 asc , null order by last_access_date
+     * @return
+     */
+    public Page<DossierDTO> getAllAffaires(int limit, int offset, Long userId, String vcKey, List<EnumVCOwner> enumVCOwner, String searchCriteriaClient, String searchCriteriaYear, Long searchCriteriaNumber, Boolean searchCriteriaBalance, String searchCriteriaInitiale, Boolean searchArchived, Boolean sortOpenDate);
 
     Long saveAffaire(DossierDTO dossierDTO, String vcKey);
 
@@ -36,5 +51,9 @@ public interface DossierV2Service {
     void switchDossierDigital(Long dossierId, Long userId, String vcKey);
 
     String inviteConseil(Long dossierId, ItemPartieDTO partieDTO);
+
+    String addShareAllFolderUser();
+
+    List<DossierDTO> findAllByVCKey(String vcKey, Long userId);
 
 }

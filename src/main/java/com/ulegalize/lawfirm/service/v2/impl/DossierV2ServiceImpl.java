@@ -41,8 +41,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.ZonedDateTime;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -77,8 +75,6 @@ public class DossierV2ServiceImpl implements DossierV2Service {
     private final IAffaireProducer affaireProducer;
 
     private String REGEX = "^[a-zA-Z0-9_!#$%&'*+/=?`{|}~^.-]+@[a-zA-Z0-9.-]+$";
-    //Compile regular expression to get the pattern
-    private Pattern pattern = Pattern.compile(REGEX);
 
     public DossierV2ServiceImpl(EntityToDossierConverter entityToDossierConverter,
                                 DossierRepository dossierRepository,
@@ -157,7 +153,7 @@ public class DossierV2ServiceImpl implements DossierV2Service {
 
     @Override
     public Page<DossierDTO> getAllAffaires(int limit, int offset, Long userId, String vcKey, List<EnumVCOwner> enumVCOwner,
-                                           String searchCriteriaClient, String searchCriteriaYear, Long searchCriteriaNumber, Boolean searchCriteriaBalance, String searchCriteriaInitiale, Boolean searchArchived) {
+                                           String searchCriteriaClient, String searchCriteriaYear, Long searchCriteriaNumber, Boolean searchCriteriaBalance, String searchCriteriaInitiale, Boolean searchArchived, Boolean sortOpenDate) {
         log.debug("Get all Affaires with limit {} and offset {} , user id {} and vckey {}", limit, offset, userId, vcKey);
         Optional<LawfirmUsers> lawfirmUsers = lawfirmUserRepository.findLawfirmUsersByVcKeyAndUserId(vcKey, userId);
 
@@ -173,7 +169,17 @@ public class DossierV2ServiceImpl implements DossierV2Service {
             searchCriteriaClient = searchCriteriaClient != null && !searchCriteriaClient.isEmpty() ? searchCriteriaClient : "%";
 
 
-            Pageable pageable = new OffsetBasedPageRequest(limit, offset, Sort.by(Sort.Direction.DESC, "id_doss"));
+            Pageable pageable;
+
+            if (sortOpenDate == null) {
+                pageable = new OffsetBasedPageRequest(limit, offset, Sort.by(Sort.Direction.DESC, "dossierrig1_.last_access_date"));
+            } else if (sortOpenDate) {
+                // tdossiers0_.year_doss desc, tdossiers0_.num_doss desc
+                pageable = new OffsetBasedPageRequest(limit, offset, Sort.by(Sort.Direction.ASC, "date_open"));
+            } else {
+                pageable = new OffsetBasedPageRequest(limit, offset, Sort.by(Sort.Direction.DESC, "date_open"));
+
+            }
 
             Page<IDossierDTO> tDossiersList = null;
             String initiales = searchCriteriaInitiale != null && !searchCriteriaInitiale.isEmpty() ? searchCriteriaInitiale.toUpperCase() : "%";
@@ -186,16 +192,18 @@ public class DossierV2ServiceImpl implements DossierV2Service {
                     searchCriteriaClient, searchCriteriaYear, numberDossier, initiales, searchCriteriaBalance, searchArchived,
                     pageable);
 
-            Optional<EnumVCOwner> enumVCOwner2 = enumVCOwner.stream().filter(enumVCOwner1 -> enumVCOwner1.equals(EnumVCOwner.NOT_SAME_VC)).findFirst();
+            Optional<EnumVCOwner> enumVCOwnerOptional = enumVCOwner.stream().filter(enumVCOwner1 -> enumVCOwner1.equals(EnumVCOwner.NOT_SAME_VC)).findFirst();
 
             List<DossierDTO> dossierDTOS = tDossiersList.getContent().stream().map(dossier -> {
                 DossierDTO dossierDTO = new DossierDTO(dossier.getId(), dossier.getYear(), dossier.getNum(), dossier.getInitiales(),
                         dossier.getFirstnameClient(), dossier.getLastnameClient(), dossier.getCompanyClient(), dossier.getIdClient(),
                         dossier.getAdverseFirstnameClient(), dossier.getAdverseLastnameClient(), dossier.getAdverseCompanyClient(), dossier.getAdverseIdClient(),
-                        dossier.getBalance(), dossier.getVckeyOwner(), enumVCOwner2, dossier.getCloseDossier(),
+                        dossier.getBalance(), dossier.getVckeyOwner(), enumVCOwnerOptional.orElse(null),
+                        dossier.getCloseDossier(),
+                        dossier.getOpenDossier(),
                         dossier.getType(),
-                        dossier.getLastAccessDate()
-
+                        dossier.getLastAccessDate(),
+                        dossier.getPartiesName()
                 );
                 dossierDTO.setTypeItem(new ItemStringDto(dossier.getType().getDossType(),
                         Utils.getLabel(enumLanguage,
@@ -389,13 +397,7 @@ public class DossierV2ServiceImpl implements DossierV2Service {
         log.debug("entering saveAffaireAndCreateCase {}", dossierDTO);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        Long saveAffaire = saveAffaire(dossierDTO, vcKey);
-
-        DossierDTO newDossierDto = getDossierById(saveAffaire);
-
-        createCasLawfirm(newDossierDto, lawfirmToken);
-
-        return saveAffaire;
+        return saveAffaire(dossierDTO, vcKey);
     }
 
     @Override
@@ -409,59 +411,6 @@ public class DossierV2ServiceImpl implements DossierV2Service {
         attachAffaire(caseId, newDossierDto, lawfirmToken);
 
         return saveAffaire;
-    }
-
-    @Transactional(propagation = Propagation.REQUIRED, noRollbackFor = ResponseStatusException.class)
-    public void createCasLawfirm(DossierDTO dossierDTO, LawfirmToken lawfirmToken) throws ResponseStatusException {
-        log.debug("entering createCasLawfirm {}", dossierDTO);
-        List<ContactSummary> contactSummaryList = new ArrayList<>();
-        switch (dossierDTO.getType()) {
-            case BA:
-            case DC:
-            case DF:
-                ContactSummary contactSummary = clientV2Service.getCientById(dossierDTO.getIdClient());
-                contactSummaryList.add(contactSummary);
-                break;
-            case MD:
-                for (ItemClientDto dossierContact1 : dossierDTO.getClientList()) {
-                    log.info(" Contact type {}", dossierContact1.getType());
-                    try {
-                        ContactSummary contactSummary1 = clientV2Service.getCientById(dossierContact1.getValue());
-                        if (contactSummary1.getEmail() != null && !contactSummary1.getEmail().isEmpty()) {
-                            contactSummaryList.add(contactSummary1);
-                        }
-                    } catch (ResponseStatusException rs) {
-                        log.warn("Client does not exist {}", rs.getMessage());
-                    }
-                }
-                break;
-        }
-
-        // check there is at least one contact
-        // check if the email's contact exist for transparency
-        if (!CollectionUtils.isEmpty(contactSummaryList)) {
-            boolean anyMatch = contactSummaryList.stream().anyMatch(contactSummary -> {
-                if (contactSummary.getEmail() != null) {
-                    Matcher matcher = pattern.matcher(contactSummary.getEmail().toLowerCase());
-                    return matcher.matches();
-                } else {
-                    return false;
-                }
-            });
-            // Check if any emails are valid
-            if (anyMatch) {
-                CaseCreationDTO caseCreationDTO = new CaseCreationDTO();
-                caseCreationDTO.setDossier(dossierDTO);
-                caseCreationDTO.setContactSummaryList(new ArrayList<>());
-                caseCreationDTO.getContactSummaryList().addAll(contactSummaryList);
-
-                caseProducer.createCaseMessage(caseCreationDTO, lawfirmToken);
-            } else {
-                log.warn("The contact email has not been fill in.");
-            }
-        } else {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No contact with email for transparency");
-        }
     }
 
     @Transactional(propagation = Propagation.REQUIRED, noRollbackFor = ResponseStatusException.class)
@@ -745,16 +694,15 @@ public class DossierV2ServiceImpl implements DossierV2Service {
 
         log.debug("Law firm list {} user id {}", lawfirmUsers.get().getId(), userId);
 
+        List<DossierDTO> resultList = new ArrayList<>();
+        String finalYear = "%";
+        Long finalNumber = null;
+        String client = "%";
+        boolean bothYearAndNumber = false;
 
-        List<TDossiers> dossierListByVcUserId = dossierRepository.findAffairesByVcUserId(lawfirmUsers.get().getId());
-        EnumLanguage enumLanguage = EnumLanguage.fromshortCode(lawfirmToken.getLanguage());
-        List<DossierDTO> dossierDTOList = entityToDossierConverter.convertToList(dossierListByVcUserId, enumLanguage);
-
-        List<DossierDTO> resultList = dossierDTOList;
         if (searchCriteria != null && !searchCriteria.isEmpty()) {
             long number = 0;
             String year = "%";
-            boolean bothYearAndNumber = false;
 
             bothYearAndNumber = searchCriteria.contains("/");
             // remove all non digit and /
@@ -764,35 +712,55 @@ public class DossierV2ServiceImpl implements DossierV2Service {
                 if (bothYearAndNumber) {
                     year = StringUtils.substringBefore(searchCriteria, "/");
                     number = Long.valueOf(StringUtils.substringAfter(searchCriteria, "/"));
-                } else {
+                } else if (searchCriteria.matches("^[0-9]*$")) {
                     number = Long.valueOf(searchCriteria);
                 }
             } catch (NumberFormatException nf) {
                 log.warn("Number of dossier is wrong {}", searchCriteria);
             }
 
-            String finalYear = year;
-            long finalNumber = number;
+            finalYear = year;
+            finalNumber = number != 0 ? number : null;
+            // if year AND number contain digit or "/"
+            if (!year.matches("[0-9]+") && finalNumber == null) {
+                client = searchCriteria;
+            }
 
             log.info("****************");
             log.info("Search criteria {}", searchCriteria);
-            log.info("Number {}", number);
-            log.info("year {}", year);
+            log.info("Number {}", finalNumber);
+            log.info("year {}", finalYear);
             log.info("bothYearAndNumber {}", bothYearAndNumber);
+            log.info("client {}", client);
             log.info("****************");
-
-            resultList = !bothYearAndNumber ? dossierDTOList.stream()
-                    .filter(dossier
-                            -> dossier.getYear().toString().toLowerCase().contains(finalYear.toLowerCase())
-                            || dossier.getNum().toString().toLowerCase().contains(String.valueOf(finalNumber)))
-                    .collect(Collectors.toList()) :
-                    dossierDTOList.stream()
-                            .filter(dossier
-                                    -> dossier.getYear().toString().toLowerCase().contains(finalYear.toLowerCase())
-                                    && dossier.getNum().toString().toLowerCase().contains(String.valueOf(finalNumber)))
-                            .collect(Collectors.toList());
-
         }
+        List<Integer> integersOwners = Arrays.stream(EnumVCOwner.values()).map(EnumVCOwner::getId).collect(Collectors.toList());
+
+        List<IDossierDTO> tDossiersList = dossierRepository.findAffairesByVcUserId(lawfirmUsers.get().getId(), integersOwners, client, finalYear, finalNumber, bothYearAndNumber);
+
+        EnumLanguage enumLanguage = EnumLanguage.fromshortCode(lawfirmToken.getLanguage());
+
+        resultList = tDossiersList.stream().map(dossier -> {
+            DossierDTO dossierDTO = new DossierDTO(dossier.getId(), dossier.getYear(), dossier.getNum(), dossier.getInitiales(),
+                    dossier.getFirstnameClient(), dossier.getLastnameClient(), dossier.getCompanyClient(), dossier.getIdClient(),
+                    dossier.getAdverseFirstnameClient(), dossier.getAdverseLastnameClient(), dossier.getAdverseCompanyClient(), dossier.getAdverseIdClient(),
+                    dossier.getBalance(), dossier.getVckeyOwner(), dossier.getOwner(),
+                    dossier.getCloseDossier(),
+                    dossier.getOpenDossier(),
+                    dossier.getType(),
+                    dossier.getLastAccessDate(),
+                    dossier.getPartiesName()
+            );
+            dossierDTO.setTypeItem(new ItemStringDto(dossier.getType().getDossType(),
+                    Utils.getLabel(enumLanguage,
+                            dossier.getType().getLabelFr(),
+                            dossier.getType().getLabelEn(),
+                            dossier.getType().getLabelNl())));
+
+            return dossierDTO;
+        }).collect(Collectors.toList());
+
+        log.debug("Result affaire list total {}", tDossiersList.size());
 
         return resultList.stream()
                 .map(dossier -> {
@@ -1179,6 +1147,51 @@ public class DossierV2ServiceImpl implements DossierV2Service {
             log.warn("New Partie cannot be a litigant {}", partieDTO);
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "New Partie cannot be a litigant");
         }
+    }
+
+    @Override
+    public String addShareAllFolderUser() {
+        log.debug("Entering addShareAllFolderUser");
+        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+
+        Optional<LawfirmUsers> lawfirmUsersOptional = lawfirmUserRepository.findLawfirmUsersByVcKeyAndUserId(lawfirmToken.getVcKey(), lawfirmToken.getUserId());
+
+        if (lawfirmUsersOptional.isPresent()) {
+            List<TDossiers> dossiersList = dossierRepository.findAllByVCKey(lawfirmToken.getVcKey());
+
+            dossiersList.forEach(dossiers -> {
+                ShareAffaireDTO shareAffaireDTO = new ShareAffaireDTO();
+                shareAffaireDTO.setUserIdSelected(new ArrayList<>());
+                shareAffaireDTO.getUserIdSelected().add(lawfirmUsersOptional.get().getUser().getId());
+                shareAffaireDTO.setUserId(lawfirmUsersOptional.get().getUser().getId());
+                shareAffaireDTO.setAffaireId(dossiers.getIdDoss());
+                shareAffaireDTO.setVcKey(lawfirmUsersOptional.get().getLawfirm().getVckey());
+                Optional<TDossierRights> optionalTDossierRights = tDossierRightsRepository.findAllByVcUserIdAndDossierId(lawfirmUsersOptional.get().getId(), dossiers.getIdDoss());
+                if (optionalTDossierRights.isEmpty()) {
+                    log.info("dossier {} is not shared with user {} vcuserid {}", dossiers.getIdDoss(), lawfirmUsersOptional.get().getUser().getId(), lawfirmUsersOptional.get().getId());
+                    addShareFolderUser(shareAffaireDTO, false);
+                }
+            });
+        }
+        return null;
+    }
+
+    @Override
+    public List<DossierDTO> findAllByVCKey(String vcKey, Long userId) {
+        log.debug("Entering findAllByVCKey {}, userId {}", vcKey, userId);
+        List<TDossiers> dossiers = dossierRepository.findAllByVCKeyAndUserId(vcKey, userId, List.of(EnumVCOwner.OWNER_VC, EnumVCOwner.NOT_OWNER_VC));
+
+        log.debug("dossier size {}", dossiers.size());
+        return dossiers.stream().map(dossier -> {
+            DossierDTO dossierDTO = new DossierDTO();
+            dossierDTO.setId(dossier.getIdDoss());
+            dossierDTO.setYear(Long.parseLong(dossier.getYear_doss()));
+            dossierDTO.setNum(dossier.getNum_doss());
+
+            return dossierDTO;
+        }).collect(Collectors.toList());
     }
 
     private String getObjShared(String year_doss, Long num_doss) {

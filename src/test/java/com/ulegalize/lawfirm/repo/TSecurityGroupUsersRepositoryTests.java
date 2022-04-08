@@ -27,7 +27,7 @@ public class TSecurityGroupUsersRepositoryTests extends EntityTest {
 
     @Test
     public void test_A_findByIdUserAndVckey() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TSecurityGroups tSecurityGroups = createTSecurityGroups(lawfirm, true);
 
         List<TSecurityGroupRights> securityGroupsId = tSecurityGroupUsersRepository.findByIdUserAndVckey(lawfirm.getLawfirmUsers().get(0).getUser().getId(), lawfirm.getVckey(), List.of(EnumSecurityAppGroups.ADMIN));
@@ -44,7 +44,7 @@ public class TSecurityGroupUsersRepositoryTests extends EntityTest {
 
     @Test
     public void test_B_findByIdUserAndVckey_false() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TSecurityGroups tSecurityGroups = createTSecurityGroups(lawfirm, true);
 
         List<TSecurityGroupRights> securityGroupsId = tSecurityGroupUsersRepository.findByIdUserAndVckey(lawfirm.getLawfirmUsers().get(0).getUser().getId(), lawfirm.getVckey(), List.of(EnumSecurityAppGroups.USER));

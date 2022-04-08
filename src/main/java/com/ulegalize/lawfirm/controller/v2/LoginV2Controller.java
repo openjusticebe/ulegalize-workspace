@@ -64,7 +64,7 @@ public class LoginV2Controller {
 
             return lawfirmV2Service.registerUser(lawfirmToken.getUserEmail(), lawfirmToken.getClientFrom());
         } finally {
-            slackApi.sendSensitiveNotification("A new user create his lawfirm. :ok_hand: ", lawfirmToken.getUserEmail(), EnumSlackUrl.NEW_ARRIVAL);
+            slackApi.sendSensitiveNotification("A new user '" + lawfirmToken.getClientFrom() + "' create his lawfirm. :ok_hand: ", lawfirmToken.getUserEmail(), EnumSlackUrl.NEW_ARRIVAL);
         }
     }
 
@@ -73,7 +73,7 @@ public class LoginV2Controller {
         log.debug("getUser()");
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        LawfirmToken userProfile = securityGroupService.getUserProfile(lawfirmToken.getUserEmail(), lawfirmToken.getToken(), true);
+        LawfirmToken userProfile = securityGroupService.getUserProfile(lawfirmToken.getClientFrom(), lawfirmToken.getUserEmail(), lawfirmToken.getToken(), true);
         log.info("Lawfirm connected {}", userProfile);
 
         return ResponseEntity.ok()
@@ -90,7 +90,7 @@ public class LoginV2Controller {
         log.debug("getUser()");
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        LawfirmToken userProfile = securityGroupService.getUserProfile(lawfirmToken.getUserEmail(), lawfirmToken.getToken(), true);
+        LawfirmToken userProfile = securityGroupService.getUserProfile(lawfirmToken.getClientFrom(), lawfirmToken.getUserEmail(), lawfirmToken.getToken(), true);
         log.info("Lawfirm connected {}", userProfile);
 
         return ResponseEntity
@@ -124,7 +124,7 @@ public class LoginV2Controller {
         log.debug("validateSignup({})", defaultLawfirmDTO);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        LawfirmToken userProfile = securityGroupService.getUserProfile(lawfirmToken.getUserEmail(), lawfirmToken.getToken(), true);
+        LawfirmToken userProfile = securityGroupService.getUserProfile(lawfirmToken.getClientFrom(), lawfirmToken.getUserEmail(), lawfirmToken.getToken(), true);
         log.info("Lawfirm connected {}", userProfile);
 
         // check if the new cab is different than the old

@@ -36,6 +36,7 @@ public class CalendarToEntityConverter implements SuperTriConverter<LawfirmCalen
         entity.setMicroText(event.getMicroText());
         entity.setAudioText(event.getAudioText());
         entity.setSpeechToTextActivated(event.isSpeechToTextActivated());
+        entity.setUrlRoom(event.getUrlRoom());
 
         return entity;
     }

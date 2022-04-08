@@ -76,18 +76,6 @@ public class LawfirmV2Controller {
         return lawfirmUserService.updateIsPublicLawfirmUser(lawfirmToken.getVcKey(), userId, isPublic);
     }
 
-    @PutMapping(value = "/user/{userId}/active")
-    @ApiIgnore
-    public LawfirmUserDTO updateIsActiveLawfirmUser(@PathVariable Long userId, @RequestBody String isActive) {
-        log.debug("updateIsActiveLawfirmUser with id {}", userId);
-        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-
-        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
-
-        return lawfirmUserService.updateIsActiveLawfirmUser(lawfirmToken.getVcKey(), userId, isActive);
-    }
-
-
     @GetMapping(value = "/users/list")
     public ResponseEntity<List<LawfirmDTO>> getLawfirmList(@RequestParam(required = false) Long userId) {
         log.debug("getLawfirmList()");
@@ -129,7 +117,7 @@ public class LawfirmV2Controller {
     @GetMapping
     @ApiIgnore
     public LawfirmDTO getLawfirmByName(@RequestParam String name) {
-        log.debug("getLawfirmList({})", name);
+        log.debug("getLawfirmByName({})", name);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());

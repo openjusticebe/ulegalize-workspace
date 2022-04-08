@@ -16,7 +16,7 @@ public class TTimesheetType implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(insertable = false, name = "id_ts", nullable = false)
+    @Column(columnDefinition = "SMALLINT", insertable = false, name = "id_ts", nullable = false)
     @Getter
     @Setter
     private Integer idTs;

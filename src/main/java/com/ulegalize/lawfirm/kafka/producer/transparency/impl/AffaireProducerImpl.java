@@ -34,7 +34,7 @@ public class AffaireProducerImpl implements IAffaireProducer {
                 KafkaObject<CaseCreationDTO> messageKafka = new KafkaObject<>(lawfirmToken, message);
                 kafkaTemplate.send(topicName, messageKafka);
 
-                log.info("All messages received createCaseMessage");
+                log.info("All messages received attachAffaire");
             } catch (Exception e) {
                 log.error("Error while createCaseMessage ", e);
             }

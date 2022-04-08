@@ -10,6 +10,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.Map;
 
 @Component
@@ -22,16 +23,18 @@ public class MailProducerImpl implements IMailProducer {
     private String activeProfile;
     @Value("${tpd.sendMail-topic-name}")
     private String topicName;
+    @Value("${tpd.sendEvent-topic-name}")
+    private String topicSendEventName;
 
     public MailProducerImpl(KafkaTemplate<String, Object> kafkaTemplate) {
         this.kafkaTemplate = kafkaTemplate;
     }
 
     @Override
-    public void sendEmail(String organizer, String location, ZonedDateTime start, ZonedDateTime end, EnumMailTemplate enumMailTemplate, EnumLanguage enumLanguage, String template, String subject, Map<String, Object> context, boolean roomAttached, boolean isModerator, String roomName) {
+    public void sendEvent(String eventId, String location, ZonedDateTime start, ZonedDateTime end, EnumMailTemplate enumMailTemplate, EnumLanguage enumLanguage, String template, String subject, Map<String, Object> context, boolean roomAttached, boolean isModerator, String urlRoom, List<String> attendeesEmail) {
         log.debug("Entering producer sendEmail enumLanguage {} and template {}", enumLanguage, template);
         if (!activeProfile.equalsIgnoreCase("integrationtest")
-                && !activeProfile.equalsIgnoreCase("dev")
+//                && !activeProfile.equalsIgnoreCase("dev")
                 && !activeProfile.equalsIgnoreCase("devDocker")) {
             try {
                 KafkaMailObject messageKafka = new KafkaMailObject();
@@ -40,13 +43,40 @@ public class MailProducerImpl implements IMailProducer {
                 messageKafka.setTemplate(template);
                 messageKafka.setSubject(subject);
                 messageKafka.setContext(context);
-                messageKafka.setOrganizer(organizer);
                 messageKafka.setLocation(location);
                 messageKafka.setStart(start);
                 messageKafka.setEnd(end);
                 messageKafka.setRoomAttached(roomAttached);
                 messageKafka.setIsModerator(isModerator);
-                messageKafka.setRoomName(roomName);
+                messageKafka.setUrlRoom(urlRoom);
+                messageKafka.setAttendeesEmail(attendeesEmail);
+                messageKafka.setEventId(eventId);
+
+                kafkaTemplate.send(topicSendEventName, messageKafka);
+
+                log.info("All messages received");
+            } catch (Exception e) {
+                log.error("Error while createFolders ", e);
+            }
+        }
+    }
+
+    @Override
+    public void sendEmail(String location, ZonedDateTime start, ZonedDateTime end, EnumMailTemplate enumMailTemplate, EnumLanguage enumLanguage, String template, String subject, Map<String, Object> context) {
+        log.debug("Entering producer sendEmail enumLanguage {} and template {}", enumLanguage, template);
+        if (!activeProfile.equalsIgnoreCase("integrationtest")
+//                && !activeProfile.equalsIgnoreCase("dev")
+                && !activeProfile.equalsIgnoreCase("devDocker")) {
+            try {
+                KafkaMailObject messageKafka = new KafkaMailObject();
+                messageKafka.setEnumMailTemplate(enumMailTemplate);
+                messageKafka.setEnumLanguage(enumLanguage);
+                messageKafka.setTemplate(template);
+                messageKafka.setSubject(subject);
+                messageKafka.setContext(context);
+                messageKafka.setLocation(location);
+                messageKafka.setStart(start);
+                messageKafka.setEnd(end);
 
                 kafkaTemplate.send(topicName, messageKafka);
 

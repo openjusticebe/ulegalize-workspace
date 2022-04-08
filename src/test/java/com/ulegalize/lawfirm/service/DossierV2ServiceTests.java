@@ -51,7 +51,7 @@ public class DossierV2ServiceTests extends EntityTest {
 
     @BeforeEach
     public void setupAuthenticate() {
-        lawfirm = createLawfirm();
+        lawfirm = createLawfirm("MYLAW");
         Long userId = lawfirm.getLawfirmUsers().get(0).getUser().getId();
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         String usermail = lawfirm.getLawfirmUsers().get(0).getUser().getEmail();
@@ -126,11 +126,11 @@ public class DossierV2ServiceTests extends EntityTest {
         String searchCriteria = String.valueOf(LocalDate.now().getYear());
         Long userId = lawfirm.getLawfirmUsers().get(0).getUser().getId();
         boolean searchArchived = false;
-        Page<DossierDTO> allAffaires = dossierV2Service.getAllAffaires(10, 0, userId, vcKey, List.of(EnumVCOwner.OWNER_VC), "", null, null, false, null, searchArchived);
+        Page<DossierDTO> allAffaires = dossierV2Service.getAllAffaires(10, 0, userId, vcKey, List.of(EnumVCOwner.OWNER_VC), "", null, null, false, null, searchArchived, null);
 
         assertNotNull(allAffaires);
         assertEquals(1, allAffaires.getTotalPages());
-        assertTrue(allAffaires.getContent().get(0).getBalance().equals(BigDecimal.ZERO.setScale(2)));
+        assertTrue(allAffaires.getContent().get(0).getBalance().setScale(2).equals(BigDecimal.ZERO.setScale(2)));
     }
 
     @Test
@@ -143,7 +143,7 @@ public class DossierV2ServiceTests extends EntityTest {
         String searchCriteria = String.valueOf(LocalDate.now().getYear());
         Long userId = lawfirm.getLawfirmUsers().get(0).getUser().getId();
         boolean searchArchived = false;
-        Page<DossierDTO> allAffaires = dossierV2Service.getAllAffaires(10, 0, userId, vcKey, List.of(EnumVCOwner.OWNER_VC), "", null, null, true, null, searchArchived);
+        Page<DossierDTO> allAffaires = dossierV2Service.getAllAffaires(10, 0, userId, vcKey, List.of(EnumVCOwner.OWNER_VC), "", null, null, true, null, searchArchived, null);
 
         assertNotNull(allAffaires);
         assertEquals(1, allAffaires.getTotalPages());

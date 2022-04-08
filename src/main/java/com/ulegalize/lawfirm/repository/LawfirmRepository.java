@@ -20,17 +20,17 @@ public interface LawfirmRepository extends CrudRepository<LawfirmEntity, String>
     @Query(value = "SELECT l from LawfirmEntity l where upper(l.vckey) = ?1")
     Optional<LawfirmEntity> findLawfirmByVckey(String vcKey);
 
-    @Query(value = "SELECT new com.ulegalize.dto.LawfirmDTO(   " + "l.vckey," + "l.name," + "l.alias,"
-            + "l.abbreviation," + "l.companyNumber," + "l.objetsocial," + "l.currency," + "l.website,"
-            + "l.couthoraire," + "l.startInvoiceNumber," + "l.street," + "l.city," + "l.postalCode,"
-            + "l.countryCode," + "l.email," + "l.phoneNumber," + "l.fax," + "l.notification," + "l.logo," + "l.driveType)"
+    @Query(value = "SELECT new com.ulegalize.dto.LawfirmDTO(   l.vckey,l.name,l.alias,"
+            + "l.abbreviation,l.companyNumber,l.objetsocial,l.currency,l.website,"
+            + "l.couthoraire,l.startInvoiceNumber,l.street,l.city,l.postalCode,"
+            + "l.countryCode,l.email,l.phoneNumber,l.fax,l.notification,l.logo,l.driveType)"
             + " from LawfirmEntity l where upper(l.vckey) = ?1")
     Optional<LawfirmDTO> findLawfirmDTOByVckey(String vcKey);
 
-    @Query(value = "SELECT new com.ulegalize.dto.LawfirmDTO(   " + "l.vckey," + "l.name," + "l.alias,"
-            + "l.abbreviation," + "l.companyNumber," + "l.objetsocial," + "l.currency," + "l.website,"
-            + "l.couthoraire," + "l.startInvoiceNumber," + "l.street," + "l.city," + "l.postalCode,"
-            + "l.countryCode," + "l.email," + "l.phoneNumber," + "l.fax," + "l.notification," + "l.logo," + "l.driveType)"
+    @Query(value = "SELECT new com.ulegalize.dto.LawfirmDTO(   l.vckey,l.name,l.alias,"
+            + "l.abbreviation,l.companyNumber,l.objetsocial,l.currency,l.website,"
+            + "l.couthoraire,l.startInvoiceNumber,l.street,l.city,l.postalCode,"
+            + "l.countryCode,l.email,l.phoneNumber,l.fax,l.notification,l.logo,l.driveType)"
             + " from LawfirmEntity l where upper(l.vckey) like concat('%', ?1, '%')")
     List<LawfirmDTO> searchLawfirmDTOByVckey(String vcKey);
 
@@ -39,6 +39,14 @@ public interface LawfirmRepository extends CrudRepository<LawfirmEntity, String>
 
     @Query(value = "SELECT l from LawfirmEntity l where l.licenseId = 1 and l.lawfirmWebsite.active = true")
     List<LawfirmEntity> findAllByLicenseId();
+
+    @Query(value = "SELECT distinct l from LawfirmEntity l " +
+            "join fetch l.lawfirmUsers lu " +
+            "join fetch lu.user " +
+            "left join fetch l.lawfirmWebsite " +
+            "where l.licenseId = 1 and l.temporaryVc= false " +
+            " order by l.date_upd desc")
+    List<LawfirmEntity> findAllByLicenseIdAndTemporaryVc();
 
     List<LawfirmEntity> findAll();
 

@@ -1,7 +1,10 @@
 package com.ulegalize.lawfirm.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ulegalize.enumeration.*;
+import com.ulegalize.enumeration.DriveType;
+import com.ulegalize.enumeration.EnumCalendarEventType;
+import com.ulegalize.enumeration.EnumLanguage;
+import com.ulegalize.enumeration.EnumRefCurrency;
 import com.ulegalize.lawfirm.EntityTest;
 import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.entity.LawfirmEntity;
@@ -52,7 +55,7 @@ public class LawfirmControllerTest extends EntityTest {
 
     @BeforeEach
     public void setupAuthenticate() {
-        lawfirm = createLawfirm();
+        lawfirm = createLawfirm("MYLAW");
         Long userId = lawfirm.getLawfirmUsers().get(0).getUser().getId();
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         String usermail = lawfirm.getLawfirmUsers().get(0).getUser().getEmail();
@@ -71,14 +74,6 @@ public class LawfirmControllerTest extends EntityTest {
                 .andExpect(status().isOk());
     }
 
-    @WithMockUser(value = "spring")
-    @Test
-    public void test_B_findLawfirmDossiers() throws Exception {
-        createDossier(lawfirm, EnumVCOwner.OWNER_VC);
-        mvc.perform(get("/lawfirm/" + lawfirm.getVckey() + "/dossiers")
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk());
-    }
 
     @WithMockUser(value = "spring")
     @Test

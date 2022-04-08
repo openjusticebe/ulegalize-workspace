@@ -1,10 +1,8 @@
 package com.ulegalize.lawfirm.service;
 
-import com.ulegalize.dto.ItemDto;
-import com.ulegalize.dto.ItemLongDto;
-import com.ulegalize.dto.ItemStringDto;
-import com.ulegalize.dto.ItemVatDTO;
+import com.ulegalize.dto.*;
 import com.ulegalize.enumeration.EnumAccountType;
+import com.ulegalize.enumeration.EnumLanguage;
 
 import java.util.List;
 
@@ -50,4 +48,6 @@ public interface SearchService {
     List<ItemVatDTO> getDefaultVatsByCountryCode(String countryCode);
 
     List<ItemStringDto> getDossierType();
+
+    List<ItemEventDto> getCalendarEventType(EnumLanguage enumLanguage);
 }

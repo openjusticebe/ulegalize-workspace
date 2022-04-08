@@ -24,7 +24,7 @@ public interface InvoiceService {
 
     InvoiceDTO updateInvoice(InvoiceDTO invoiceDTO, String vcKey);
 
-    List<PrestationSummary> getPrestationByDossierId(Long invoiceId, Long dossierId, Long userId, String vcKey);
+    List<PrestationSummary> getPrestationByDossierId(Long invoiceId, Long dossierId, Long userId, String vcKey, Boolean filterInvoicePrestation);
 
     Long countInvoiceDetailsByVat(BigDecimal vat);
 
@@ -36,9 +36,9 @@ public interface InvoiceService {
 
     InvoiceDTO totalInvoiceByDossierId(Long dossierId);
 
-    List<FraisAdminDTO> getFraisAdminByDossierId(Long invoiceId, Long dossierId, Long userId, String vcKey);
+    List<FraisAdminDTO> getFraisAdminByDossierId(Long invoiceId, Long dossierId, Long userId, String vcKey, Boolean filterInvoicePrestation);
 
-    List<ComptaDTO> getDeboursByDossierId(Long invoiceId, Long dossierId, Long userId, String vcKey);
+    List<ComptaDTO> getDeboursByDossierId(Long invoiceId, Long dossierId, Long userId, String vcKey, Boolean filterInvoicePrestation);
 
-    List<ComptaDTO> getFraisCollabByDossierId(Long invoiceId, Long dossierId, Long userId, String vcKey);
+    List<ComptaDTO> getFraisCollabByDossierId(Long invoiceId, Long dossierId, Long userId, String vcKey, Boolean filterInvoicePrestation);
 }

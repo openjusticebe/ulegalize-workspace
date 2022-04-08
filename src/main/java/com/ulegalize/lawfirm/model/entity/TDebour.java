@@ -19,7 +19,7 @@ public class TDebour implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(insertable = false, name = "id_debour", nullable = false)
+    @Column(columnDefinition = "INTEGER", insertable = false, name = "id_debour", nullable = false)
     @Getter
     @Setter
     private Long idDebour;
@@ -29,22 +29,22 @@ public class TDebour implements Serializable {
     @Setter
     private Long idDoss;
 
-    @Column(name = "id_debour_type", nullable = false)
+    @Column(columnDefinition = "SMALLINT", name = "id_debour_type", nullable = false)
     @Getter
     @Setter
     private Long idDebourType;
 
-    @Column(name = "unit", nullable = false)
+    @Column(columnDefinition = "SMALLINT", name = "unit", nullable = false)
     @Getter
     @Setter
     private Integer unit;
 
-    @Column(name = "price_per_unit", nullable = false)
+    @Column(columnDefinition = "DOUBLE", name = "price_per_unit", nullable = false)
     @Getter
     @Setter
     private BigDecimal pricePerUnit;
 
-    @Column(name = "id_mesure_type", nullable = false)
+    @Column(columnDefinition = "TINYINT", name = "id_mesure_type", nullable = false)
     @Getter
     @Setter
     private Integer idMesureType;

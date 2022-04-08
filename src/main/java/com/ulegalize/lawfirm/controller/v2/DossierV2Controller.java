@@ -82,7 +82,8 @@ public class DossierV2Controller {
                                                         @RequestParam(required = false) Long searchCriteriaNumber,
                                                         @RequestParam(required = false) String searchCriteriaInitiale,
                                                         @RequestParam(required = false) Boolean searchCriteriaBalance,
-                                                        @RequestParam(required = false) Boolean searchArchived) {
+                                                        @RequestParam(required = false) Boolean searchArchived,
+                                                        @RequestParam(required = false) Boolean sortOpenDate) {
         log.debug("getAffaires(offset: {} , limit {}", offset, limit);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
@@ -96,7 +97,7 @@ public class DossierV2Controller {
         }
         return responseBuilder
                 .body(dossierV2Service.getAllAffaires(limit, offset, lawfirmToken.getUserId(), lawfirmToken.getVcKey(), List.of(EnumVCOwner.OWNER_VC, EnumVCOwner.NOT_OWNER_VC),
-                        searchCriteriaClient, searchCriteriaYear, searchCriteriaNumber, searchCriteriaBalance, searchCriteriaInitiale, searchArchived));
+                        searchCriteriaClient, searchCriteriaYear, searchCriteriaNumber, searchCriteriaBalance, searchCriteriaInitiale, searchArchived, sortOpenDate));
     }
 
     @GetMapping(value = "/shared/list")
@@ -118,7 +119,7 @@ public class DossierV2Controller {
                     .cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS));
         }
         return responseBuilder
-                .body(dossierV2Service.getAllAffaires(limit, offset, lawfirmToken.getUserId(), lawfirmToken.getVcKey(), List.of(EnumVCOwner.NOT_SAME_VC), searchCriteriaClient, searchCriteriaYear, searchCriteriaNumber, null, null, searchArchived));
+                .body(dossierV2Service.getAllAffaires(limit, offset, lawfirmToken.getUserId(), lawfirmToken.getVcKey(), List.of(EnumVCOwner.NOT_SAME_VC), searchCriteriaClient, searchCriteriaYear, searchCriteriaNumber, null, null, searchArchived, null));
     }
 
     @GetMapping

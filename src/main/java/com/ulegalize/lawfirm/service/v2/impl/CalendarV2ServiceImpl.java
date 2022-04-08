@@ -20,12 +20,12 @@ import com.ulegalize.lawfirm.model.entity.*;
 import com.ulegalize.lawfirm.repository.*;
 import com.ulegalize.lawfirm.service.MailService;
 import com.ulegalize.lawfirm.service.v2.CalendarV2Service;
+import com.ulegalize.lawfirm.service.validator.CalendarValidator;
 import com.ulegalize.lawfirm.utils.CalendarEventsUtil;
 import com.ulegalize.lawfirm.utils.DriveUtils;
 import com.ulegalize.lawfirm.utils.EmailUtils;
 import com.ulegalize.mail.transparency.EnumMailTemplate;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -67,6 +67,7 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
     private final EntityToCalendarConverter entityToCalendarConverter;
     private final CalendarToEntityConverter calendarToEntityConverter;
     private final MailService mailService;
+    private final CalendarValidator calendarValidator;
 
     public CalendarV2ServiceImpl(CalendarEventRepository calendarEventRepository,
                                  LawfirmUserRepository lawfirmUserRepository,
@@ -76,7 +77,7 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
                                  LawfirmRepository lawfirmRepository,
                                  ICaseProducer caseProducer,
                                  IPaymentProducer paymentProducer, DossierRepository dossierRepository,
-                                 CalendarToEntityConverter calendarToEntityConverter, MailService mailService) {
+                                 CalendarToEntityConverter calendarToEntityConverter, MailService mailService, CalendarValidator calendarValidator) {
         this.calendarEventRepository = calendarEventRepository;
         this.lawfirmUserRepository = lawfirmUserRepository;
         this.entityToCalendarConverter = entityToCalendarConverter;
@@ -88,6 +89,7 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
         this.dossierRepository = dossierRepository;
         this.calendarToEntityConverter = calendarToEntityConverter;
         this.mailService = mailService;
+        this.calendarValidator = calendarValidator;
     }
 
 
@@ -106,12 +108,19 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
                 return new ArrayList<>();
             }
         }
+
         List<EnumCalendarEventType> enumCalendarEventTypeList = eventTypesSelected.stream().map(EnumCalendarEventType::fromCode).collect(Collectors.toList());
         // start date and end date must be midnight in order to have all day
+
+        Optional<TUsers> tUsersOptional = userRepository.findById(userId);
+        if (tUsersOptional.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User does not exist");
+        }
+
         if (dossierId != null) {
-            calEvents = calendarEventRepository.findCalendarEventsByUserIdAndDateAndDossierId(userId, dossierId, lawfirmToken.getVcKey(), start, end, enumCalendarEventTypeList);
+            calEvents = calendarEventRepository.findCalendarEventsByUserIdAndDateAndDossierId(userId, dossierId, lawfirmToken.getVcKey(), start, end, enumCalendarEventTypeList, tUsersOptional.get().getEmail());
         } else {
-            calEvents = calendarEventRepository.findCalendarEventsByUserIdAndDate(userId, lawfirmToken.getVcKey(), start, end, enumCalendarEventTypeList);
+            calEvents = calendarEventRepository.findCalendarEventsByUserIdAndDate(userId, lawfirmToken.getVcKey(), start, end, enumCalendarEventTypeList, tUsersOptional.get().getEmail());
         }
         log.debug("Found {} events ", calEvents.size());
 
@@ -128,83 +137,71 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Lawfirm with key: {" + lawfirmToken.getVcKey() + "} not found.");
         }
 
-        Optional<TCalendarEvent> eventEntityOptional = calendarEventRepository.findById(eventId);
-        if (eventEntityOptional.isEmpty()) {
+        Optional<TCalendarEvent> optionalTCalendarEvent = calendarEventRepository.findById(eventId);
+        if (optionalTCalendarEvent.isEmpty()) {
             log.warn("Event id {} not found ", eventId);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Event not found");
         }
 
-        if (CollectionUtils.isEmpty(eventEntityOptional.get().getTCalendarParticipants())) {
+        if (CollectionUtils.isEmpty(optionalTCalendarEvent.get().getTCalendarParticipants())) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Client email not found ");
         }
 
-        if (eventEntityOptional.get().getTUsers() == null && eventEntityOptional.get().getVcKey() == null) {
-            log.warn("event {} user nor vckey found ", eventEntityOptional.get().getId());
+        if (optionalTCalendarEvent.get().getTUsers() == null && optionalTCalendarEvent.get().getVcKey() == null) {
+            log.warn("event {} user nor vckey found ", optionalTCalendarEvent.get().getId());
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "event {} user nor vckey found");
         }
 
         // remove permanence at this date and for this user
-        Long userId = eventEntityOptional.get().getTUsers() != null ? eventEntityOptional.get().getTUsers().getId() : null;
+        Long userId = optionalTCalendarEvent.get().getTUsers() != null ? optionalTCalendarEvent.get().getTUsers().getId() : null;
 
-        log.debug("remove the PERM for the event from {} to {} for user id {}", eventEntityOptional.get().getStart(), eventEntityOptional.get().getEnd(), userId);
-        List<TCalendarEvent> calendarEventList = calendarEventRepository.getCalendarEventByStartEndUserIdType(eventEntityOptional.get().getStart(), eventEntityOptional.get().getEnd(), userId, EnumCalendarEventType.PERM);
+        log.debug("remove the PERM for the event from {} to {} for user id {}", optionalTCalendarEvent.get().getStart(), optionalTCalendarEvent.get().getEnd(), userId);
+        List<TCalendarEvent> calendarEventList = calendarEventRepository.getCalendarEventByStartEndUserIdType(optionalTCalendarEvent.get().getStart(), optionalTCalendarEvent.get().getEnd(), userId, EnumCalendarEventType.PERM);
         // remove the first
         if (calendarEventList != null && !calendarEventList.isEmpty()) {
             log.info("calendar event to remove id {}", calendarEventList.stream().map(TCalendarEvent::getId).collect(Collectors.toList()));
             calendarEventRepository.deleteAll(calendarEventList);
         }
 
-        TCalendarEvent eventEntity = eventEntityOptional.get();
+        TCalendarEvent calendarEvent = optionalTCalendarEvent.get();
 
-        eventEntity.setApproved(true);
-        eventEntity.setUpdateDate(new Date());
-        eventEntity.setUpdateUser(lawfirmToken.getUsername());
+        calendarEvent.setApproved(true);
+        calendarEvent.setUpdateDate(new Date());
+        calendarEvent.setUpdateUser(lawfirmToken.getUsername());
 
-        TCalendarEvent savedEvent = calendarEventRepository.save(eventEntity);
+        TCalendarEvent savedEvent = calendarEventRepository.save(calendarEvent);
 
         LawfirmUsers lawyer = lawfirm.get().getLawfirmUsers().stream()
-                .filter(user -> eventEntity.getTUsers() != null && user.getUser().getId().equals(eventEntity.getTUsers().getId()))
+                .filter(user -> calendarEvent.getTUsers() != null && user.getUser().getId().equals(calendarEvent.getTUsers().getId()))
                 .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Error while filtering user"));
 
         LawfirmCalendarEventDTO lawfirmCalendarEventDTO = entityToCalendarConverter.apply(savedEvent, lawfirmToken.getLanguage());
         if (!activeProfile.equalsIgnoreCase("integrationtest")) {
 
-            // create cas juridique
-            createCasLawfirm(lawfirmCalendarEventDTO, lawfirmToken);
-
             String language = lawyer.getUser().getLanguage() != null ? lawyer.getUser().getLanguage().toLowerCase() : EnumLanguage.FR.getShortCode();
 
             // mail to jitsi mediator (visio)
             String emailTo;
-            if (eventEntityOptional.get().getTUsers() != null) {
-                emailTo = eventEntityOptional.get().getTUsers().getEmail();
+            if (savedEvent.getTUsers() != null) {
+                emailTo = savedEvent.getTUsers().getEmail();
             } else {
                 Optional<LawfirmDTO> lawfirmDTOOptional = lawfirmRepository.findLawfirmDTOByVckey(savedEvent.getVcKey());
 
                 emailTo = lawfirmDTOOptional.get().getEmail();
             }
+
+            List<String> attendeesEmailTmp = savedEvent.getTCalendarParticipants().stream().map(TCalendarParticipants::getUserEmail).distinct().collect(Collectors.toList());
+            attendeesEmailTmp.add(emailTo);
+            List<String> attendeesEmail = attendeesEmailTmp.stream().distinct().collect(Collectors.toList());
+
             // mail to jitsi mediator (visio)
-            mailService.sendMail(EnumMailTemplate.MAILAPPOINTMENTCONFIRMEDTEMPLATE,
+            mailService.sendEvent(String.valueOf(savedEvent.getId()), EnumMailTemplate.MAILAPPOINTMENTCONFIRMEDTEMPLATE,
                     EmailUtils.prepareContextForAppointmentConfirmedEmail(language, emailTo, savedEvent, lawyer, portalUrl, lawfirmToken.getClientFrom()),
                     language,
                     CalendarEventsUtil.convertToZoneDateTimeViaInstant(savedEvent.getStart()),
                     CalendarEventsUtil.convertToZoneDateTimeViaInstant(savedEvent.getEnd())
-                    , true, true, eventEntity.getRoomName());
-
-            for (TCalendarParticipants tCalendarParticipant : eventEntityOptional.get().getTCalendarParticipants()) {
-                // mail to jitsi mediator (visio)
-                if (!emailTo.equalsIgnoreCase(tCalendarParticipant.getUserEmail())) {
-                    // mail to contact
-                    mailService.sendMail(EnumMailTemplate.MAILAPPOINTMENTCONFIRMEDTEMPLATE,
-                            EmailUtils.prepareContextForAppointmentConfirmedEmail(language, tCalendarParticipant.getUserEmail(), savedEvent, lawyer, portalUrl, lawfirmToken.getClientFrom()),
-                            language,
-                            CalendarEventsUtil.convertToZoneDateTimeViaInstant(savedEvent.getStart()),
-                            CalendarEventsUtil.convertToZoneDateTimeViaInstant(savedEvent.getEnd())
-                            , true, false, eventEntity.getRoomName());
-                }
-
-            }
+                    , true, true, savedEvent.getUrlRoom(), attendeesEmail);
 
         }
         return lawfirmCalendarEventDTO;
@@ -216,7 +213,8 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         // BR when creating
-        commonRuleEvent(calendarEvent);
+
+        calendarValidator.validate(calendarEvent);
 
         createOrUpdateCalendarEvent(calendarEvent, lawfirmToken.getVcKey());
     }
@@ -232,8 +230,11 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Event not found");
         }
 
+        if (eventEntityOptional.get().getEventType() != calendarEvent.getEventType()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Type of event does not match");
+        }
         // BR when updating
-        commonRuleEvent(calendarEvent);
+        calendarValidator.validate(calendarEvent);
 
         createOrUpdateCalendarEvent(calendarEvent, lawfirmToken.getVcKey());
     }
@@ -397,30 +398,6 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
     }
 
     /**
-     * common rules for updatinf and creating an event
-     *
-     * @param calendarEvent
-     */
-    private void commonRuleEvent(LawfirmCalendarEventDTO calendarEvent) {
-        if (calendarEvent.getStart() == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "start date cannot be empty");
-        }
-
-        if (calendarEvent.getEventType() == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Event type cannot be before start date");
-        }
-
-        if (!calendarEvent.getEventType().equals(EnumCalendarEventType.TASK)) {
-            if (calendarEvent.getEnd() == null) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "end date cannot be empty");
-            }
-            if (calendarEvent.getEnd().before(calendarEvent.getStart())) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "End date cannot be before start date");
-            }
-        }
-    }
-
-    /**
      * create or update a calendar event
      *
      * @param calendarEvent
@@ -508,76 +485,67 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
      * @param vcKey
      * @param startDate
      * @param endDate
-     * @param calendarEvent
+     * @param lawfirmCalendarEventDTO
      * @param approved
      * @param clientFrom
      */
-    private void createEvent(String username, String language, String vcKey, ZonedDateTime startDate, ZonedDateTime endDate, LawfirmCalendarEventDTO calendarEvent, boolean approved, String clientFrom) {
-        log.debug("Entering createEvent String username {}, LocalDateTime startDate {}, LocalDateTime endDate {}, LawfirmCalendarEvent calendarEvent {}, boolean approved {}", username, startDate, endDate, calendarEvent, approved);
+    private void createEvent(String username, String language, String vcKey, ZonedDateTime startDate, ZonedDateTime endDate, LawfirmCalendarEventDTO lawfirmCalendarEventDTO, boolean approved, String clientFrom) {
+        log.debug("Entering createEvent String username {}, LocalDateTime startDate {}, LocalDateTime endDate {}, LawfirmCalendarEvent lawfirmCalendarEventDTO {}, boolean approved {}", username, startDate, endDate, lawfirmCalendarEventDTO, approved);
 
         // recalculate the start and end date
-        calendarEvent.setStart(CalendarEventsUtil.convertToDateViaInstant(startDate));
+        lawfirmCalendarEventDTO.setStart(CalendarEventsUtil.convertToDateViaInstant(startDate));
 
         if (endDate != null) {
-            calendarEvent.setEnd(CalendarEventsUtil.convertToDateViaInstant(endDate));
+            lawfirmCalendarEventDTO.setEnd(CalendarEventsUtil.convertToDateViaInstant(endDate));
         } else {
-            calendarEvent.setEnd(CalendarEventsUtil.convertToDateViaInstant(startDate));
+            lawfirmCalendarEventDTO.setEnd(CalendarEventsUtil.convertToDateViaInstant(startDate));
 
         }
-        TCalendarEvent entity = null;
+        TCalendarEvent calendarEvent = null;
 
         boolean calendarCreated = false;
-        if (calendarEvent.getId() != null) {
-            Optional<TCalendarEvent> tCalendarEvent = calendarEventRepository.findById(calendarEvent.getId());
+        if (lawfirmCalendarEventDTO.getId() != null) {
+            Optional<TCalendarEvent> tCalendarEvent = calendarEventRepository.findById(lawfirmCalendarEventDTO.getId());
             if (tCalendarEvent.isPresent()) {
                 log.debug("calendar {} is present", tCalendarEvent.get().getId());
-                entity = calendarToEntityConverter.apply(calendarEvent, tCalendarEvent.get());
+                calendarEvent = calendarToEntityConverter.apply(lawfirmCalendarEventDTO, tCalendarEvent.get());
                 calendarCreated = true;
             }
         }
 
         if (!calendarCreated) {
             log.debug("calendar new event");
-            entity = calendarToEntityConverter.apply(calendarEvent, new TCalendarEvent());
+            calendarEvent = calendarToEntityConverter.apply(lawfirmCalendarEventDTO, new TCalendarEvent());
 
-            entity.setCreationUser(username);
+            calendarEvent.setCreationUser(username);
         }
 
-        if (calendarEvent.getDossierId() != null) {
-            Optional<TDossiers> dossiersOptional = dossierRepository.findById(calendarEvent.getDossierId());
-            dossiersOptional.ifPresent(entity::setDossier);
+        if (lawfirmCalendarEventDTO.getDossierId() != null) {
+            Optional<TDossiers> dossiersOptional = dossierRepository.findById(lawfirmCalendarEventDTO.getDossierId());
+            dossiersOptional.ifPresent(calendarEvent::setDossier);
         }
 
-        if (calendarEvent.getUserId() != null && calendarEvent.getUserId() != 0) {
-            Optional<TUsers> usersOptional = userRepository.findById(calendarEvent.getUserId());
-            usersOptional.ifPresent(entity::setTUsers);
+        if (lawfirmCalendarEventDTO.getUserId() != null && lawfirmCalendarEventDTO.getUserId() != 0) {
+            Optional<TUsers> usersOptional = userRepository.findById(lawfirmCalendarEventDTO.getUserId());
+            usersOptional.ifPresent(calendarEvent::setTUsers);
         } else {
             // if it's empty create for vkey
-            entity.setVcKey(vcKey);
+            calendarEvent.setVcKey(vcKey);
         }
-        entity.setNote(calendarEvent.getNote());
-        entity.setUpdateUser(username);
-        entity.setApproved(approved); //all events created here are obviously approved
+        calendarEvent.setNote(lawfirmCalendarEventDTO.getNote());
+        calendarEvent.setUpdateUser(username);
+        calendarEvent.setApproved(approved); //all events created here are obviously approved
 
         if (!calendarCreated) {
-            log.debug("Room name starting");
+            log.debug("url room generated {} ", lawfirmCalendarEventDTO.getUrlRoom());
 
-            String roomName = entity.getTUsers() != null ? String.valueOf(entity.getTUsers().getId()) : entity.getVcKey();
-
-            // if iit's null generate a room at random
-            if (roomName == null) {
-                log.debug("room generated automatically ");
-                roomName = RandomStringUtils.randomAlphabetic(8);
-            }
-            log.debug("room name generated {} ", roomName);
-
-            entity.setRoomName(roomName);
+            calendarEvent.setUrlRoom(lawfirmCalendarEventDTO.getUrlRoom());
         }
 
         log.debug("Calendar Participants starting");
 
         // remove duplicate email
-        List<String> participantEmailList = calendarEvent.getParticipantsEmail() != null ? calendarEvent.getParticipantsEmail().stream()
+        List<String> participantEmailList = lawfirmCalendarEventDTO.getParticipantsEmail() != null ? lawfirmCalendarEventDTO.getParticipantsEmail().stream()
                 .distinct()
                 .collect(Collectors.toList()) : new ArrayList<>();
 
@@ -587,8 +555,8 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
         List<String> emailRemoved = new ArrayList<>();
 
         // First in the DB list
-        if (!CollectionUtils.isEmpty(entity.getTCalendarParticipants())) {
-            for (TCalendarParticipants calendarParticipants : entity.getTCalendarParticipants()) {
+        if (!CollectionUtils.isEmpty(calendarEvent.getTCalendarParticipants())) {
+            for (TCalendarParticipants calendarParticipants : calendarEvent.getTCalendarParticipants()) {
                 // list from UI (user selected)
                 boolean participantFoundInUI = participantEmailList.stream().anyMatch(email -> email.equalsIgnoreCase(calendarParticipants.getUserEmail()));
 
@@ -599,8 +567,8 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
                     emailRemoved.add(calendarParticipants.getUserEmail());
                 }
             }
-        } else if (entity.getTCalendarParticipants() == null) {
-            entity.setTCalendarParticipants(new ArrayList<>());
+        } else if (calendarEvent.getTCalendarParticipants() == null) {
+            calendarEvent.setTCalendarParticipants(new ArrayList<>());
         }
 
         // added cancel
@@ -610,7 +578,7 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
         if (!participantEmailList.isEmpty()) {
             for (String email : participantEmailList) {
                 // list from UI (user selected)
-                boolean participantFoundInDb = entity.getTCalendarParticipants() != null && entity.getTCalendarParticipants().stream().anyMatch(tCalendarParticipants -> tCalendarParticipants.getUserEmail().equalsIgnoreCase(email));
+                boolean participantFoundInDb = calendarEvent.getTCalendarParticipants() != null && calendarEvent.getTCalendarParticipants().stream().anyMatch(tCalendarParticipants -> tCalendarParticipants.getUserEmail().equalsIgnoreCase(email));
 
                 log.debug("Participant email {} is found in db {}", email, participantFoundInDb);
                 // if email is not found in db , it's a new one
@@ -621,31 +589,31 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
         }
 
         if (!participantEmailList.isEmpty()) {
-            List<TCalendarParticipants> participantsList = entity.getTCalendarParticipants();
+            List<TCalendarParticipants> participantsList = calendarEvent.getTCalendarParticipants();
             for (String email : emailAdded) {
                 TCalendarParticipants tCalendarParticipants = new TCalendarParticipants();
-                tCalendarParticipants.setTCalendarEvent(entity);
+                tCalendarParticipants.setTCalendarEvent(calendarEvent);
                 tCalendarParticipants.setUserEmail(email);
                 tCalendarParticipants.setCreUser(username);
 
                 participantsList.add(tCalendarParticipants);
             }
-            entity.getTCalendarParticipants().addAll(participantsList);
+            calendarEvent.getTCalendarParticipants().addAll(participantsList);
 
             for (String email : emailRemoved) {
-                List<TCalendarParticipants> tCalendarParticipantsToRemoved = entity.getTCalendarParticipants().stream()
+                List<TCalendarParticipants> tCalendarParticipantsToRemoved = calendarEvent.getTCalendarParticipants().stream()
                         .filter(cal -> cal.getUserEmail().equalsIgnoreCase(email))
                         .collect(Collectors.toList());
 
-                entity.getTCalendarParticipants().removeAll(tCalendarParticipantsToRemoved);
+                calendarEvent.getTCalendarParticipants().removeAll(tCalendarParticipantsToRemoved);
             }
         } else {
-            entity.getTCalendarParticipants().clear();
+            calendarEvent.getTCalendarParticipants().clear();
         }
 
-        TCalendarEvent savedEvent = calendarEventRepository.save(entity);
+        TCalendarEvent savedEvent = calendarEventRepository.save(calendarEvent);
 
-        calendarEvent.setId(savedEvent.getId());
+        lawfirmCalendarEventDTO.setId(savedEvent.getId());
 
         // send email cancellation and enroll email
         log.debug("Send email cancellation and enroll email");
@@ -654,70 +622,36 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
         String emailContact = "";
         String phoneContact = "";
 
-        if (savedEvent.getVcKey() != null && !savedEvent.getVcKey().isEmpty()) {
+
+        if (savedEvent.getTUsers() != null) {
+            emailContact = savedEvent.getTUsers().getEmail();
+        } else {
             log.debug("Vc key {} contact person", savedEvent.getVcKey());
             Optional<LawfirmDTO> lawfirmDTOOptional = lawfirmRepository.findLawfirmDTOByVckey(savedEvent.getVcKey());
             if (lawfirmDTOOptional.isPresent()) {
                 emailContact = lawfirmDTOOptional.get().getEmail();
                 phoneContact = lawfirmDTOOptional.get().getPhoneNumber();
             }
-        } else {
-            emailContact = savedEvent.getTUsers().getEmail();
         }
 
-        boolean roomAttached = calendarEvent.getEventType().equals(EnumCalendarEventType.RDV);
+        // send event to all participants and NOT rdv because the notification will be sent once the event is approved/confirmed
+        if (!participantEmailList.isEmpty() && !savedEvent.getEventType().equals(EnumCalendarEventType.RDV)) {
+            log.debug("email into list {} and email responsable {}", participantEmailList, emailContact);
+            List<String> attendeesEmailTmp = participantEmailList.stream().distinct().collect(Collectors.toList());
+            attendeesEmailTmp.add(emailContact);
+            List<String> attendeesEmail = attendeesEmailTmp.stream().distinct().collect(Collectors.toList());
 
-//        // send notification to the lawyer
-        mailService.sendMail(EnumMailTemplate.MAILAPPOINTMENT_ADDED_NOTIFICATION,
-                EmailUtils.prepareContextNotificationEmail(language, savedEvent, CalendarEventsUtil.convertToDateViaInstant(startDate), CalendarEventsUtil.convertToDateViaInstant(endDate), emailContact, phoneContact, portalUrl, emailContact, clientFrom),
-                language,
-                startDate,
-                endDate, roomAttached, true, savedEvent.getRoomName());
-
-        // the rest except of the list lawyer
-        // if no added and no removed
-        if (!participantEmailList.isEmpty()) {
-            log.debug("email into list {}", participantEmailList);
-            List<String> emailToRemove = new ArrayList<>(emailAdded);
-            emailToRemove.addAll(emailRemoved);
-            participantEmailList.removeAll(emailToRemove);
-            log.debug("email list after removed emailAdded and removed, it remains {}", participantEmailList);
-
-            if (!participantEmailList.isEmpty()) {
-                for (String email : participantEmailList) {
-                    if (!email.equalsIgnoreCase(emailContact)) {
-                        // email in the list but not added or removed
-                        log.info("email in the list but not added or removed {}", email);
-                        mailService.sendMail(EnumMailTemplate.MAILAPPOINTMENT_ADDED_NOTIFICATION,
-                                EmailUtils.prepareContextNotificationEmail(language, savedEvent, CalendarEventsUtil.convertToDateViaInstant(startDate), CalendarEventsUtil.convertToDateViaInstant(endDate), emailContact, phoneContact, portalUrl, email, clientFrom),
-                                language,
-                                startDate,
-                                endDate, roomAttached, false, savedEvent.getRoomName());
-                    }
-
-                }
-            }
-        }
-
-
-        for (String email : emailAdded) {
-            // send notification to the participants
-            mailService.sendMail(EnumMailTemplate.MAILAPPOINTMENT_ADDED_NOTIFICATION,
-                    EmailUtils.prepareContextNotificationEmail(language, savedEvent, CalendarEventsUtil.convertToDateViaInstant(startDate), CalendarEventsUtil.convertToDateViaInstant(endDate), emailContact, phoneContact, portalUrl, email, clientFrom),
+            // mail to jitsi mediator (visio)
+            mailService.sendEvent(String.valueOf(savedEvent.getId()),
+                    EnumMailTemplate.MAILAPPOINTMENT_ADDED_NOTIFICATION,
+                    EmailUtils.prepareContextNotificationEmail(language, savedEvent, CalendarEventsUtil.convertToDateViaInstant(startDate), CalendarEventsUtil.convertToDateViaInstant(endDate), emailContact, phoneContact, portalUrl, "", clientFrom),
                     language,
-                    startDate,
-                    endDate, roomAttached, false, savedEvent.getRoomName());
-        }
-        log.debug("start Notification cancel email {}", emailRemoved);
+                    CalendarEventsUtil.convertToZoneDateTimeViaInstant(savedEvent.getStart()),
+                    CalendarEventsUtil.convertToZoneDateTimeViaInstant(savedEvent.getEnd())
+                    , lawfirmCalendarEventDTO.isRoomAttached(), true, calendarEvent.getUrlRoom(), attendeesEmail);
 
-        for (String email : emailRemoved) {
-            // send notification to the participants
-            mailService.sendMailWithoutMeeting(EnumMailTemplate.MAILAPPOINTMENT_CANCEL_NOTIFICATION,
-                    EmailUtils.prepareContextNotificationEmail(language, savedEvent, CalendarEventsUtil.convertToDateViaInstant(startDate), CalendarEventsUtil.convertToDateViaInstant(endDate), emailContact, phoneContact, portalUrl, email, clientFrom),
-                    language,
-                    startDate,
-                    endDate);
         }
+
         log.info("End Notification");
 
     }

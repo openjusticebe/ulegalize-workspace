@@ -39,6 +39,7 @@ public class EntityToUserConverter implements SuperTriConverter<TUsers, Boolean,
         lawyer.setValid(entity.getValid());
         lawyer.setIdUser(entity.getIdUser());
         lawyer.setNotification(entity.getNotification());
+        lawyer.setLanguage(entity.getLanguage());
 
         if (wihtCalendarEvents) {
             List<TCalendarEvent> events = calendarEventRepository.findCalendarEventsByUserId(entity.getId());

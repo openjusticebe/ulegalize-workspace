@@ -104,7 +104,7 @@ public class ComptaServiceImpl implements ComptaService {
     }
 
     @Override
-    public Page<ComptaDTO> getAllCompta(int limit, int offset, String vcKey, String searchCriteriaClient, String searchCriteriaYear, Long searchCriteriaNumber, String searchCriteriaPoste) {
+    public Page<ComptaDTO> getAllCompta(int limit, int offset, String vcKey, String searchCriteriaClient, String searchCriteriaYear, Long searchCriteriaNumber, String searchCriteriaPoste, Integer typeId, Integer searchCriteriaCompte) {
         log.debug("Get all Compta with user {} limit {} and offset {}", vcKey, limit, offset);
 
         Sort.Order order = new Sort.Order(Sort.Direction.DESC, "id_frais");
@@ -113,8 +113,10 @@ public class ComptaServiceImpl implements ComptaService {
         String year = searchCriteriaYear != null ? searchCriteriaYear : "";
         String client = searchCriteriaClient != null && !searchCriteriaClient.isEmpty() ? searchCriteriaClient : "";
         String poste = searchCriteriaPoste != null && !searchCriteriaPoste.isEmpty() ? searchCriteriaPoste : "%";
+        String typeCompta = typeId != null ? String.valueOf(typeId) : "%";
+        String compte = searchCriteriaCompte != null ? String.valueOf(searchCriteriaCompte) : "%";
 
-        Page<TFrais> allCompta = tFraisRepository.findAllWithPagination(vcKey, client, year, searchCriteriaNumber, poste, pageable);
+        Page<TFrais> allCompta = tFraisRepository.findAllWithPagination(vcKey, client, year, searchCriteriaNumber, poste, typeCompta, compte, pageable);
 
         List<ComptaDTO> comptaDTOList = entityToComptaDTOConverter.convertToList(allCompta.getContent());
 

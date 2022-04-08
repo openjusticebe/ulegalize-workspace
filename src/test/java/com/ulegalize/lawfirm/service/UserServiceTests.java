@@ -26,7 +26,7 @@ public class UserServiceTests extends EntityTest {
     @Test
     public void test_A_changeLanguage() {
 
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
 
         TUsers user = lawfirm.getLawfirmUsers().get(0).getUser();
         assertNotEquals(user.getLanguage(), EnumLanguage.EN.getShortCode());
@@ -40,7 +40,7 @@ public class UserServiceTests extends EntityTest {
     @Test
     public void test_B_createUser() {
 
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
 
         TUsers user = lawfirm.getLawfirmUsers().get(0).getUser();
         assertNotEquals(user.getLanguage(), EnumLanguage.EN.getShortCode());
@@ -57,7 +57,7 @@ public class UserServiceTests extends EntityTest {
     @Test
     public void test_C_createUser_fullname() {
 
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
 
         TUsers user = lawfirm.getLawfirmUsers().get(0).getUser();
         assertNotEquals(user.getLanguage(), EnumLanguage.EN.getShortCode());

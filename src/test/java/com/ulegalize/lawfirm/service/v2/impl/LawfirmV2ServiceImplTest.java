@@ -39,7 +39,7 @@ public class LawfirmV2ServiceImplTest extends EntityTest {
 
     @Test
     public void test_A_deleteTempVcKey() throws Exception {
-        lawfirm = createLawfirm();
+        lawfirm = createLawfirm("MYLAW");
         Long userId = lawfirm.getLawfirmUsers().get(0).getUser().getId();
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         String usermail = lawfirm.getLawfirmUsers().get(0).getUser().getEmail();
@@ -61,7 +61,7 @@ public class LawfirmV2ServiceImplTest extends EntityTest {
 
     @Test
     public void test_B_getLawfirmInfoByVcKey() throws Exception {
-        lawfirm = createLawfirm();
+        lawfirm = createLawfirm("MYLAW");
         Long userId = lawfirm.getLawfirmUsers().get(0).getUser().getId();
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         String usermail = lawfirm.getLawfirmUsers().get(0).getUser().getEmail();

@@ -41,7 +41,7 @@ public class InvoiceServiceTests extends EntityTest {
     @Test
     public void test_A_getInvoicesBySearchCriteria_ByYearfacture_2020_founded() {
 
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TFactures tFactures = createFacture(lawfirm);
         String searchCriteria = String.valueOf(LocalDate.now().getYear());
         List<ItemLongDto> itemLongDtoList = invoiceService
@@ -57,7 +57,7 @@ public class InvoiceServiceTests extends EntityTest {
     @Test
     public void test_B_createInvoice() {
 
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
 
         String email = "my@gmail.com";
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
@@ -124,7 +124,7 @@ public class InvoiceServiceTests extends EntityTest {
     @Test
     public void test_B2_createInvoice() {
 
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
 
         String email = "my@gmail.com";
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
@@ -221,7 +221,7 @@ public class InvoiceServiceTests extends EntityTest {
     @Test
     public void test_B3_createInvoice_forbidden() {
 
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
 
         String email = "my@gmail.com";
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
@@ -309,7 +309,7 @@ public class InvoiceServiceTests extends EntityTest {
 
     @Test
     public void test_C_updateInvoice_frais_notlink_exception() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
 
         String email = "my@gmail.com";
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
@@ -337,7 +337,7 @@ public class InvoiceServiceTests extends EntityTest {
 
     @Test
     public void test_D_updateInvoice() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
 
         String email = "my@gmail.com";
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
@@ -369,7 +369,7 @@ public class InvoiceServiceTests extends EntityTest {
     public void test_E_deleteInvoiceById() {
 
         String email = "my@gmail.com";
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
 
@@ -392,7 +392,7 @@ public class InvoiceServiceTests extends EntityTest {
     public void test_F_getPrestationByDossierId() {
 
         String email = "my@gmail.com";
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
 
@@ -402,7 +402,7 @@ public class InvoiceServiceTests extends EntityTest {
 
         TFactures tFactures = createFacture(lawfirm);
 
-        List<PrestationSummary> entityList = invoiceService.getPrestationByDossierId(tFactures.getIdFacture(), tFactures.getIdDoss(), lawfirm.getLawfirmUsers().get(0).getUser().getId(), lawfirm.getVckey());
+        List<PrestationSummary> entityList = invoiceService.getPrestationByDossierId(tFactures.getIdFacture(), tFactures.getIdDoss(), lawfirm.getLawfirmUsers().get(0).getUser().getId(), lawfirm.getVckey(), null);
 
 
         assertEquals(1, entityList.size());
@@ -412,7 +412,7 @@ public class InvoiceServiceTests extends EntityTest {
     public void test_G_getFraisAdminByDossierId() {
 
         String email = "my@gmail.com";
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
 
@@ -422,7 +422,7 @@ public class InvoiceServiceTests extends EntityTest {
 
         TFactures tFactures = createFacture(lawfirm);
 
-        List<FraisAdminDTO> entityList = invoiceService.getFraisAdminByDossierId(tFactures.getIdFacture(), tFactures.getIdDoss(), lawfirm.getLawfirmUsers().get(0).getUser().getId(), lawfirm.getVckey());
+        List<FraisAdminDTO> entityList = invoiceService.getFraisAdminByDossierId(tFactures.getIdFacture(), tFactures.getIdDoss(), lawfirm.getLawfirmUsers().get(0).getUser().getId(), lawfirm.getVckey(), null);
 
 
         assertEquals(1, entityList.size());
@@ -432,7 +432,7 @@ public class InvoiceServiceTests extends EntityTest {
     public void test_H_getDeboursByDossierId() {
 
         String email = "my@gmail.com";
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
 
@@ -445,7 +445,7 @@ public class InvoiceServiceTests extends EntityTest {
         tFactures.getFraisDeboursList().get(0).getTFrais().getRefPoste().setFraisProcedure(true);
         testEntityManager.persist(tFactures.getFraisDeboursList().get(0).getTFrais().getRefPoste());
 
-        List<ComptaDTO> entityList = invoiceService.getDeboursByDossierId(tFactures.getIdFacture(), tFactures.getIdDoss(), lawfirm.getLawfirmUsers().get(0).getUser().getId(), lawfirm.getVckey());
+        List<ComptaDTO> entityList = invoiceService.getDeboursByDossierId(tFactures.getIdFacture(), tFactures.getIdDoss(), lawfirm.getLawfirmUsers().get(0).getUser().getId(), lawfirm.getVckey(), null);
 
 
         assertEquals(1, entityList.size());
@@ -455,7 +455,7 @@ public class InvoiceServiceTests extends EntityTest {
     public void test_I_getFraisCollabByDossierId() {
 
         String email = "my@gmail.com";
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
 
@@ -468,7 +468,7 @@ public class InvoiceServiceTests extends EntityTest {
         tFactures.getFraisDeboursList().get(0).getTFrais().getRefPoste().setFraisCollaboration(true);
         testEntityManager.persist(tFactures.getFraisDeboursList().get(0).getTFrais().getRefPoste());
 
-        List<ComptaDTO> entityList = invoiceService.getFraisCollabByDossierId(tFactures.getIdFacture(), tFactures.getIdDoss(), lawfirm.getLawfirmUsers().get(0).getUser().getId(), lawfirm.getVckey());
+        List<ComptaDTO> entityList = invoiceService.getFraisCollabByDossierId(tFactures.getIdFacture(), tFactures.getIdDoss(), lawfirm.getLawfirmUsers().get(0).getUser().getId(), lawfirm.getVckey(), null);
 
 
         assertEquals(1, entityList.size());

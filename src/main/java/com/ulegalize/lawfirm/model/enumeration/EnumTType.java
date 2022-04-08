@@ -3,8 +3,8 @@ package com.ulegalize.lawfirm.model.enumeration;
 import lombok.Getter;
 
 public enum EnumTType {
-    ENTREE(1, "Entrée", "Entry", "Ingang"),
-    SORTIE(2, "Sortie", "Output", "Uitgang");
+    SORTIE(1, "Sortie", "Output", "Uitgang"),
+    ENTREE(2, "Entrée", "Entry", "Ingang");
 
     @Getter
     private Integer idType;

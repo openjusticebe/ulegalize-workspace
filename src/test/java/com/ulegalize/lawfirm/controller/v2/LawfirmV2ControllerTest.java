@@ -6,8 +6,7 @@ import com.ulegalize.enumeration.*;
 import com.ulegalize.lawfirm.EntityTest;
 import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.converter.EntityToUserConverter;
-import com.ulegalize.lawfirm.model.entity.LawfirmEntity;
-import com.ulegalize.lawfirm.model.entity.TCalendarEvent;
+import com.ulegalize.lawfirm.model.entity.*;
 import com.ulegalize.lawfirm.model.enumeration.EnumValid;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
@@ -55,7 +54,7 @@ public class LawfirmV2ControllerTest extends EntityTest {
 
     @BeforeEach
     public void setupAuthenticate() {
-        lawfirm = createLawfirm();
+        lawfirm = createLawfirm("MYLAW");
         Long userId = lawfirm.getLawfirmUsers().get(0).getUser().getId();
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         String usermail = lawfirm.getLawfirmUsers().get(0).getUser().getEmail();
@@ -68,29 +67,56 @@ public class LawfirmV2ControllerTest extends EntityTest {
 
     @WithMockUser(value = "spring")
     @Test
-    public void test_A_updateRoleLawfirmUser() throws Exception {
-        LawyerDTO lawyerDTO = entityToUserConverter.apply(lawfirm.getLawfirmUsers().get(0).getUser(), false);
+    public void test_A1_updateRoleLawfirmUser() throws Exception {
+        LawfirmUsers lawfirmUsers = lawfirm.getLawfirmUsers().get(0);
+        LawyerDTO lawyerDTO = entityToUserConverter.apply(lawfirmUsers.getUser(), false);
         lawyerDTO.setFunctionId(EnumRole.ASSISTANT.getIdRole());
+        // deactivate
+        lawyerDTO.setActive(!lawfirmUsers.isActive());
+        TSecurityGroups tSecurityGroups = createTSecurityGroups(lawfirm, true);
+        LawfirmUsers lawfirmUsersNew = createLawfirmUsers(lawfirm, "newSecu@gmail.com");
+        // add second user to the group admin
+        TSecurityGroupUsers tSecurityGroupUsersRemain = createTSecurityGroupUsers(lawfirmUsersNew, tSecurityGroups);
 
         mvc.perform(put("/v2/lawfirm/users/role")
-                .with(authentication(authentication))
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(asJsonString(lawyerDTO)))
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(asJsonString(lawyerDTO)))
                 .andExpect(jsonPath("$.functionId", is(lawyerDTO.getFunctionId())))
+                .andExpect(jsonPath("$.active", is(lawyerDTO.isActive())))
                 .andExpect(status().isOk());
     }
 
     @WithMockUser(value = "spring")
     @Test
-    public void test_B_updateRoleLawfirmUser_not() throws Exception {
-        LawyerDTO lawyerDTO = entityToUserConverter.apply(lawfirm.getLawfirmUsers().get(0).getUser(), false);
+    public void test_A2_updateRoleLawfirmUser_403() throws Exception {
+        LawfirmUsers lawfirmUsers = lawfirm.getLawfirmUsers().get(0);
+        LawyerDTO lawyerDTO = entityToUserConverter.apply(lawfirmUsers.getUser(), false);
         lawyerDTO.setFunctionId(EnumRole.ASSISTANT.getIdRole());
-        EnumRole enumBeforeUpdate = lawfirm.getLawfirmUsers().get(0).getIdRole();
+        // deactivate
+        lawyerDTO.setActive(!lawfirmUsers.isActive());
+        TSecurityGroups tSecurityGroups = createTSecurityGroups(lawfirm, true);
 
         mvc.perform(put("/v2/lawfirm/users/role")
-                .with(authentication(authentication))
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(asJsonString(lawyerDTO)))
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(asJsonString(lawyerDTO)))
+                .andExpect(status().isForbidden());
+    }
+
+    @WithMockUser(value = "spring")
+    @Test
+    public void test_B_updateRoleLawfirmUser_not() throws Exception {
+        LawfirmUsers lawfirmUsers = lawfirm.getLawfirmUsers().get(0);
+        LawyerDTO lawyerDTO = entityToUserConverter.apply(lawfirmUsers.getUser(), false);
+        lawyerDTO.setFunctionId(EnumRole.ASSISTANT.getIdRole());
+        EnumRole enumBeforeUpdate = lawfirmUsers.getIdRole();
+        lawyerDTO.setActive(lawfirmUsers.isActive());
+
+        mvc.perform(put("/v2/lawfirm/users/role")
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(asJsonString(lawyerDTO)))
                 .andExpect(jsonPath("$.functionId", not(enumBeforeUpdate.getIdRole())))
                 .andExpect(status().isOk());
     }

@@ -40,6 +40,8 @@ public class AdminV2Controller {
     private TemplateV2Service templateV2Service;
     @Autowired
     private SecurityGroupService securityGroupService;
+    @Autowired
+    private DossierV2Service dossierV2Service;
 
     // VirtualCab
     @GetMapping(value = "/lawfirm")
@@ -525,4 +527,11 @@ public class AdminV2Controller {
         return templateV2Service.getTemplatData();
     }
 
+    @PostMapping(value = "/users/share/global")
+    @ApiIgnore
+    public String adminAddShareUser() throws RestException {
+        log.debug("adminAddShareUser()");
+
+        return dossierV2Service.addShareAllFolderUser();
+    }
 }

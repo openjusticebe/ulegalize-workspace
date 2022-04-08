@@ -26,7 +26,7 @@ public class CalendarSchedulerServiceTests extends EntityTest {
 
     @Test
     public void test_A_executeInfo() throws LawfirmBusinessException {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         LawfirmUsers lawfirmUsers = createLawfirmUsers(lawfirm, "newUserForsecurity@gmail.com");
         Date start = new Date();
         Date end = new Date();

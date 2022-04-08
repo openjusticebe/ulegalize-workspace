@@ -52,6 +52,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/v2/login/verifyUser").permitAll()
                 .antMatchers("/v2/compta").hasAnyAuthority(EnumRights.ADMINISTRATEUR.name(), EnumRights.COMPTABILITE_LECTURE.name())
                 .antMatchers("/v2/admin").hasAnyAuthority(EnumRights.ADMINISTRATEUR.name())
+                .antMatchers("/v2/lawfirm/user/*/active").hasAnyAuthority(EnumRights.ADMINISTRATEUR.name())
+                .antMatchers("/v1/backAdmin").hasAnyAuthority(EnumRights.SUPER_ADMIN.name())
                 // swagger
                 .antMatchers("/v2/api-docs", "/configuration/**", "/swagger*/**", "/webjars/**").permitAll()
 

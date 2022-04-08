@@ -25,7 +25,7 @@ public class LawfirmRepositoryTests extends EntityTest {
 
     @Test
     public void test_A_searchLawfirmDTOByVckey() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
 
         List<LawfirmDTO> lawfirmDTOS = lawfirmRepository.searchLawfirmDTOByVckey(lawfirm.getVckey().substring(0, 3));
         assertNotNull(lawfirmDTOS);
@@ -37,12 +37,23 @@ public class LawfirmRepositoryTests extends EntityTest {
 
     @Test
     public void test_B_searchLawfirmDTOByVckey() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
 
         Optional<LawfirmDTO> lawfirmDTOOptional = lawfirmRepository.findLawfirmDTOByVckey(lawfirm.getVckey());
         assertNotNull(lawfirmDTOOptional);
 
         assertTrue(lawfirmDTOOptional.isPresent());
+
+    }
+
+    @Test
+    public void test_C_findAllByLicenseIdAndTemporaryVc() {
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
+
+        List<LawfirmEntity> lawfirmEntities = lawfirmRepository.findAllByLicenseIdAndTemporaryVc();
+        assertNotNull(lawfirmEntities);
+
+        assertTrue(lawfirmEntities.size() > 0);
 
     }
 }

@@ -77,10 +77,10 @@ public class TCalendarEvent extends BaseEntity {
     @Setter
     private Date end;
 
-    @Column(name = "room_name")
+    @Column(name = "url_room")
     @Getter
     @Setter
-    private String roomName;
+    private String urlRoom;
 
     @Column(name = "path_file")
     @Getter
@@ -112,7 +112,7 @@ public class TCalendarEvent extends BaseEntity {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         TCalendarEvent that = (TCalendarEvent) o;
-        return approved == that.approved && Objects.equals(id, that.id) && Objects.equals(dossier, that.dossier) && Objects.equals(tUsers, that.tUsers) && Objects.equals(vcKey, that.vcKey) && Objects.equals(title, that.title) && Objects.equals(note, that.note) && Objects.equals(location, that.location) && eventType == that.eventType && Objects.equals(start, that.start) && Objects.equals(end, that.end) && Objects.equals(roomName, that.roomName) && Objects.equals(pathFile, that.pathFile) && Objects.equals(microText, that.microText) && Objects.equals(audioText, that.audioText);
+        return approved == that.approved && Objects.equals(id, that.id) && Objects.equals(dossier, that.dossier) && Objects.equals(tUsers, that.tUsers) && Objects.equals(vcKey, that.vcKey) && Objects.equals(title, that.title) && Objects.equals(note, that.note) && Objects.equals(location, that.location) && eventType == that.eventType && Objects.equals(start, that.start) && Objects.equals(end, that.end) && Objects.equals(urlRoom, that.urlRoom) && Objects.equals(pathFile, that.pathFile) && Objects.equals(microText, that.microText) && Objects.equals(audioText, that.audioText);
     }
 
     @Override

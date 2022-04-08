@@ -42,7 +42,7 @@ public class VirtualcabClientRepositoryTests extends EntityTest {
 
     @BeforeEach
     public void setupAuthenticate() {
-        lawfirm = createLawfirm();
+        lawfirm = createLawfirm("MYLAW");
         Long userId = lawfirm.getLawfirmUsers().get(0).getUser().getId();
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         String usermail = lawfirm.getLawfirmUsers().get(0).getUser().getEmail();

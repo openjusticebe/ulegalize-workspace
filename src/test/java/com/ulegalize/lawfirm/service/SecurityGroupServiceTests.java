@@ -33,12 +33,12 @@ public class SecurityGroupServiceTests extends EntityTest {
 
     @Test
     public void test_A_getUserProfile() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TSecurityGroups tSecurityGroups = createTSecurityGroups(lawfirm, true);
 
         String email = lawfirm.getLawfirmUsers().get(0).getUser().getEmail();
 
-        LawfirmToken userProfile = securityGroupService.getUserProfile(email, "", true);
+        LawfirmToken userProfile = securityGroupService.getUserProfile(null, email, "", true);
 
         assertNotNull(userProfile);
         assertEquals(lawfirm.getVckey(), userProfile.getVcKey());
@@ -49,7 +49,7 @@ public class SecurityGroupServiceTests extends EntityTest {
     @Test
     public void test_B_addUserSecurity() throws Exception {
         String email = "my@gmail.com";
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
 
@@ -72,7 +72,7 @@ public class SecurityGroupServiceTests extends EntityTest {
     @Test
     public void test_C_deleteSecurityUserGroup() throws Exception {
         String email = "my@gmail.com";
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
 
@@ -84,20 +84,45 @@ public class SecurityGroupServiceTests extends EntityTest {
 
         TSecurityGroups tSecurityGroups = createTSecurityGroups(lawfirm, true);
         LawfirmUsers lawfirmUsers = createLawfirmUsers(lawfirm, "newSecu@gmail.com");
+        // add second user to the group admin
+        TSecurityGroupUsers tSecurityGroupUsersRemain = createTSecurityGroupUsers(lawfirmUsers, tSecurityGroups);
+        assertEquals(2, tSecurityGroups.getTSecurityGroupUsersList().size());
+
         Long aLong = securityGroupService.deleteSecurityUsersGroup(lawfirm.getLawfirmUsers().get(0).getUser().getId());
         testEntityManager.clear();
         testEntityManager.flush();
 
         assertNotNull(aLong);
 
-        TSecurityGroupUsers tSecurityGroupUsers = testEntityManager.find(TSecurityGroupUsers.class, tSecurityGroups.getTSecurityGroupUsersList().get(0).getId());
-        assertNull(tSecurityGroupUsers);
+        TSecurityGroups tSecurityGroups1 = testEntityManager.find(TSecurityGroups.class, tSecurityGroups.getId());
+        assertNotNull(tSecurityGroups1);
+        assertEquals(1, tSecurityGroups1.getTSecurityGroupUsersList().size());
+    }
+
+    @Test
+    public void test_C2_deleteSecurityUserGroup_oneRemaining() throws Exception {
+        String email = "my@gmail.com";
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
+        String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
+        boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
+
+        LawfirmToken lawfirmToken = new LawfirmToken(0L, email, email, lawfirm.getVckey(), null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", verifyUser);
+
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+
+        TSecurityGroups tSecurityGroups = createTSecurityGroups(lawfirm, true);
+        LawfirmUsers lawfirmUsers = createLawfirmUsers(lawfirm, "newSecu@gmail.com");
+        assertThrows(ResponseStatusException.class, () -> {
+            Long aLong = securityGroupService.deleteSecurityUsersGroup(lawfirm.getLawfirmUsers().get(0).getUser().getId());
+        });
     }
 
     @Test
     public void test_D_deleteSecurityRightGroup() throws Exception {
         String email = "my@gmail.com";
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
 
@@ -122,7 +147,7 @@ public class SecurityGroupServiceTests extends EntityTest {
     @Test
     public void test_D_addRightSecurity() throws Exception {
         String email = "my@gmail.com";
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
 
@@ -145,7 +170,7 @@ public class SecurityGroupServiceTests extends EntityTest {
     @Test
     public void test_E_addRightSecurity_forbidden() throws Exception {
         String email = "my@gmail.com";
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
 
@@ -166,7 +191,7 @@ public class SecurityGroupServiceTests extends EntityTest {
     @Test
     public void test_F_deleteSecurityGroupById() throws Exception {
         String email = "my@gmail.com";
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
 
@@ -192,7 +217,7 @@ public class SecurityGroupServiceTests extends EntityTest {
     @Test
     public void test_G_deleteSecurityGroupById_forbidden() throws Exception {
         String email = "my@gmail.com";
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
 

@@ -40,7 +40,7 @@ public class TemplateV2ServiceTests extends EntityTest {
     @Test
     public void test_A_getModelsList() {
         String email = "my@gmail.com";
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
 
@@ -59,7 +59,7 @@ public class TemplateV2ServiceTests extends EntityTest {
     @Test
     public void test_B_updateModels() {
         String email = "my@gmail.com";
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
 
@@ -84,7 +84,7 @@ public class TemplateV2ServiceTests extends EntityTest {
     @Test
     public void test_C_createModels() {
         String email = "my@gmail.com";
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
 
@@ -114,7 +114,7 @@ public class TemplateV2ServiceTests extends EntityTest {
     @Test
     public void test_D_deleteModels() {
         String email = "my@gmail.com";
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
 

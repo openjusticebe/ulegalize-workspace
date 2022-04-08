@@ -30,7 +30,7 @@ public class ClientRepositoryTests extends EntityTest {
 
     @Test
     public void test_A_findByAliasPublic() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TClients client = createClient(lawfirm);
 
         TUsers user = lawfirm.getLawfirmUsers().get(0).getUser();
@@ -42,7 +42,7 @@ public class ClientRepositoryTests extends EntityTest {
 
     @Test
     public void test_B_findByUserIdOrVcKey() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TClients client = createClient(lawfirm);
 
         TUsers user = lawfirm.getLawfirmUsers().get(0).getUser();
@@ -54,7 +54,7 @@ public class ClientRepositoryTests extends EntityTest {
 
     @Test
     public void test_C_findByUserIdOrVcKeyAAndF_email() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TClients client = createClient(lawfirm);
 
         TUsers user = lawfirm.getLawfirmUsers().get(0).getUser();
@@ -66,7 +66,7 @@ public class ClientRepositoryTests extends EntityTest {
 
     @Test
     public void test_D_findByUserIdOrVcKeyWithPagination() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TClients client = createClient(lawfirm);
 
         TUsers user = lawfirm.getLawfirmUsers().get(0).getUser();
@@ -79,7 +79,7 @@ public class ClientRepositoryTests extends EntityTest {
 
     @Test
     public void test_E_countByUserIdOrVcKeyWithPagination() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TClients client = createClient(lawfirm);
 
         TUsers user = lawfirm.getLawfirmUsers().get(0).getUser();
@@ -91,7 +91,7 @@ public class ClientRepositoryTests extends EntityTest {
 
     @Test
     public void test_F_findById_clientAndUserIdOrVcKey() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TClients client = createClient(lawfirm);
 
         TUsers user = lawfirm.getLawfirmUsers().get(0).getUser();
@@ -102,7 +102,7 @@ public class ClientRepositoryTests extends EntityTest {
 
     @Test
     public void test_G_countByUserIdOrVcKey() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TClients client = createClient(lawfirm);
 
         TUsers user = lawfirm.getLawfirmUsers().get(0).getUser();
@@ -115,7 +115,7 @@ public class ClientRepositoryTests extends EntityTest {
 
     @Test
     public void test_H_countByVcKeyAndClientTypeAndFCompany() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TClients client = createClient(lawfirm);
 
         Long result = clientRepository.countByVcKeyAndClientTypeAndFCompany(lawfirm.getVckey(), EnumClientType.NATURAL_PERSON, client.getF_company());
@@ -127,7 +127,7 @@ public class ClientRepositoryTests extends EntityTest {
 
     @Test
     public void test_I_findByIds_oneResult() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TClients client = createClient(lawfirm);
         TClients client2 = createClient(lawfirm);
 
@@ -140,7 +140,7 @@ public class ClientRepositoryTests extends EntityTest {
 
     @Test
     public void test_J_findByIds_twoResult() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TClients client = createClient(lawfirm);
         TClients client2 = createClient(lawfirm);
 

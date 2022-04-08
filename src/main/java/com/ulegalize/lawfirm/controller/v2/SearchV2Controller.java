@@ -275,20 +275,9 @@ public class SearchV2Controller {
         log.debug("getCalendarEventType() for language {}", lawfirmToken.getLanguage());
 
         EnumLanguage enumLanguage = EnumLanguage.fromshortCode(lawfirmToken.getLanguage());
+        List<ItemEventDto> itemEventDtoList = searchService.getCalendarEventType(enumLanguage);
 
-        return ResponseEntity
-                .ok()
-                .cacheControl(CacheControl.maxAge(120, TimeUnit.SECONDS))
-                .body(Arrays.stream(EnumCalendarEventType.values()).map(enumCalendarEventType -> {
-                            return new ItemEventDto(enumCalendarEventType.getCode(),
-                                    Utils.getLabel(enumLanguage,
-                                            enumCalendarEventType.getLabelFr(),
-                                            enumCalendarEventType.getLabelEn(),
-                                            enumCalendarEventType.getLabelNl()),
-                                    enumCalendarEventType.getColor());
-                        })
-                        .collect(Collectors.toList()));
-
+        return ResponseEntity.ok().body(itemEventDtoList);
     }
 
     @GetMapping(path = "/currencies")

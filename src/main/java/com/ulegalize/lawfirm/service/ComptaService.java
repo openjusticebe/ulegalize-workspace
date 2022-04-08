@@ -16,7 +16,7 @@ public interface ComptaService {
 
     Page<ComptaDTO> getAllComptaByDossierId(int limit, int offset, Long dossierId, String vcKey, Boolean isDebours, Boolean isFraiCollaboration, Boolean honoraire, Boolean tiers);
 
-    Page<ComptaDTO> getAllCompta(int limit, int offset, String vcKey, String searchCriteriaClient, String searchCriteriaYear, Long searchCriteriaNumber, String searchCriteriaPoste);
+    Page<ComptaDTO> getAllCompta(int limit, int offset, String vcKey, String searchCriteriaClient, String searchCriteriaYear, Long searchCriteriaNumber, String searchCriteriaPoste, Integer typeId, Integer searchCriteriaCompte);
 
     ComptaDTO updateCompta(ComptaDTO comptaDTO, String vcKey);
 

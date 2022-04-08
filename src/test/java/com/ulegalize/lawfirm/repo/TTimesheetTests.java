@@ -1,6 +1,5 @@
 package com.ulegalize.lawfirm.repo;
 
-import com.ulegalize.dto.PrestationSummary;
 import com.ulegalize.enumeration.EnumVCOwner;
 import com.ulegalize.lawfirm.EntityTest;
 import com.ulegalize.lawfirm.model.entity.LawfirmEntity;
@@ -28,10 +27,10 @@ public class TTimesheetTests extends EntityTest {
 
     @Test
     public void test_A_findAllByInvoiceIdDossierId() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TFactures facture = createFacture(lawfirm);
 
-        List<PrestationSummary> tTimesheetTypes = timesheetRepository.findAllByInvoiceIdDossierId(facture.getIdFacture(), facture.getIdDoss(), lawfirm.getLawfirmUsers().get(0).getId());
+        List<Object[]> tTimesheetTypes = timesheetRepository.findAllByInvoiceIdDossierId(facture.getIdFacture(), facture.getIdDoss(), lawfirm.getLawfirmUsers().get(0).getId(), null);
 
         assertNotNull(tTimesheetTypes);
         assertTrue(tTimesheetTypes.size() > 0);
@@ -39,7 +38,7 @@ public class TTimesheetTests extends EntityTest {
 
     @Test
     public void test_B_countAllByIdAndDossierId() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
         TTimesheet tTimesheet = createTTimesheet(lawfirm, dossier);
 
@@ -51,7 +50,7 @@ public class TTimesheetTests extends EntityTest {
 
     @Test
     public void test_B1_countAllByIdAndDossierId_zero() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
         TTimesheet tTimesheet = createTTimesheet(lawfirm, dossier);
         TDossiers dossier2 = createDossier(lawfirm, EnumVCOwner.OWNER_VC);

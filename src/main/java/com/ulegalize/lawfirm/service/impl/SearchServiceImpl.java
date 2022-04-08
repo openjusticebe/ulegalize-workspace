@@ -1,10 +1,7 @@
 package com.ulegalize.lawfirm.service.impl;
 
 import com.ulegalize.dto.*;
-import com.ulegalize.enumeration.EnumAccountType;
-import com.ulegalize.enumeration.EnumDossierType;
-import com.ulegalize.enumeration.EnumLanguage;
-import com.ulegalize.enumeration.EnumRole;
+import com.ulegalize.enumeration.*;
 import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.entity.*;
 import com.ulegalize.lawfirm.model.enumeration.EnumFactureType;
@@ -17,6 +14,7 @@ import com.ulegalize.lawfirm.utils.DriveUtils;
 import com.ulegalize.utils.ClientsUtils;
 import com.ulegalize.utils.Utils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -290,4 +288,20 @@ public class SearchServiceImpl implements SearchService {
         return tDebourTypeRepository.findAllByVcKeyAndArchived(vcKey, false);
 
     }
+
+    @Override
+    @Cacheable("CalendarEventType")
+    public List<ItemEventDto> getCalendarEventType(EnumLanguage enumLanguage) {
+        return Arrays.stream(EnumCalendarEventType.values()).map(enumCalendarEventType -> {
+                    return new ItemEventDto(enumCalendarEventType.getCode(),
+                            Utils.getLabel(enumLanguage,
+                                    enumCalendarEventType.getLabelFr(),
+                                    enumCalendarEventType.getLabelEn(),
+                                    enumCalendarEventType.getLabelNl()),
+                            enumCalendarEventType.getColor());
+                })
+                .collect(Collectors.toList());
+
+    }
+
 }

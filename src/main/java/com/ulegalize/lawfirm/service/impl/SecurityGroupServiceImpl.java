@@ -2,7 +2,6 @@ package com.ulegalize.lawfirm.service.impl;
 
 import com.ulegalize.dto.*;
 import com.ulegalize.enumeration.*;
-import com.ulegalize.lawfirm.exception.RestException;
 import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.converter.EntityToSecurityGroupConverter;
 import com.ulegalize.lawfirm.model.converter.EntityToUserConverter;
@@ -24,6 +23,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
@@ -78,26 +78,19 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
     }
 
     @Override
-    public LawfirmToken getUnverifiedUserProfile(String userEmail, String token, boolean withSecurity) {
+    public LawfirmToken getUserProfile(String clientFrom, String userEmail, String token, boolean withSecurity) {
         log.debug("Entering getUserProfile email {}", userEmail);
-        return profile(userEmail, token, withSecurity, EnumValid.UNVERIFIED);
-
-    }
-
-    @Override
-    public LawfirmToken getUserProfile(String userEmail, String token, boolean withSecurity) {
-        log.debug("Entering getUserProfile email {}", userEmail);
-        return profile(userEmail, token, withSecurity, EnumValid.VERIFIED);
+        return profile(clientFrom, userEmail, token, withSecurity, EnumValid.VERIFIED);
 
     }
 
     @Override
     public LawfirmToken getSimpleUserProfile(String email, String token) {
         log.debug("Entering getSimpleUserProfile email {}", email);
-        return profile(email, token, false, EnumValid.VERIFIED);
+        return profile(null, email, token, false, EnumValid.VERIFIED);
     }
 
-    private LawfirmToken profile(String email, String token, boolean fullProfile, EnumValid enumValid) {
+    private LawfirmToken profile(String clientFrom, String email, String token, boolean fullProfile, EnumValid enumValid) {
 
         Optional<LawyerDTO> lawyerDTOOptional = tUsersRepository.findDTOByEmail(email);
 
@@ -123,6 +116,11 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
             LawfirmEntity lawfirmEntity = lawfirmUsersList.get(0).getLawfirm();
             verified = lawfirmUsersList.get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
             vcKey = lawfirmEntity.getVckey();
+
+//            if(!lawfirmEntity.getclientFrom().equalsIgnore(clientFrom)){
+//                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Client from must be the same");
+//            }
+
             dropboxToken = lawfirmEntity.getDropboxToken();
             temporaryVc = lawfirmEntity.getTemporaryVc();
             currency = lawfirmEntity.getCurrency().getSymbol();
@@ -136,6 +134,12 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
 
             roleIdList = securityGroupRights.stream()
                     .map(TSecurityGroupRights::getIdRight).collect(Collectors.toList());
+        }
+
+        // only go inside with admin interface
+        // This authorization is manage into auth0
+        if (clientFrom != null && clientFrom.equalsIgnoreCase("admin")) {
+            roleIdList.add(EnumRights.SUPER_ADMIN);
         }
 
         return new LawfirmToken(lawyerDTOOptional.get().getId(), lawyerDTOOptional.get().getIdUser(),
@@ -155,17 +159,17 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
         List<LawfirmUsers> lawfirmUsersList = lawfirmUserRepository.findLawfirmUsersByVcKey(vcKey);
 
         EnumLanguage enumLanguage = EnumLanguage.fromshortCode(lawfirmToken.getLanguage());
-        return lawfirmUsersList.stream().map(user -> {
-            LawyerDTO lawyerDTO = entityToUserConverter.apply(user.getUser(), false);
-            lawyerDTO.setFunctionId(user.getIdRole().getIdRole());
-            lawyerDTO.setFunctionIdItem(new ItemDto(user.getIdRole().getIdRole(),
+        return lawfirmUsersList.stream().map(lawfirmUsers -> {
+            LawyerDTO lawyerDTO = entityToUserConverter.apply(lawfirmUsers.getUser(), false);
+            lawyerDTO.setFunctionId(lawfirmUsers.getIdRole().getIdRole());
+            lawyerDTO.setFunctionIdItem(new ItemDto(lawfirmUsers.getIdRole().getIdRole(),
                     Utils.getLabel(enumLanguage,
-                            user.getIdRole().getLabelFr(),
-                            user.getIdRole().getLabelEn(),
-                            user.getIdRole().getLabelNl()
+                            lawfirmUsers.getIdRole().getLabelFr(),
+                            lawfirmUsers.getIdRole().getLabelEn(),
+                            lawfirmUsers.getIdRole().getLabelNl()
                     )));
-            lawyerDTO.setActive(user.isActive());
-            List<TSecurityGroupUsers> securityGroupUsersList = tSecurityGroupUsersRepository.findByIdAndVckey(user.getUser().getId(), vcKey);
+            lawyerDTO.setActive(lawfirmUsers.isActive());
+            List<TSecurityGroupUsers> securityGroupUsersList = tSecurityGroupUsersRepository.findByIdAndVckey(lawfirmUsers.getUser().getId(), vcKey);
 
             securityGroupUsersList.forEach(groupUsers -> {
                 if (!groupUsers.getTSecurityGroups().getTSecAppGroupId().equals(EnumSecurityAppGroups.SUPER_ADMIN)) {
@@ -203,7 +207,7 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
     }
 
     @Override
-    public Integer createUserSecurity(Long userId, SecurityGroupUserDTO securityGroupUserDTO) throws RestException {
+    public Integer createUserSecurity(Long userId, SecurityGroupUserDTO securityGroupUserDTO) throws ResponseStatusException {
         log.info("Entering createUserSecurity userId {}", userId);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
@@ -221,9 +225,14 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
         }
 
         TUsers user;
+        Optional<TUsers> usersOptional;
         // create user
         // check if the user is known
-        Optional<TUsers> usersOptional = tUsersRepository.findByEmail(securityGroupUserDTO.getEmail().toLowerCase().trim());
+        if (securityGroupUserDTO.getUserId() != null) {
+            usersOptional = tUsersRepository.findById(securityGroupUserDTO.getUserId());
+        } else {
+            usersOptional = tUsersRepository.findByEmail(securityGroupUserDTO.getEmail().toLowerCase().trim());
+        }
 
         // NOT EXIST -> new user
         if (usersOptional.isEmpty()) {
@@ -340,10 +349,21 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Optional<LawfirmUsers> lawfirmUsersOptional = lawfirmUserRepository.findLawfirmUsersByVcKeyAndUserId(lawfirmToken.getVcKey(), userId);
 
-        if (!lawfirmUsersOptional.isPresent()) {
+        if (lawfirmUsersOptional.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Lawfirm User not found");
         }
+
         List<TSecurityGroupUsers> tSecurityGroupUsers = tSecurityGroupUsersRepository.findByIdAndVckey(userId, lawfirmToken.getVcKey());
+
+        // if there is at least one active user in the group ADMIN
+        List<TSecurityGroupUsers> securityGroupUsersList = tSecurityGroupUsersRepository.findByVckeyAndRight(lawfirmToken.getVcKey(), EnumSecurityAppGroups.ADMIN);
+
+        log.debug("Security group user (active) size {}", securityGroupUsersList.size());
+
+        if (!CollectionUtils.isEmpty(securityGroupUsersList) && securityGroupUsersList.size() == 1) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only one user is remaining into the ADMIN vckey " + lawfirmToken.getVcKey());
+        }
+
 
         tSecurityGroupUsersRepository.deleteAllById(tSecurityGroupUsers.stream().map(TSecurityGroupUsers::getId).collect(Collectors.toList()));
 
@@ -506,13 +526,13 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Optional<TSecurityGroupUsers> securityGroupUsersOptional = tSecurityGroupUsersRepository.findById(securityGroupUserId);
 
-        if (!securityGroupUsersOptional.isPresent()) {
+        if (securityGroupUsersOptional.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Security user group not found");
         }
 
         List<TSecurityGroupUsers> securityGroupUsers = tSecurityGroupUsersRepository.findBySecGroupUserIdAndVckey(securityGroupUsersOptional.get().getTSecurityGroups().getId(), lawfirmToken.getVcKey(), EnumSecurityAppGroups.ADMIN);
 
-        // if it's admin and remove the last user
+        // if it's admin and remove the last user throw exception
         if (securityGroupUsers != null && securityGroupUsers.size() == 1) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Security user group cannot be deleted because it's only 1 remaining");
         }
@@ -536,7 +556,7 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
         List<TSecurityGroupRights> securityGroupRights = tSecurityGroupRightsRepository.findByTSecurityGroups_Id(securityGroupId);
         List<ItemDto> rightOut = new ArrayList<>();
 
-        Arrays.stream(EnumRights.values()).forEach(enumRights -> {
+        EnumRights.allNonAdmin().forEach(enumRights -> {
             boolean exist = false;
             for (TSecurityGroupRights tSecurityGroupRights : securityGroupRights) {
                 if (enumRights.getId() == tSecurityGroupRights.getIdRight().getId()) {

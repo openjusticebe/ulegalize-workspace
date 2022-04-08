@@ -10,6 +10,7 @@ import org.apache.commons.lang3.time.DateUtils;
 import org.apache.commons.text.StringEscapeUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -29,9 +30,9 @@ public abstract class EntityTest extends ConfigureTest {
 
     protected ObjectMapper objectMapper;
 
-    protected LawfirmEntity createLawfirm() {
+    protected LawfirmEntity createLawfirm(String vcKey) {
         LawfirmEntity lawfirmEntity = new LawfirmEntity();
-        lawfirmEntity.setVckey("MYLAW");
+        lawfirmEntity.setVckey(vcKey);
         lawfirmEntity.setName("MYLAW name");
         lawfirmEntity.setAlias("MYLAW");
         lawfirmEntity.setEmail("MYLAW@");
@@ -43,6 +44,7 @@ public abstract class EntityTest extends ConfigureTest {
         lawfirmEntity.setUserUpd(USER);
         lawfirmEntity.setStartInvoiceNumber(10);
         lawfirmEntity.setNotification(true);
+        lawfirmEntity.setTemporaryVc(false);
 
         lawfirmEntity.setLawfirmUsers(new ArrayList<>());
         createLawfirmUsers(lawfirmEntity, EMAIL);
@@ -137,14 +139,8 @@ public abstract class EntityTest extends ConfigureTest {
         tDossiers.setId_user_resp(lawfirmEntity.getLawfirmUsers().get(0).getUser().getId());
 
         testEntityManager.persist(tDossiers);
-        TDossierRights tDossierRights = new TDossierRights();
-        tDossierRights.setDossierId(tDossiers.getIdDoss());
-        tDossierRights.setVcUserId(lawfirmEntity.getLawfirmUsers().get(0).getId());
-        tDossierRights.setVcOwner(enumVCOwner);
-        tDossierRights.setRIGHTS("ACCESS");
-        tDossierRights.setTDossiers(tDossiers);
-        tDossierRights.setCreUser(USER);
-        tDossierRights.setLawfirmUsers(lawfirmEntity.getLawfirmUsers().get(0));
+
+        TDossierRights tDossierRights = createTDossierRights(tDossiers, lawfirmEntity.getLawfirmUsers().get(0), enumVCOwner);
 
         testEntityManager.persist(tDossierRights);
 
@@ -155,6 +151,21 @@ public abstract class EntityTest extends ConfigureTest {
         return tDossiers;
     }
 
+    protected TDossierRights createTDossierRights(TDossiers tDossiers, LawfirmUsers lawfirmUsers, EnumVCOwner enumVCOwner) {
+        TDossierRights tDossierRights = new TDossierRights();
+        tDossierRights.setDossierId(tDossiers.getIdDoss());
+        tDossierRights.setVcUserId(lawfirmUsers.getId());
+        tDossierRights.setVcOwner(enumVCOwner);
+        tDossierRights.setRIGHTS("ACCESS");
+        tDossierRights.setTDossiers(tDossiers);
+        tDossierRights.setCreUser(USER);
+        tDossierRights.setLawfirmUsers(lawfirmUsers);
+
+        testEntityManager.persist(tDossierRights);
+
+        return tDossierRights;
+
+    }
     protected TMatiereRubriques createTMatiereRubriques() {
         TMatiereRubriques matiereRubriques = new TMatiereRubriques();
         matiereRubriques.setMatiereRubriqueDesc("matiere desc");
@@ -225,12 +236,7 @@ public abstract class EntityTest extends ConfigureTest {
 
         calendarEvent.setCreationUser(USER);
 
-        TCalendarParticipants tCalendarParticipants = new TCalendarParticipants();
-        tCalendarParticipants.setTCalendarEvent(calendarEvent);
-        tCalendarParticipants.setUserEmail(lawfirmEntity.getLawfirmUsers().get(0).getUser().getEmail());
-        tCalendarParticipants.setCreUser(USER);
-        calendarEvent.setTCalendarParticipants(new ArrayList<>());
-        calendarEvent.getTCalendarParticipants().add(tCalendarParticipants);
+        createParticipantToEvent(calendarEvent, lawfirmEntity.getLawfirmUsers().get(0).getUser().getEmail());
 
         testEntityManager.persist(calendarEvent);
 
@@ -241,6 +247,22 @@ public abstract class EntityTest extends ConfigureTest {
         testEntityManager.persist(tUsers);
 
         return calendarEvent;
+    }
+
+    protected TCalendarEvent createParticipantToEvent(TCalendarEvent calendarEvent, String participantEmail) {
+        TCalendarParticipants tCalendarParticipants = new TCalendarParticipants();
+        tCalendarParticipants.setTCalendarEvent(calendarEvent);
+        tCalendarParticipants.setUserEmail(participantEmail);
+        tCalendarParticipants.setCreUser(USER);
+
+        if (calendarEvent.getTCalendarParticipants() != null) {
+            calendarEvent.getTCalendarParticipants().add(tCalendarParticipants);
+        } else {
+            calendarEvent.setTCalendarParticipants(new ArrayList<>());
+            calendarEvent.getTCalendarParticipants().add(tCalendarParticipants);
+        }
+        return calendarEvent;
+
     }
 
     protected TFrais createTFrais(LawfirmEntity lawfirm, TDossiers dossier) {
@@ -368,14 +390,16 @@ public abstract class EntityTest extends ConfigureTest {
         return refPoste;
     }
 
-    protected TSecurityGroupUsers createTSecurityGroupUsers(LawfirmEntity lawfirm, TSecurityGroups tSecurityGroups) {
+    protected TSecurityGroupUsers createTSecurityGroupUsers(LawfirmUsers lawfirmUsers, TSecurityGroups tSecurityGroups) {
         TSecurityGroupUsers tSecurityGroupUsers = new TSecurityGroupUsers();
 
-        tSecurityGroupUsers.setUser(lawfirm.getLawfirmUsers().get(0).getUser());
+        tSecurityGroupUsers.setUser(lawfirmUsers.getUser());
         tSecurityGroupUsers.setTSecurityGroups(tSecurityGroups);
         testEntityManager.persist(tSecurityGroupUsers);
 
-        tSecurityGroups.setTSecurityGroupUsersList(new ArrayList<>());
+        if (CollectionUtils.isEmpty(tSecurityGroups.getTSecurityGroupUsersList())) {
+            tSecurityGroups.setTSecurityGroupUsersList(new ArrayList<>());
+        }
         tSecurityGroups.getTSecurityGroupUsersList().add(tSecurityGroupUsers);
 
         return tSecurityGroupUsers;
@@ -408,7 +432,7 @@ public abstract class EntityTest extends ConfigureTest {
 
         testEntityManager.persist(tSecurityGroups);
         if (withUser) {
-            createTSecurityGroupUsers(lawfirm, tSecurityGroups);
+            createTSecurityGroupUsers(lawfirm.getLawfirmUsers().get(0), tSecurityGroups);
         }
 
         return tSecurityGroups;

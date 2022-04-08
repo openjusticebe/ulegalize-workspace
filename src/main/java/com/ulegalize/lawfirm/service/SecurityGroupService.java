@@ -1,23 +1,14 @@
 package com.ulegalize.lawfirm.service;
 
 import com.ulegalize.dto.*;
-import com.ulegalize.lawfirm.exception.RestException;
 import com.ulegalize.lawfirm.model.LawfirmToken;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
 public interface SecurityGroupService {
-    /**
-     * must be used to verified emails
-     *
-     * @param email
-     * @param token
-     * @param withSecurity
-     * @return
-     */
-    LawfirmToken getUnverifiedUserProfile(String email, String token, boolean withSecurity);
 
-    LawfirmToken getUserProfile(String email, String token, boolean withSecurity);
+    LawfirmToken getUserProfile(String clientFrom, String email, String token, boolean withSecurity);
 
     LawfirmToken getSimpleUserProfile(String email, String token);
 
@@ -25,7 +16,7 @@ public interface SecurityGroupService {
 
     List<SecurityGroupDTO> getSecurityGroup();
 
-    Integer createUserSecurity(Long userId, SecurityGroupUserDTO securityGroupUserDTO) throws RestException;
+    Integer createUserSecurity(Long userId, SecurityGroupUserDTO securityGroupUserDTO) throws ResponseStatusException;
 
     Long deleteSecurityUsersGroup(Long securityGroupId);
 

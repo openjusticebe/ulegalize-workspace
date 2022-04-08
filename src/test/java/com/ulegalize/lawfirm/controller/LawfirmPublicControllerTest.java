@@ -37,7 +37,7 @@ public class LawfirmPublicControllerTest extends EntityTest {
 
     @BeforeEach
     public void setupAuthenticate() {
-        lawfirm = createLawfirm();
+        lawfirm = createLawfirm("MYLAW");
         createLawfirmWebsiteEntity(lawfirm);
 
     }

@@ -20,7 +20,7 @@ public class TFactureTimesheet implements Serializable {
     @Column(name = "ID", insertable = false, nullable = false)
     @Getter
     @Setter
-    private Integer ID;
+    private Long ID;
 
     @Column(name = "TS_ID", nullable = false)
     @Getter

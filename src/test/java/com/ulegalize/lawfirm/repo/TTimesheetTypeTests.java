@@ -26,7 +26,7 @@ public class TTimesheetTypeTests extends EntityTest {
 
     @Test
     public void test_A_findAllByVcKey() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TTimesheetType tTimesheetType = createTTimesheetType(lawfirm);
 
         List<TTimesheetType> tTimesheetTypes = tTimesheetTypeRepository.findAllByVcKey(lawfirm.getVckey());
@@ -37,7 +37,7 @@ public class TTimesheetTypeTests extends EntityTest {
 
     @Test
     public void test_B_findAllByVcKey_notfound() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
 
         List<TTimesheetType> tTimesheetTypes = tTimesheetTypeRepository.findAllByVcKey(lawfirm.getVckey());
 
@@ -47,7 +47,7 @@ public class TTimesheetTypeTests extends EntityTest {
 
     @Test
     public void test_C_findAllItemByVcKey() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TTimesheetType tTimesheetType = createTTimesheetType(lawfirm);
 
         List<PrestationTypeDTO> tTimesheetTypes = tTimesheetTypeRepository.findAllItemByVcKey(lawfirm.getVckey());
@@ -58,7 +58,7 @@ public class TTimesheetTypeTests extends EntityTest {
 
     @Test
     public void test_D_findDTOById() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TTimesheetType tTimesheetType = createTTimesheetType(lawfirm);
 
         PrestationTypeDTO tTimesheetTypes = tTimesheetTypeRepository.findDTOById(lawfirm.getVckey(), tTimesheetType.getIdTs());
@@ -69,7 +69,7 @@ public class TTimesheetTypeTests extends EntityTest {
 
     @Test
     public void test_E_findAllByVcKeyAndArchived() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TTimesheetType tTimesheetType = createTTimesheetType(lawfirm);
 
         List<ItemDto> tTimesheetTypes = tTimesheetTypeRepository.findAllByVcKeyAndArchived(lawfirm.getVckey(), tTimesheetType.getArchived());

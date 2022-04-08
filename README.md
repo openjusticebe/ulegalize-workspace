@@ -8,24 +8,27 @@ https://ulegalize.atlassian.net/wiki/spaces/UC/pages/793378817/Open+source
 Don't hesitate to create PR in order to change something in the project
 
 ## how to develop
+
 The profile used to develop is the '_dev_'
+
 1. copy paste the `application-dev.default.properties` to `application-dev.properties`
 2. change values (ask to the administrator or use it yours locally:
-    * IP_MYSQL
-    * PORT_MYSQL
-    * IP_KAFKA
-    * PORT_KAFKA
+   * IP_MYSQL
+   * PORT_MYSQL
+   * IP_KAFKA
+   * PORT_KAFKA
 3. Ask to change if it necessary the username/pwd
    `spring.kafka.properties.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username='admin' password='admin-secret';
    `
+
 ## deploy
 
 change `gradle.properties` version  
 commit your change add a new tag and push all
 
 ```
-git tag 2.15.10  
-git push origin 2.15.10
+git tag 2.18.0  
+git push origin 2.18.0
 
 ```
 
@@ -69,19 +72,19 @@ docker-compose up -d
 
 https://stackoverflow.com/questions/31324981/how-to-access-host-port-from-docker-container/61424570#61424570   
 `
-docker run --name ulegalize-lawfirm --network="host" --restart always -p 127.0.0.1:8989:8989 -it finauxa/ulegalize-lawfirm:2.15.10 --spring.profiles.active=test --server.use-forward-headers=true  
+docker run --name ulegalize-lawfirm --network="host" --restart always -p 127.0.0.1:8989:8989 -it finauxa/ulegalize-lawfirm:2.18.0 --spring.profiles.active=test --server.use-forward-headers=true  
 `
 
 ###### dev
 
 `
-docker run --name ulegalize-lawfirm --restart always -p 127.0.0.1:8989:8989 -it finauxa/ulegalize-lawfirm:2.15.10 --spring.profiles.active=devDocker --server.use-forward-headers=true
+docker run --name ulegalize-lawfirm --restart always -p 127.0.0.1:8989:8989 -it finauxa/ulegalize-lawfirm:2.18.0 --spring.profiles.active=devDocker --server.use-forward-headers=true
 `
 
 ###### prod
 
 `
-docker run --name ulegalize-lawfirm --restart always -p 127.0.0.1:8989:8989 -it finauxa/ulegalize-lawfirm:2.15.10 --spring.profiles.active=prod --server.use-forward-headers=true
+docker run --name ulegalize-lawfirm --restart always -p 127.0.0.1:8989:8989 -it finauxa/ulegalize-lawfirm:2.18.0 --spring.profiles.active=prod --server.use-forward-headers=true
 `
 
 ## more info
@@ -93,15 +96,15 @@ https://ulegalize.atlassian.net/l/c/AY0FkzHX
 build the app
 
 ```
-docker build -t finauxa/ulegalize-lawfirm:2.15.10 .  
-docker push finauxa/ulegalize-lawfirm:2.15.10  
+docker build -t finauxa/ulegalize-lawfirm:2.18.0 .  
+docker push finauxa/ulegalize-lawfirm:2.18.0  
 ```
 
 ```
 docker stop ulegalize-lawfirm   
 docker rm ulegalize-lawfirm  
 docker rmi $(docker images finauxa/ulegalize-lawfirm -q)  
-docker pull finauxa/ulegalize-lawfirm:2.15.10  
+docker pull finauxa/ulegalize-lawfirm:2.18.0  
 ```
 
 ## mysql 5.6

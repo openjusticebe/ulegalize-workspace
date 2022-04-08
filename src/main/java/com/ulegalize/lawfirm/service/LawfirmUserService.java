@@ -15,13 +15,10 @@ public interface LawfirmUserService {
 
     String switchLawfirm(Long userId, String newVcKeySelected);
 
-    List<LawfirmDTO> getLawfirms();
-
     SecurityGroupUserDTO getLawfirmUserByUserId(Long userId);
 
     LawyerDTO updateRoleLawfirmUser(LawyerDTO lawyerDTO);
 
     LawfirmUserDTO updateIsPublicLawfirmUser(String vcKey, Long userId, String active);
 
-    LawfirmUserDTO updateIsActiveLawfirmUser(String vcKey, Long userId, String isActive);
 }

@@ -34,7 +34,7 @@ public class DossierRepositoryTests extends EntityTest {
 
     @Test
     public void test_A_getMaxDossierByVckeyAndYear() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
 
         Long maxDossier = dossierRepository.getMaxDossierByVckeyAndYear(lawfirm.getVckey(), dossier.getYear_doss());
@@ -47,7 +47,7 @@ public class DossierRepositoryTests extends EntityTest {
 
     @Test
     public void test_B_getMaxDossierByVckeyAndYear_noyear() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
 
         Long maxDossier = dossierRepository.getMaxDossierByVckeyAndYear(lawfirm.getVckey(), "2010");
@@ -60,7 +60,7 @@ public class DossierRepositoryTests extends EntityTest {
 
     @Test
     public void test_C_getDossierRight() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
 
         Optional<TDossiers> dossiersOptional = dossierRepository.findById(dossier.getIdDoss());
@@ -72,22 +72,20 @@ public class DossierRepositoryTests extends EntityTest {
 
     @Test
     public void test_D_getAffairesByVcUserIdAndSearchCriteria() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
 
         Long vcUserId = dossier.getDossierRightsList().get(0).getVcUserId();
-        List<TDossiers> dossiersList = dossierRepository.findAffairesByVcUserId(vcUserId);
+        List<IDossierDTO> dossiersList = dossierRepository.findAffairesByVcUserId(vcUserId, List.of(EnumVCOwner.OWNER_VC.getId(), EnumVCOwner.NOT_OWNER_VC.getId()), "", dossier.getYear_doss(), null, false);
 
         assertNotNull(dossiersList);
         assertEquals(1, dossiersList.size());
-        assertEquals(vcUserId, (Long) dossiersList.get(0).getDossierRightsList().get(0).getVcUserId());
-        assertEquals("ACCESS", dossiersList.get(0).getDossierRightsList().get(0).getRIGHTS());
     }
 
 
     @Test
     public void test_E_countByClient_cabAndOrClient_adv() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
 
         Long opposingClientId = dossier.getOpposingCounsel() != null ? dossier.getOpposingCounsel().getId_client() : null;
@@ -103,7 +101,7 @@ public class DossierRepositoryTests extends EntityTest {
 
     @Test
     public void test_F_findByVcUserIdWithPagination() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
 
         Optional<DossierContact> dossierContactClient = dossier.getDossierContactList().stream().filter(dossierContact -> dossierContact.getContactTypeId().equals(EnumDossierContactType.CLIENT)).findAny();
@@ -127,7 +125,7 @@ public class DossierRepositoryTests extends EntityTest {
 
     @Test
     public void test_G_findByVcUserIdWithPagination_withBalance() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
         TTimesheet tTimesheet = createTTimesheet(lawfirm, dossier);
         List<Integer> integers = List.of(EnumVCOwner.OWNER_VC, EnumVCOwner.NOT_OWNER_VC).stream().map(EnumVCOwner::getId).collect(Collectors.toList());
@@ -144,7 +142,7 @@ public class DossierRepositoryTests extends EntityTest {
 
     @Test
     public void test_H_findByVcUserIdWithPagination_withoutBalance() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
         TTimesheet tTimesheet = createTTimesheet(lawfirm, dossier);
 
@@ -167,7 +165,7 @@ public class DossierRepositoryTests extends EntityTest {
 
     @Test
     public void test_I_findByVcUserIdAllWithPagination() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
         List<Integer> integers = List.of(EnumVCOwner.OWNER_VC, EnumVCOwner.NOT_OWNER_VC).stream().map(EnumVCOwner::getId).collect(Collectors.toList());
         Pageable pageable = new OffsetBasedPageRequest(10, 0, Sort.by(Sort.Direction.DESC, "id_doss"));
@@ -182,12 +180,40 @@ public class DossierRepositoryTests extends EntityTest {
 
     @Test
     public void test_J_findByIdDoss() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
 
         Optional<TDossiers> tDossiers = dossierRepository.findByIdDoss(dossier.getIdDoss(), lawfirm.getLawfirmUsers().get(0).getId(), List.of(EnumVCOwner.OWNER_VC, EnumVCOwner.NOT_OWNER_VC));
 
         assertTrue(tDossiers.isPresent());
+    }
+
+    @Test
+    public void test_K_findByIdDossAndVcKey() {
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
+        LawfirmUsers newUser = createLawfirmUsers(lawfirm, EMAIL);
+        testEntityManager.persist(lawfirm);
+
+        TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
+        TDossierRights tDossierRights = createTDossierRights(dossier, newUser, EnumVCOwner.NOT_SAME_VC);
+
+        Optional<TDossiers> tDossiers = dossierRepository.findByIdDossAndVcKey(dossier.getIdDoss(), lawfirm.getVckey());
+
+        assertTrue(tDossiers.isPresent());
+    }
+
+    @Test
+    public void test_L_findByIdDossAndVcKey() {
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
+        LawfirmUsers newUser = createLawfirmUsers(lawfirm, EMAIL);
+
+        testEntityManager.persist(lawfirm);
+        TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
+        TDossierRights tDossierRights = createTDossierRights(dossier, newUser, EnumVCOwner.NOT_SAME_VC);
+
+        List<TDossiers> tDossiers = dossierRepository.findByVcKeyAndDossier(lawfirm.getVckey(), dossier.getIdDoss());
+
+        assertTrue(tDossiers.size() > 0);
     }
 
 }

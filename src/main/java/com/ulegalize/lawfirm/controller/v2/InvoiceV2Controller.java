@@ -157,50 +157,52 @@ public class InvoiceV2Controller {
 
     @GetMapping("/{invoiceId}/prestations/{dossierId}")
     @ApiIgnore
-    public List<PrestationSummary> getPrestationByDossierId(@PathVariable Long invoiceId, @PathVariable Long dossierId) {
+    public List<PrestationSummary> getPrestationByDossierId(@PathVariable Long invoiceId,
+                                                            @PathVariable Long dossierId,
+                                                            @RequestParam(required = false) Boolean filterInvoicePrestation) {
         log.debug("getPrestationByDossierId(invoiceId {}, dossier id {})", invoiceId, dossierId);
 
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
-        return invoiceService.getPrestationByDossierId(invoiceId, dossierId, lawfirmToken.getUserId(), lawfirmToken.getVcKey());
+        return invoiceService.getPrestationByDossierId(invoiceId, dossierId, lawfirmToken.getUserId(), lawfirmToken.getVcKey(), filterInvoicePrestation);
     }
 
     @GetMapping("/{invoiceId}/fraisAdmin/{dossierId}")
     @ApiIgnore
-    public List<FraisAdminDTO> getFraisAdminByDossierId(@PathVariable Long invoiceId, @PathVariable Long dossierId) {
+    public List<FraisAdminDTO> getFraisAdminByDossierId(@PathVariable Long invoiceId, @PathVariable Long dossierId, Boolean filterInvoiceFraisAdmin) {
         log.debug("getFraisAdminByDossierId(invoiceId {}, dossier id {})", invoiceId, dossierId);
 
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
-        return invoiceService.getFraisAdminByDossierId(invoiceId, dossierId, lawfirmToken.getUserId(), lawfirmToken.getVcKey());
+        return invoiceService.getFraisAdminByDossierId(invoiceId, dossierId, lawfirmToken.getUserId(), lawfirmToken.getVcKey(), filterInvoiceFraisAdmin);
     }
 
     @GetMapping("/{invoiceId}/debours/{dossierId}")
     @ApiIgnore
-    public List<ComptaDTO> getDeboursByDossierId(@PathVariable Long invoiceId, @PathVariable Long dossierId) {
+    public List<ComptaDTO> getDeboursByDossierId(@PathVariable Long invoiceId, @PathVariable Long dossierId, Boolean filterInvoiceDebours) {
         log.debug("getDeboursByDossierId(invoiceId {}, dossier id {})", invoiceId, dossierId);
 
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
-        return invoiceService.getDeboursByDossierId(invoiceId, dossierId, lawfirmToken.getUserId(), lawfirmToken.getVcKey());
+        return invoiceService.getDeboursByDossierId(invoiceId, dossierId, lawfirmToken.getUserId(), lawfirmToken.getVcKey(), filterInvoiceDebours);
     }
 
     @GetMapping("/{invoiceId}/fraisCollaborat/{dossierId}")
     @ApiIgnore
-    public List<ComptaDTO> getFraisCollabByDossierId(@PathVariable Long invoiceId, @PathVariable Long dossierId) {
+    public List<ComptaDTO> getFraisCollabByDossierId(@PathVariable Long invoiceId, @PathVariable Long dossierId, Boolean filterInvoiceFraisCollab) {
         log.debug("getFraisCollabByDossierId(invoiceId {}, dossier id {})", invoiceId, dossierId);
 
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
-        return invoiceService.getFraisCollabByDossierId(invoiceId, dossierId, lawfirmToken.getUserId(), lawfirmToken.getVcKey());
+        return invoiceService.getFraisCollabByDossierId(invoiceId, dossierId, lawfirmToken.getUserId(), lawfirmToken.getVcKey(), filterInvoiceFraisCollab);
     }
 
     @GetMapping("/vat/{vat}")

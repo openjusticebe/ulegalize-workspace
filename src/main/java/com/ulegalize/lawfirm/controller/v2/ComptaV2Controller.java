@@ -79,9 +79,11 @@ public class ComptaV2Controller {
                                      @RequestParam(required = false) String searchCriteriaClient,
                                      @RequestParam(required = false) String searchCriteriaYear,
                                      @RequestParam(required = false) Long searchCriteriaNumber,
-                                     @RequestParam(required = false) String searchCriteriaPoste
+                                     @RequestParam(required = false) String searchCriteriaPoste,
+                                     @RequestParam(required = false) Integer typeId,
+                                     @RequestParam(required = false) Integer searchCriteriaCompte
     ) {
-        log.debug("getCompta(offset: {} , limit {} and dossierId {} , debours {}, frais collaboration {}, honoraire {}, tiers {})", offset, limit, dossierId, isDebours, isFraiCollaboration, honoraire, tiers);
+        log.debug("getCompta(offset: {} , limit {} and dossierId {} , debours {}, frais collaboration {}, honoraire {}, tiers {}, type {} and compte {})", offset, limit, dossierId, isDebours, isFraiCollaboration, honoraire, tiers, typeId, searchCriteriaCompte);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
@@ -90,7 +92,7 @@ public class ComptaV2Controller {
         if (dossierId != null && (isFraiCollaboration != null || isDebours != null || honoraire != null || tiers != null)) {
             allCompta = comptaService.getAllComptaByDossierId(limit, offset, dossierId, lawfirmToken.getVcKey(), isDebours, isFraiCollaboration, honoraire, tiers);
         } else {
-            allCompta = comptaService.getAllCompta(limit, offset, lawfirmToken.getVcKey(), searchCriteriaClient, searchCriteriaYear, searchCriteriaNumber, searchCriteriaPoste);
+            allCompta = comptaService.getAllCompta(limit, offset, lawfirmToken.getVcKey(), searchCriteriaClient, searchCriteriaYear, searchCriteriaNumber, searchCriteriaPoste, typeId, searchCriteriaCompte);
         }
 
         return allCompta;

@@ -26,7 +26,7 @@ public class TSecurityGroupRightsRepositoryTests extends EntityTest {
 
     @Test
     public void test_A_findBySecurityGroup() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TSecurityGroups tSecurityGroups = createTSecurityGroups(lawfirm, true);
 
         List<TSecurityGroupRights> securityGroupsId = tSecurityGroupRightsRepository.findByTSecurityGroups_Id(tSecurityGroups.getId());

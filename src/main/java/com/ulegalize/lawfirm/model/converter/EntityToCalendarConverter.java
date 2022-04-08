@@ -5,7 +5,6 @@ import com.ulegalize.enumeration.EnumLanguage;
 import com.ulegalize.lawfirm.model.entity.TCalendarEvent;
 import com.ulegalize.lawfirm.model.entity.TCalendarParticipants;
 import com.ulegalize.lawfirm.utils.SuperTriConverter;
-import com.ulegalize.utils.DossiersUtils;
 import com.ulegalize.utils.Utils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -16,18 +15,16 @@ import java.util.stream.Collectors;
 public class EntityToCalendarConverter implements SuperTriConverter<TCalendarEvent, String, LawfirmCalendarEventDTO> {
     @Autowired
     private EntityToDossierConverter entityToDossierConverter;
-    @Autowired
-    private EntityToContactSummaryConverter entityToContactSummaryConverter;
 
     @Override
     public LawfirmCalendarEventDTO apply(TCalendarEvent entity, String language) {
 
         LawfirmCalendarEventDTO event = new LawfirmCalendarEventDTO();
         if (entity.getDossier() != null) {
-            DossierDTO ds = entityToDossierConverter.apply(entity.getDossier(), EnumLanguage.fromshortCode(language));
-            event.setDossier(ds);
-            event.setDossierId(ds.getId());
-            event.setDossierItem(new ItemLongDto(ds.getId(), DossiersUtils.getDossierLabelItem(entity.getDossier().getYear_doss(), entity.getDossier().getNum_doss())));
+            DossierDTO dossierDTO = entityToDossierConverter.apply(entity.getDossier(), EnumLanguage.fromshortCode(language));
+            event.setDossier(dossierDTO);
+            event.setDossierId(dossierDTO.getId());
+            event.setDossierItem(new ItemLongDto(dossierDTO.getId(), dossierDTO.getLabel()));
         }
 
         event.setId(entity.getId());
@@ -52,6 +49,9 @@ public class EntityToCalendarConverter implements SuperTriConverter<TCalendarEve
             event.setEventTypeItem(itemStringDto);
         }
         event.setApproved(entity.isApproved());
+        // check if it exists
+        event.setRoomAttached(entity.getUrlRoom() != null && !entity.getUrlRoom().isEmpty());
+        event.setUrlRoom(entity.getUrlRoom());
         if (entity.getTUsers() != null) {
             event.setUserId(entity.getTUsers().getId());
             String fullname = entity.getTUsers().getFullname() != null && !entity.getTUsers().getFullname().trim().isEmpty() ? entity.getTUsers().getFullname() : entity.getTUsers().getEmail();

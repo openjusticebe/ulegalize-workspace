@@ -24,7 +24,7 @@ public class DossierRightRepositoryTests extends EntityTest {
 
     @Test
     public void test_A_getDossierRight() {
-        LawfirmEntity lawfirm = createLawfirm();
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
 
         Long dossiersOptional = dossierRightsRepository.countByDossierIdAndVcOwnerAndVcKey(dossier.getIdDoss(), lawfirm.getVckey());

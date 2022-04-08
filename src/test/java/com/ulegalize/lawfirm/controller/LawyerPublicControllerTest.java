@@ -46,7 +46,7 @@ public class LawyerPublicControllerTest extends EntityTest {
         objectMapper = new ObjectMapper();
         objectMapper.findAndRegisterModules();
 
-        lawfirm = createLawfirm();
+        lawfirm = createLawfirm("MYLAW");
     }
 
     @Test

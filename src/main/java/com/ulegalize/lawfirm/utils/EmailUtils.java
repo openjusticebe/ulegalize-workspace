@@ -87,14 +87,12 @@ public class EmailUtils {
     public static Map<String, Object> prepareContextForAppointmentConfirmedEmail(String language, String emailTo, TCalendarEvent appointment, LawfirmUsers lawyer, String portalUrl, String clientFrom) {
 
         Map<String, Object> model = communPrepareContext(clientFrom, portalUrl, emailTo);
-        model.put("portalUrlLogin", portalUrl + "login");
         EnumLanguage enumLanguage = EnumLanguage.fromshortCode(language);
         String location = appointment.getLocation() != null ? appointment.getLocation() : null;
 
         model.put("location", location);
 
         model.put("lawyer_fullname", lawyer.getUser().getFullname());
-        model.put("lawyer_email", lawyer.getUser().getEmail());
 
         model.put("lawfirm_email", lawyer.getLawfirm().getEmail());
         model.put("lawfirm_phone", lawyer.getLawfirm().getPhoneNumber());

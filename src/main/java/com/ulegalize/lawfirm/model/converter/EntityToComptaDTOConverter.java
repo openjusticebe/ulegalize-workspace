@@ -19,6 +19,9 @@ public class EntityToComptaDTOConverter implements SuperConverter<TFrais, Compta
         compta.setVcKey(entityTFrais.getVcKey());
         compta.setGridId(entityTFrais.getGridId());
         compta.setIdCompte(entityTFrais.getIdCompte());
+        if (entityTFrais.getRefCompte() != null) {
+            compta.setCompte(new ItemDto(entityTFrais.getRefCompte().getIdCompte(), entityTFrais.getRefCompte().getCompteNum()));
+        }
         compta.setIdDoss(entityTFrais.getIdDoss());
         if (entityTFrais.getTDossiers() != null) {
             compta.setIdDossierItem(new ItemLongDto(entityTFrais.getIdDoss(),

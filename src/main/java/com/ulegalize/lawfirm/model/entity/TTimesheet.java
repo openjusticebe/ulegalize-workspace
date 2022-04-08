@@ -34,7 +34,7 @@ public class TTimesheet implements Serializable {
     @Setter
     private Long idGest;
 
-    @Column(name = "ts_type", nullable = false)
+    @Column(columnDefinition = "SMALLINT", name = "ts_type", nullable = false)
     @Getter
     @Setter
     private Integer tsType = 0;
@@ -49,12 +49,12 @@ public class TTimesheet implements Serializable {
     @Setter
     private ZonedDateTime dateAction;
 
-    @Column(name = "dh", nullable = false)
+    @Column(columnDefinition = "CHAR(2)", name = "dh", nullable = false)
     @Getter
     @Setter
     private BigDecimal dh = BigDecimal.ZERO;
 
-    @Column(name = "dm", nullable = false)
+    @Column(columnDefinition = "CHAR(2)", name = "dm", nullable = false)
     @Getter
     @Setter
     private BigDecimal dm = BigDecimal.ZERO;
@@ -85,7 +85,7 @@ public class TTimesheet implements Serializable {
     @Setter
     private BigDecimal vat;
 
-    @Column(name = "is_forfait", nullable = false)
+    @Column(columnDefinition = "INTEGER", name = "is_forfait", nullable = false)
     @Getter
     @Setter
     private Boolean forfait = Boolean.FALSE;

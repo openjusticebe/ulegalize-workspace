@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.Map;
 
 @Component
@@ -29,36 +30,46 @@ public class MailService {
      * @param language
      */
     public void sendMailWithoutMeetingAndIcs(EnumMailTemplate type, Map<String, Object> context, String language) {
-        sendMail(type, context, language, null, null, false, false, null);
+        sendMail(type, context, language, null, null);
     }
 
-    /**
-     * no meeting
-     *
-     * @param type
-     * @param context
-     * @param language
-     * @param start
-     * @param end
-     */
-    public void sendMailWithoutMeeting(EnumMailTemplate type, Map<String, Object> context, String language, ZonedDateTime start, ZonedDateTime end) {
-        sendMail(type, context, language, start, end, false, false, null);
-    }
-
-    public void sendMail(EnumMailTemplate type, Map<String, Object> context, String language, ZonedDateTime start, ZonedDateTime end, boolean roomAttached, boolean isModerator, String roomName) {
-        if (activeProfile.equalsIgnoreCase("integrationtest")
-                || activeProfile.equalsIgnoreCase("dev")
-                || activeProfile.equalsIgnoreCase("devDocker")) {
-            return;
-        }
-        String emailTo = (String) context.get("to");
+    public void sendEvent(String eventId, EnumMailTemplate type, Map<String, Object> context, String language, ZonedDateTime start, ZonedDateTime end, boolean roomAttached, boolean isModerator, String urlRoom, List<String> attendeesEmail) {
+        log.debug("Entering Event has to be sent");
         String location = (String) context.get("location");
-        String organizer = null;
-        String subject = null;
-
-        log.info("Sending mail {} and to {} ", type, emailTo);
         EnumLanguage enumLanguage = EnumLanguage.fromshortCode(language);
         log.debug("language {}", enumLanguage);
+
+        String subject = subjectConfiguration(type, context, enumLanguage);
+
+        sendEvent(eventId, location, start, end, type, enumLanguage,
+                type.getName() + language,
+                subject,
+                context,
+                roomAttached,
+                isModerator,
+                urlRoom,
+                attendeesEmail);
+    }
+
+    public void sendMail(EnumMailTemplate type, Map<String, Object> context, String language, ZonedDateTime start, ZonedDateTime end) {
+        log.debug("Entering Email has to be sent");
+        String location = (String) context.get("location");
+        EnumLanguage enumLanguage = EnumLanguage.fromshortCode(language);
+        log.debug("language {}", enumLanguage);
+
+        String subject = subjectConfiguration(type, context, enumLanguage);
+
+        sendEmail(location, start, end, type, enumLanguage,
+                type.getName() + language,
+                subject,
+                context);
+    }
+
+    public String subjectConfiguration(EnumMailTemplate type, Map<String, Object> context, EnumLanguage enumLanguage) {
+        String emailTo = (String) context.get("to");
+
+        log.info("Sending mail {} and to {} ", type, emailTo);
+
         String appointmentType = (String) context.get("appointment_type");
 
         String subjectFr = "";
@@ -75,17 +86,16 @@ public class MailService {
         subjectEn += type.getSubjectEn();
         subjectNl += type.getSubjectNl();
 
+        String subject;
 
         switch (type) {
             case MAILAPPOINTMENT_ADDED_NOTIFICATION:
-                organizer = (String) context.get("lawyer_email");
 
                 subject = context.get("title") != null && !((String) context.get("title")).isEmpty() ? (String) context.get("title") : Utils.getLabel(enumLanguage, subjectFr, subjectEn, subjectNl);
                 break;
             case MAILAPPOINTMENT_CANCEL_NOTIFICATION:
             case MAILAPPOINTMENTCONFIRMEDTEMPLATE:
             case MAILNEWAPPOINTMENTREQUESTTEMPLATE: {
-                organizer = (String) context.get("lawyer_email");
             }
             case MAILAPPOINTMENTREGISTEREDTEMPLATE: {
                 subject = Utils.getLabel(enumLanguage, subjectFr, subjectEn, subjectNl);
@@ -107,17 +117,19 @@ public class MailService {
                 break;
             }
             default:
+                subject = "";
                 break;
         }
-        sendMailWithoutMeetingAndIcs(organizer, location, start, end, type, enumLanguage,
-                type.getName() + language,
-                subject,
-                context,
-                roomAttached, isModerator, roomName);
+
+        return subject;
 
     }
 
-    private void sendMailWithoutMeetingAndIcs(String organizer, String location, ZonedDateTime start, ZonedDateTime end, EnumMailTemplate enumMailTemplate, EnumLanguage enumLanguage, String template, String subject, Map<String, Object> context, boolean roomAttached, boolean isModerator, String roomName) {
-        mailProducer.sendEmail(organizer, location, start, end, enumMailTemplate, enumLanguage, template, subject, context, roomAttached, isModerator, roomName );
+    private void sendEmail(String location, ZonedDateTime start, ZonedDateTime end, EnumMailTemplate enumMailTemplate, EnumLanguage enumLanguage, String template, String subject, Map<String, Object> context) {
+        mailProducer.sendEmail(location, start, end, enumMailTemplate, enumLanguage, template, subject, context);
+    }
+
+    private void sendEvent(String eventId, String location, ZonedDateTime start, ZonedDateTime end, EnumMailTemplate enumMailTemplate, EnumLanguage enumLanguage, String template, String subject, Map<String, Object> context, boolean roomAttached, boolean isModerator, String urlRoom, List<String> attendeesEmail) {
+        mailProducer.sendEvent(eventId, location, start, end, enumMailTemplate, enumLanguage, template, subject, context, roomAttached, isModerator, urlRoom, attendeesEmail);
     }
 }

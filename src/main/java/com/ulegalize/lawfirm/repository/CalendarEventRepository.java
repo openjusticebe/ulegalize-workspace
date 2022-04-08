@@ -31,25 +31,27 @@ public interface CalendarEventRepository extends JpaRepository<TCalendarEvent, L
 	V2
 	 */
 
-    @Query(value = "SELECT e" +
+    @Query(value = "SELECT DISTINCT e" +
             " from TCalendarEvent e " +
             " left join e.tUsers user " +
-            " where ( user.id = :userId or e.vcKey = :vcKey)" +
+            " left join e.tCalendarParticipants participant" +
+            " where ( user.id = :userId or e.vcKey = :vcKey or participant.userEmail = :userEmail)" +
             " and e.eventType in :eventTypesSelected" +
             " and e.start >= :start" +
             " and e.end <= :end ")
-    List<TCalendarEvent> findCalendarEventsByUserIdAndDate(Long userId, String vcKey, Date start, Date end, List<EnumCalendarEventType> eventTypesSelected);
+    List<TCalendarEvent> findCalendarEventsByUserIdAndDate(Long userId, String vcKey, Date start, Date end, List<EnumCalendarEventType> eventTypesSelected, String userEmail);
 
-    @Query(value = "SELECT e" +
+    @Query(value = "SELECT DISTINCT e" +
             " from TCalendarEvent e " +
             " join e.dossier dossier " +
             " left join e.tUsers user " +
-            " where ( user.id = :userId or e.vcKey = :vcKey) " +
+            " left join e.tCalendarParticipants participant" +
+            " where ( user.id = :userId or e.vcKey = :vcKey or participant.userEmail = :userEmail)" +
             " and dossier.idDoss = :dossierId" +
             " and e.eventType in :eventTypesSelected" +
             " and e.start >= :start" +
             " and e.end <= :end ")
-    List<TCalendarEvent> findCalendarEventsByUserIdAndDateAndDossierId(Long userId, Long dossierId, String vcKey, Date start, Date end, List<EnumCalendarEventType> eventTypesSelected);
+    List<TCalendarEvent> findCalendarEventsByUserIdAndDateAndDossierId(Long userId, Long dossierId, String vcKey, Date start, Date end, List<EnumCalendarEventType> eventTypesSelected, String userEmail);
 
     @Query(
             value = "SELECT e" +

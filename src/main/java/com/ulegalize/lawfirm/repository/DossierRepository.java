@@ -13,8 +13,27 @@ import java.util.Optional;
 
 public interface DossierRepository extends JpaRepository<TDossiers, Long> {
 
-    @Query(value = "SELECT d from TDossiers d join d.dossierRightsList dr where dr.lawfirmUsers.lawfirm.vckey = ?1")
+    @Query(value = "SELECT d from TDossiers d join d.dossierRightsList dr where dr.lawfirmUsers.lawfirm.vckey = ?1 order by d.year_doss desc, d.num_doss desc")
     List<TDossiers> findAllByVCKey(String vcKey);
+
+    @Query(value = "SELECT distinct d" +
+            " from TDossiers d" +
+            " join d.dossierRightsList dr " +
+            " join dr.lawfirmUsers lu" +
+            " join lu.user user" +
+            " where lu.lawfirm.vckey = ?1 " +
+            " and d.idDoss not in (" +
+            " SELECT distinct d.idDoss" +
+            " from TDossiers d" +
+            " join d.dossierRightsList dr " +
+            " join dr.lawfirmUsers lu" +
+            " join lu.user user" +
+            " where lu.lawfirm.vckey = ?1 " +
+            " and user.id = ?2 " +
+            " and dr.vcOwner in (?3) " +
+            ")" +
+            " order by d.year_doss desc, d.num_doss desc")
+    List<TDossiers> findAllByVCKeyAndUserId(String vcKey, Long userId, List<EnumVCOwner> vcOwner);
 
     @Query(value = "SELECT d from TDossiers d " +
             " join fetch d.dossierRightsList dr " +
@@ -28,12 +47,14 @@ public interface DossierRepository extends JpaRepository<TDossiers, Long> {
     @Query(value = "SELECT d from TDossiers d join d.dossierRightsList dr where d.idDoss = ?1 and dr.vcUserId = ?2")
     Optional<TDossiers> findAuthorizedByIdDoss(Long isDossier, Long vcUserId);
 
-    @Query(nativeQuery = true, value = "select tdossiers0_.id_doss as id, tdossiers0_.year_doss as year, tdossiers0_.num_doss as num, users.initiales," +
+    @Query(nativeQuery = true, value = "select tdossiers0_.id_doss as id, tdossiers0_.year_doss as year, tdossiers0_.num_doss as num, users.initiales, " +
+            " GROUP_CONCAT( concat(coalesce(tclients4_.f_nom,''), ' ' , coalesce(tclients4_.f_prenom,'')) SEPARATOR ',' ) as partiesName, " +
             " tclients2_.f_prenom as firstnameClient, tclients2_.f_nom as lastnameClient, tclients2_.f_company as companyClient, tclients2_.id_client as idClient, " +
             " tclients3_.f_prenom as adverseFirstnameClient, tclients3_.f_nom as adverseLastnameClient, tclients3_.f_company as adverseCompanyClient, tclients3_.id_client as adverseIdClient, " +
             " round(ifnull(presta.cout,0), 2)+ifnull(fraisadmin.cout,0)+ ifnull(fraisProcedure.cout,0)+ ifnull(fraisCollaboration.cout,0) - round(ifnull(t_factures.cout,0), 2) balance," +
             " owner.vc_key as vckeyOwner," +
             " tdossiers0_.date_close as closeDossier," +
+            " tdossiers0_.date_open as openDossier," +
             " tdossiers0_.doss_type as type," +
             " dossierrig1_.last_access_date as lastAccessDate" +
             " from t_dossiers tdossiers0_ " +
@@ -108,19 +129,8 @@ public interface DossierRepository extends JpaRepository<TDossiers, Long> {
             " when ?8 = 1 then tdossiers0_.date_close is not null else 1=1 end) " +
             " group by tdossiers0_.id_doss   ," +
             "       tdossiers0_.year_doss  ," +
-            "       tdossiers0_.num_doss   ," +
-            "       users.initiales," +
-            "       tclients2_.f_prenom    ," +
-            "       tclients2_.f_nom       ," +
-            "       tclients2_.f_company   ," +
-            "       tclients2_.id_client   ," +
-            "       tclients3_.f_prenom    ," +
-            "       tclients3_.f_nom       ," +
-            "       tclients3_.f_company   ," +
-            "       tclients3_.id_client   ," +
-            "       owner.vc_key           ," +
-            "       tdossiers0_.date_close" +
-            " order by dossierrig1_.last_access_date desc, tdossiers0_.year_doss desc, tdossiers0_.num_doss desc",
+            "       tdossiers0_.num_doss  " +
+            " ",
             countQuery = "select count(tdossiers0_.id_doss) " +
                     " from t_dossiers tdossiers0_ " +
                     " inner join t_dossier_rights dossierrig1_ on tdossiers0_.id_doss = dossierrig1_.dossier_id " +
@@ -192,7 +202,11 @@ public interface DossierRepository extends JpaRepository<TDossiers, Long> {
                     "  and (case when ?8 = 0 then tdossiers0_.date_close is null " +
                     " when ?8 = 1 then tdossiers0_.date_close is not null else 1=1 end)" +
                     " group by tdossiers0_.id_doss")
-    Page<IDossierDTO> findByVcUserIdAllWithPagination(Long vcUserId, List<Integer> vcOwner, String searchCriteriaClient, String year, Long number, String initiales, Boolean withBalance, Boolean searchArchived, Pageable pageable);
+    Page<IDossierDTO> findByVcUserIdAllWithPagination(Long vcUserId, List<Integer> vcOwner,
+                                                      String searchCriteriaClient, String year, Long number, String initiales,
+                                                      Boolean withBalance,
+                                                      Boolean searchArchived,
+                                                      Pageable pageable);
 
     @Query(value = "SELECT COALESCE(max(d.num_doss) , 0) +1 " +
             " from TDossiers d " +
@@ -202,8 +216,46 @@ public interface DossierRepository extends JpaRepository<TDossiers, Long> {
             " and d.year_doss = ?2")
     Long getMaxDossierByVckeyAndYear(String vcKey, String year);
 
-    @Query(value = "SELECT d from TDossiers d join d.dossierRightsList dr where dr.vcUserId = ?1")
-    List<TDossiers> findAffairesByVcUserId(Long vcUserId);
+    @Query(nativeQuery = true, value = "select tdossiers0_.id_doss as id, tdossiers0_.year_doss as year, tdossiers0_.num_doss as num, users.initiales, " +
+            " GROUP_CONCAT( concat(coalesce(tclients4_.f_nom,''), ' ' , coalesce(tclients4_.f_prenom,'')) SEPARATOR ',' ) as partiesName, " +
+            " tclients2_.f_prenom as firstnameClient, tclients2_.f_nom as lastnameClient, tclients2_.f_company as companyClient, tclients2_.id_client as idClient, " +
+            " tclients3_.f_prenom as adverseFirstnameClient, tclients3_.f_nom as adverseLastnameClient, tclients3_.f_company as adverseCompanyClient, tclients3_.id_client as adverseIdClient, " +
+            " owner.vc_key as vckeyOwner," +
+            " dossierrig1_.vc_owner as owner," +
+            " tdossiers0_.date_close as closeDossier," +
+            " tdossiers0_.doss_type as type," +
+            " dossierrig1_.last_access_date as lastAccessDate" +
+            " from t_dossiers tdossiers0_ " +
+            " inner join t_dossier_rights dossierrig1_ on tdossiers0_.id_doss = dossierrig1_.dossier_id " +
+            " left join (" +
+            " select distinct tu2.vc_key, d.id_doss from t_dossiers d" +
+            " inner join t_dossier_rights dr on d.id_doss = dr.dossier_id" +
+            " inner join t_virtualcab_users tu2 on tu2.id = dr.VC_USER_ID" +
+            " where  dr.VC_OWNER = 1" +
+            " ) owner on owner.id_doss = tdossiers0_.id_doss " +
+            " inner join t_users users on users.id = tdossiers0_.id_user_resp " +
+            " inner join t_virtualcab_users tu on tu.id = dossierrig1_.VC_USER_ID " +
+            " left join t_dossier_contact as t_dossier_contact on t_dossier_contact.dossier_id = tdossiers0_.id_doss and t_dossier_contact.contact_type_id = 1 " +
+            " left join t_clients as tclients2_ on t_dossier_contact.client_id = tclients2_.id_client " +
+            " left join t_dossier_contact as t_dossier_contact2 on t_dossier_contact2.dossier_id = tdossiers0_.id_doss and t_dossier_contact2.contact_type_id = 2" +
+            " left join t_clients as tclients3_ on t_dossier_contact2.client_id = tclients3_.id_client" +
+            " left join t_dossier_contact as t_dossier_contact3 on t_dossier_contact3.dossier_id = tdossiers0_.id_doss and t_dossier_contact3.contact_type_id = 3" +
+            " left join t_clients as tclients4_ on t_dossier_contact3.client_id = tclients4_.id_client" +
+            " where dossierrig1_.vc_user_id = ?1 " +
+            "   and dossierrig1_.vc_owner in (?2) " +
+            "   and (" +
+            " tclients2_.f_prenom like CONCAT('%', ?3, '%') or tclients2_.f_nom like CONCAT('%', ?3, '%') " +
+            " or tclients3_.f_prenom like CONCAT('%', ?3, '%') or tclients3_.f_nom like CONCAT('%', ?3, '%') " +
+            " or tclients4_.f_prenom like CONCAT('%', ?3, '%') or tclients4_.f_nom like CONCAT('%', ?3, '%') " +
+            ") " +
+            "   and (case when ?6 = 0 then tdossiers0_.year_doss like COALESCE(CONCAT('%', ?4, '%'), '%') or tdossiers0_.num_doss like COALESCE(CONCAT(?5, '%'), '%') " +
+            "    when ?6 = 1 then tdossiers0_.year_doss like COALESCE(CONCAT('%', ?4, '%'), '%') and tdossiers0_.num_doss like COALESCE(CONCAT(?5, '%'), '%') end)  " +
+            "  and tdossiers0_.date_close is null  " +
+            " group by tdossiers0_.id_doss   ," +
+            "       tdossiers0_.year_doss  ," +
+            "       tdossiers0_.num_doss   " +
+            " order by dossierrig1_.last_access_date desc, tdossiers0_.year_doss desc, tdossiers0_.num_doss desc")
+    List<IDossierDTO> findAffairesByVcUserId(Long vcUserId, List<Integer> vcOwner, String searchCriteriaClient, String year, Long number, boolean bothYearAndNumber);
 
     @Query(value = "SELECT count(d) from TDossiers d " +
             " join d.dossierContactList dc" +
@@ -212,4 +264,13 @@ public interface DossierRepository extends JpaRepository<TDossiers, Long> {
             " or cc.id_client = :clientAdvId" +
             " or d.opposingCounsel.id_client = :clientOpposing")
     Long countByClient_cabAndOrClient_adv(Long clientId, Long clientAdvId, Long clientOpposing);
+
+    @Query(value = "SELECT d from LawfirmUsers l " +
+            " join l.lawfirm lawfirm" +
+            " join l.dossierRightsList dr" +
+            " join dr.tDossiers d" +
+            " where lawfirm.vckey = :vcKey" +
+            " and dr.dossierId = :dossierId" +
+            " ORDER BY d.year_doss, d.num_doss")
+    List<TDossiers> findByVcKeyAndDossier(String vcKey, Long dossierId);
 }

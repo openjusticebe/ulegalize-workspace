@@ -33,7 +33,7 @@ public class TFacturesRepositoryTests extends EntityTest {
     @Test
     public void test_A_getInvoicesByVcKey() {
 
-        LawfirmEntity lawfirmEntity = createLawfirm();
+        LawfirmEntity lawfirmEntity = createLawfirm("MYLAW");
         TFactures tFactures = createFacture(lawfirmEntity);
 
         List<TFactures> tFacturesList = tFacturesRepository.findAll(lawfirmEntity.getVckey());
@@ -47,7 +47,7 @@ public class TFacturesRepositoryTests extends EntityTest {
 
     @Test
     public void test_B_getInvoiceById() {
-        LawfirmEntity lawfirmEntity = createLawfirm();
+        LawfirmEntity lawfirmEntity = createLawfirm("MYLAW");
         TFactures tFactures = createFacture(lawfirmEntity);
 
         Optional<TFactures> factureFounded = tFacturesRepository.findById(tFactures.getIdFacture());
@@ -59,7 +59,7 @@ public class TFacturesRepositoryTests extends EntityTest {
 
     @Test
     public void test_C_findAllWithPagination() {
-        LawfirmEntity lawfirmEntity = createLawfirm();
+        LawfirmEntity lawfirmEntity = createLawfirm("MYLAW");
         TFactures tFactures = createFacture(lawfirmEntity);
 
         Sort.Order order = new Sort.Order(Sort.Direction.ASC, "idFactureType");
@@ -74,7 +74,7 @@ public class TFacturesRepositoryTests extends EntityTest {
 
     @Test
     public void test_D_findAllWithPagination_byClient() {
-        LawfirmEntity lawfirmEntity = createLawfirm();
+        LawfirmEntity lawfirmEntity = createLawfirm("MYLAW");
         TFactures tFactures = createFacture(lawfirmEntity);
 
         Sort.Order order = new Sort.Order(Sort.Direction.ASC, "idFactureType");
@@ -89,7 +89,7 @@ public class TFacturesRepositoryTests extends EntityTest {
 
     @Test
     public void test_E_findAllWithPagination_noResult() {
-        LawfirmEntity lawfirmEntity = createLawfirm();
+        LawfirmEntity lawfirmEntity = createLawfirm("MYLAW");
         TFactures tFactures = createFacture(lawfirmEntity);
 
         Sort.Order order = new Sort.Order(Sort.Direction.ASC, "idFactureType");
@@ -103,7 +103,7 @@ public class TFacturesRepositoryTests extends EntityTest {
 
     @Test
     public void test_F_sumHtvaInvoiceByVcKey() {
-        LawfirmEntity lawfirmEntity = createLawfirm();
+        LawfirmEntity lawfirmEntity = createLawfirm("MYLAW");
         TFactures tFactures = createFacture(lawfirmEntity);
 
         BigDecimal sum = tFacturesRepository.sumHtvaInvoiceByVcKey(lawfirmEntity.getVckey(), tFactures.getIdDoss());
@@ -117,7 +117,7 @@ public class TFacturesRepositoryTests extends EntityTest {
 
     @Test
     public void test_H_sumTvacInvoiceByVcKey() {
-        LawfirmEntity lawfirmEntity = createLawfirm();
+        LawfirmEntity lawfirmEntity = createLawfirm("MYLAW");
         TFactures tFactures = createFacture(lawfirmEntity);
 
         BigDecimal sum = tFacturesRepository.sumTvacInvoiceByVcKey(lawfirmEntity.getVckey(), tFactures.getIdDoss());

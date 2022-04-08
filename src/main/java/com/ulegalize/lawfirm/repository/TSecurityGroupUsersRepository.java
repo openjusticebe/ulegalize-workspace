@@ -19,6 +19,24 @@ public interface TSecurityGroupUsersRepository extends JpaRepository<TSecurityGr
             " and securityGroup.tSecAppGroupId in :enumSecurityAppGroups ")
     public List<TSecurityGroupRights> findByIdUserAndVckey(Long idUser, String vcKey, List<EnumSecurityAppGroups> enumSecurityAppGroups);
 
+    @Query("select securityGroup.tSecurityGroupRightsList" +
+            " from TSecurityGroupUsers tsgu " +
+            " join tsgu.tSecurityGroups securityGroup " +
+            " where tsgu.user.id = :idUser " +
+            " and securityGroup.vcKey = :vcKey" +
+            " and securityGroup.tSecAppGroupId = :enumSecurityAppGroups ")
+    public List<TSecurityGroupRights> findByIdUserAndVckeyAndEqual(Long idUser, String vcKey, EnumSecurityAppGroups enumSecurityAppGroups);
+
+    @Query("select tsgu" +
+            " from TSecurityGroupUsers tsgu " +
+            " join tsgu.user.lawfirmUsers lawfirmUsers " +
+            " join tsgu.tSecurityGroups securityGroup " +
+            " where securityGroup.vcKey = :vcKey" +
+            " and lawfirmUsers.lawfirm.vckey = :vcKey" +
+            " and lawfirmUsers.isActive = true" +
+            " and securityGroup.tSecAppGroupId = :enumSecurityAppGroup ")
+    public List<TSecurityGroupUsers> findByVckeyAndRight(String vcKey, EnumSecurityAppGroups enumSecurityAppGroup);
+
     @Query("select tsgu" +
             " from TSecurityGroupUsers tsgu " +
             " join tsgu.tSecurityGroups securityGroup " +
@@ -27,10 +45,6 @@ public interface TSecurityGroupUsersRepository extends JpaRepository<TSecurityGr
             " and securityGroup.tSecAppGroupId = :enumSecurityAppGroup ")
     public List<TSecurityGroupUsers> findBySecGroupUserIdAndVckey(Long secGroupId, String vcKey, EnumSecurityAppGroups enumSecurityAppGroup);
 
-    @Query("select tsgu " +
-            " from TSecurityGroupUsers tsgu " +
-            " join tsgu.tSecurityGroups sg where sg.vcKey = :vcKey ")
-    public List<TSecurityGroupUsers> findByVckey(String vcKey);
 
     @Query("select tsgu " +
             " from TSecurityGroupUsers tsgu " +
