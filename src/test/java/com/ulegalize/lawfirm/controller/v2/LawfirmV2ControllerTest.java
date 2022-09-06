@@ -7,11 +7,7 @@ import com.ulegalize.lawfirm.EntityTest;
 import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.converter.EntityToUserConverter;
 import com.ulegalize.lawfirm.model.entity.*;
-import com.ulegalize.lawfirm.model.enumeration.EnumValid;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -127,9 +123,22 @@ public class LawfirmV2ControllerTest extends EntityTest {
         TCalendarEvent tCalendarEvent = createTCalendarEvent(lawfirm, EnumCalendarEventType.PERM, new Date(), new Date());
 
         mvc.perform(get("/v2/lawfirm/users")
-                .with(authentication(authentication))
-                .contentType(MediaType.APPLICATION_JSON))
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$[0].public", is(lawfirm.getLawfirmUsers().get(0).isPublic())))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @Disabled
+    void test_D_searchLawfirmByNameAndStatus() throws Exception {
+
+        LawfirmEntity lawfirm = createLawfirm("CAB1");
+
+        mvc.perform(get("/v2/lawfirm/searchbystatus")
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .param("name", lawfirm.getVckey()))
                 .andExpect(status().isOk());
     }
 }

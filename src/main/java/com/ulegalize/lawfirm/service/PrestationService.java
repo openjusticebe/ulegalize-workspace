@@ -1,13 +1,14 @@
 package com.ulegalize.lawfirm.service;
 
 import com.ulegalize.dto.PrestationSummary;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 
 public interface PrestationService {
-    public List<PrestationSummary> getAllPrestations(int limit, int offset, Long userId, String vcKey);
+    public Page<PrestationSummary> getAllPrestations(int limit, int offset, Long userId, String vcKey, String searchCriteriaYear, Long searchCriteriaNumber, Integer searchCriteriaIdTsType);
 
-    List<PrestationSummary> getAllPrestationsByDossierId(int limit, int offset, Long dossierId, Long userId, String vcKey);
+    Page<PrestationSummary> getAllPrestationsByDossierId(int limit, int offset, Long dossierId, Long userId, String vcKey);
 
     List<PrestationSummary> getPrestationsByDossierId(Long dossierId, Long userId, String vcKey);
 

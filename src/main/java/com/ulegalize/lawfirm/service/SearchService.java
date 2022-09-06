@@ -9,7 +9,7 @@ import java.util.List;
 public interface SearchService {
     List<ItemLongDto> getUserResponsableByVcKey(String vcKey);
 
-    List<ItemDto> getMatieres();
+    List<ItemLongDto> getMatieres(String dossierType, String language);
 
     List<ItemStringDto> getLanguages();
 
@@ -35,7 +35,7 @@ public interface SearchService {
 
     List<ItemLongDto> getDeboursType(String vcKey);
 
-    List<ItemLongDto> getFacturesTypes(String vcKey, Boolean isCreated);
+    List<ItemLongDto> getFacturesTypes(String vcKey, Boolean isCreated, String language);
 
     List<ItemDto> getFactureEcheances(String vcKey);
 

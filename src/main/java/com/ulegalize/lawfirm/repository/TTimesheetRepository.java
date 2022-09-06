@@ -1,6 +1,7 @@
 package com.ulegalize.lawfirm.repository;
 
 import com.ulegalize.lawfirm.model.entity.TTimesheet;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -10,17 +11,32 @@ import java.util.List;
 
 public interface TTimesheetRepository extends JpaRepository<TTimesheet, Long>, JpaSpecificationExecutor<TTimesheet> {
 
-    @Query(value = "SELECT d from TTimesheet d " +
-            " join d.tDossiers.dossierRightsList dr " +
-            " where dr.vcUserId = ?1 " +
-            " and dr.vcOwner in (1, 2)")
-    List<TTimesheet> findAllWithPagination(Long vcUserIds, Pageable pageable);
+    @Query(
+            value = "SELECT t from TTimesheet t " +
+                    " join t.tDossiers.dossierRightsList dr " +
+                    " join t.tDossiers d" +
+                    " join t.tTimesheetType tsT" +
+                    " where dr.vcUserId = ?1 " +
+                    " and dr.vcOwner in (1, 2)" +
+                    " and d.year_doss like COALESCE(concat('%', ?2, '%'), '%')" +
+                    " and d.num_doss like COALESCE(CONCAT(?3, '%'), '%')" +
+                    " and tsT.idTs like COALESCE(?4, '%')",
+            countQuery = "SELECT count(t) from TTimesheet t" +
+                    " join t.tDossiers.dossierRightsList dr " +
+                    " join t.tDossiers d" +
+                    " join t.tTimesheetType tsT" +
+                    " where dr.vcUserId = ?1 " +
+                    " and dr.vcOwner in (1, 2)" +
+                    " and d.year_doss like COALESCE(concat('%', ?2, '%'), '%')" +
+                    " and d.num_doss like COALESCE(CONCAT(?3, '%'), '%')" +
+                    " and tsT.idTs like COALESCE(?4, '%')")
+    Page<TTimesheet> findAllWithPagination(Long vcUserIds, String searchCriteriaYear, Long numberDossier, Integer idTsType, Pageable pageable);
 
     @Query(value = "SELECT d from TTimesheet d " +
             " join d.tDossiers.dossierRightsList dr " +
             " where dr.dossierId = ?1" +
             " and dr.vcUserId = ?2")
-    List<TTimesheet> findAllByDossierIdWithPagination(Long dossierId, Long vcUserIds, Pageable pageable);
+    Page<TTimesheet> findAllByDossierIdWithPagination(Long dossierId, Long vcUserIds, Pageable pageable);
 
     @Query(value = "SELECT d from TTimesheet d" +
             " join d.tDossiers.dossierRightsList dr " +

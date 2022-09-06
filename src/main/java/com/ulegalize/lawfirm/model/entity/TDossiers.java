@@ -1,6 +1,8 @@
 package com.ulegalize.lawfirm.model.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.ulegalize.lawfirm.model.entity.converter.EnumMatiereRubriqueConverter;
+import com.ulegalize.lawfirm.model.enumeration.EnumMatiereRubrique;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -85,27 +87,17 @@ public class TDossiers implements Serializable {
     @Setter
     private String userUpd;
 
-    //    @ManyToOne
-//    @JoinColumn(name = "client_cab")
-//    @Getter
-//    @Setter
-//    private TClients client_cab;
-//    @ManyToOne
-//    @JoinColumn(name = "client_adv")
-//    @Getter
-//    @Setter
-//    private TClients client_adv;
     @ManyToOne
     @JoinColumn(name = "opposing_counsel")
     @Getter
     @Setter
     private TClients opposingCounsel;
 
-    @ManyToOne
-    @JoinColumn(name = "id_matiere_rubrique")
+    @Column(name = "id_matiere_rubrique", nullable = false)
+    @Convert(converter = EnumMatiereRubriqueConverter.class)
     @Getter
     @Setter
-    private TMatiereRubriques tMatiereRubriques;
+    private EnumMatiereRubrique enumMatiereRubrique;
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "dossier_id")

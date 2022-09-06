@@ -3,17 +3,19 @@ package com.ulegalize.lawfirm.model.converter;
 import com.ulegalize.dto.ContactSummary;
 import com.ulegalize.dto.ItemStringDto;
 import com.ulegalize.enumeration.EnumClientType;
+import com.ulegalize.enumeration.EnumLanguage;
 import com.ulegalize.enumeration.EnumTitle;
 import com.ulegalize.lawfirm.model.entity.TClients;
-import com.ulegalize.lawfirm.utils.SuperConverter;
+import com.ulegalize.lawfirm.utils.SuperTriConverter;
 import com.ulegalize.utils.ClientsUtils;
+import com.ulegalize.utils.Utils;
 import org.springframework.stereotype.Component;
 
 @Component
-public class EntityToContactSummaryConverter implements SuperConverter<TClients, ContactSummary> {
+public class EntityToContactSummaryConverter implements SuperTriConverter<TClients, String, ContactSummary> {
 
     @Override
-    public ContactSummary apply(TClients entity) {
+    public ContactSummary apply(TClients entity, String language) {
         ContactSummary contactSummary = new ContactSummary();
         contactSummary.setId(entity.getId_client());
         contactSummary.setEmail(entity.getF_email());
@@ -26,7 +28,7 @@ public class EntityToContactSummaryConverter implements SuperConverter<TClients,
         EnumTitle enumTitle = EnumTitle.fromId(entity.getId_title());
         if (enumTitle != null) {
             contactSummary.setTitle(enumTitle);
-            contactSummary.setTitleItem(new ItemStringDto(entity.getId_title(), enumTitle.getTitle()));
+            contactSummary.setTitleItem(new ItemStringDto(entity.getId_title(), Utils.getLabel(EnumLanguage.fromshortCode(language), enumTitle.getLabelFr(), enumTitle.getLabelEn(), enumTitle.getLabelDe(), enumTitle.getLabelNl())));
         }
         contactSummary.setLanguage(entity.getId_lg());
         contactSummary.setAddress(entity.getF_rue());

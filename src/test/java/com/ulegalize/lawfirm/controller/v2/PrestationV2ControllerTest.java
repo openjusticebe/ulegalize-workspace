@@ -1,16 +1,12 @@
 package com.ulegalize.lawfirm.controller.v2;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ulegalize.enumeration.DriveType;
-import com.ulegalize.enumeration.EnumLanguage;
-import com.ulegalize.enumeration.EnumRefCurrency;
-import com.ulegalize.enumeration.EnumVCOwner;
+import com.ulegalize.enumeration.*;
 import com.ulegalize.lawfirm.EntityTest;
 import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.entity.LawfirmEntity;
 import com.ulegalize.lawfirm.model.entity.TDossiers;
 import com.ulegalize.lawfirm.model.entity.TTimesheet;
-import com.ulegalize.lawfirm.model.enumeration.EnumValid;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
@@ -24,10 +20,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -72,8 +70,8 @@ public class PrestationV2ControllerTest extends EntityTest {
         TTimesheet tTimesheet = createTTimesheet(lawfirm, dossier);
 
         mvc.perform(delete("/v2/prestations/" + tTimesheet.getIdTs())
-                .with(authentication(authentication))
-                .contentType(MediaType.APPLICATION_JSON))
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$", is(tTimesheet.getIdTs().intValue())))
                 .andExpect(status().isOk());
 
@@ -83,4 +81,18 @@ public class PrestationV2ControllerTest extends EntityTest {
 
     }
 
+    @Test
+    void test_B_getPrestations() throws Exception {
+
+        TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
+        TTimesheet tTimesheet = createTTimesheet(lawfirm, dossier);
+
+        mvc.perform(get("/v2/prestations")
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .param("offset", String.valueOf(0))
+                        .param("limit", String.valueOf(10)))
+                .andExpect(jsonPath("$.content[0].id", equalTo(tTimesheet.getIdTs().intValue())))
+                .andExpect(status().isOk());
+    }
 }

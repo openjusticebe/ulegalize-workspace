@@ -10,12 +10,9 @@ import com.ulegalize.lawfirm.model.converter.EntityToLawfirmPrivateConverter;
 import com.ulegalize.lawfirm.model.entity.LawfirmEntity;
 import com.ulegalize.lawfirm.model.entity.LawfirmUsers;
 import com.ulegalize.lawfirm.model.entity.LawfirmWebsiteEntity;
-import com.ulegalize.lawfirm.repository.DossierRepository;
 import com.ulegalize.lawfirm.repository.LawfirmRepository;
-import com.ulegalize.lawfirm.service.LawfirmService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import springfox.documentation.annotations.ApiIgnore;
@@ -34,12 +31,6 @@ public class LawfirmController {
 
     @Autowired
     private LawfirmRepository lawfirmRepository;
-
-    @Autowired
-    private LawfirmService lawfirmService;
-
-    @Autowired
-    private DossierRepository dossierRepository;
 
     @Autowired
     EntityToLawfirmPrivateConverter entityToLawfirmPrivateConverter;
@@ -113,16 +104,6 @@ public class LawfirmController {
         lawfirmRepository.save(lawfirm);
 
         return lawfirm.getLawfirmWebsite();
-    }
-
-    @PutMapping(value = "/update-token", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public LawfirmEntity updateToken(@RequestBody LawfirmEntity lawfirmUpdted) throws LawfirmBusinessException {
-        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-
-        log.debug("updateToken by vckey {}", lawfirmToken.getVcKey());
-        LawfirmEntity lawfirm = checkLawfirm(lawfirmToken.getVcKey());
-
-        return lawfirmService.updateToken(lawfirm, lawfirmUpdted);
     }
 
     @RequestMapping(method = RequestMethod.GET, path = "/{vckey}/lawyers")

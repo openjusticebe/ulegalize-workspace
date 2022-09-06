@@ -5,6 +5,7 @@ import com.ulegalize.enumeration.EnumLanguage;
 import com.ulegalize.lawfirm.model.LawyerDutyRequest;
 import com.ulegalize.lawfirm.model.entity.LawfirmUsers;
 import com.ulegalize.lawfirm.model.entity.TCalendarEvent;
+import com.ulegalize.lawfirm.model.entity.TWorkspaceAssociated;
 import com.ulegalize.utils.DossiersUtils;
 import com.ulegalize.utils.Utils;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,7 +37,7 @@ public class EmailUtils {
         model.put("appointment_note", appointment.getNote());
         model.put("appointment_email", appointment.getEmail());
         model.put("appointment_phone", appointment.getPhone());
-        model.put("appointment_type", Utils.getLabel(enumLanguage, eventType.getLabelFr(), eventType.getLabelEn(), eventType.getLabelNl()));
+        model.put("appointment_type", Utils.getLabel(enumLanguage, eventType.getLabelFr(), eventType.getLabelEn(), eventType.getLabelNl(), eventType.getLabelNl()));
         return model;
     }
 
@@ -56,12 +57,47 @@ public class EmailUtils {
         return model;
     }
 
-    public static Map<String, Object> prepareContextVerifyUser(String emailTo, String verifyUrl, String clientFrom) {
+    public static Map<String, Object> prepareContextVerifyUser(String emailTo, String email, String hash, String language, String clientFrom) {
         Map<String, Object> model = communPrepareContext(clientFrom, "", emailTo);
 
+        String url = "https://" + clientFrom + "." + DOMAIN_URL;
+
+        String verifyUrl = url + "/verify" + "?email=" + email + "&key=" + hash + "&language=" + language;
         model.put("verifyUrl", verifyUrl);
 
         return model;
+    }
+
+    public static Map<String, Object> prepareContextCreateAssociation(String emailTo, TWorkspaceAssociated tWorkspaceAssociated, String associateWorkspaceAcceptUrl, String associateWorkspaceDeclineUrl, String clientFrom) {
+        Map<String, Object> model = communPrepareContext(clientFrom, "", emailTo);
+
+        String url = "https://" + clientFrom + "." + DOMAIN_URL;
+        String associateworkspace = url + "/associateworkspace";
+        associateWorkspaceAcceptUrl = associateworkspace + associateWorkspaceAcceptUrl;
+        associateWorkspaceDeclineUrl = associateworkspace + associateWorkspaceDeclineUrl;
+
+        model.put("associateWorkspaceAcceptUrl", associateWorkspaceAcceptUrl);
+        model.put("associateWorkspaceDeclineUrl", associateWorkspaceDeclineUrl);
+
+        model.put("message", tWorkspaceAssociated.getMessage());
+        model.put("virtualCab", tWorkspaceAssociated.getLawfirmSender().getVckey());
+
+        return model;
+    }
+
+    public static Map<String, Object> prepareContextWelcomeEmail(String emailTo, String clientFrom) {
+        return communPrepareContext(clientFrom, "", emailTo);
+    }
+
+    public static Map<String, Object> prepareContextSupportEmail(String emailTo, String clientFrom, String appointementUl) {
+        Map<String, Object> model = communPrepareContext(clientFrom, "", emailTo);
+        model.put("appointementUrl", appointementUl);
+        return model;
+
+    }
+
+    public static Map<String, Object> prepareContextReminderEmail(String emailTo, String clientFrom) {
+        return communPrepareContext(clientFrom, "", emailTo);
     }
 
     public static Map<String, Object> prepareContextForNewAppointmentEmail(String language, LawyerDutyRequest appointment, EnumCalendarEventType eventType, LawfirmUsers lawyer, String portalUrl, String clientFrom) {
@@ -79,7 +115,7 @@ public class EmailUtils {
         model.put("appointment_note", appointment.getNote());
         model.put("appointment_email", appointment.getEmail());
         model.put("appointment_phone", appointment.getPhone());
-        model.put("appointment_type", Utils.getLabel(enumLanguage, eventType.getLabelFr(), eventType.getLabelEn(), eventType.getLabelNl()));
+        model.put("appointment_type", Utils.getLabel(enumLanguage, eventType.getLabelFr(), eventType.getLabelEn(), eventType.getLabelNl(), eventType.getLabelNl()));
 
         return model;
     }
@@ -101,7 +137,7 @@ public class EmailUtils {
         model.put("appointment_time", formatTimeToString(appointment.getStart()));
         model.put("appointment_time_end", formatTimeToString(appointment.getEnd()));
         model.put("appointment_note", appointment.getNote());
-        model.put("appointment_type", Utils.getLabel(enumLanguage, appointment.getEventType().getLabelFr(), appointment.getEventType().getLabelEn(), appointment.getEventType().getLabelNl()));
+        model.put("appointment_type", Utils.getLabel(enumLanguage, appointment.getEventType().getLabelFr(), appointment.getEventType().getLabelEn(), appointment.getEventType().getLabelNl(), appointment.getEventType().getLabelNl()));
 
         return model;
     }
@@ -119,7 +155,7 @@ public class EmailUtils {
         model.put("lawyer_email", emailContact);
         EnumLanguage enumLanguage = EnumLanguage.fromshortCode(language);
 
-        model.put("appointment_type", Utils.getLabel(enumLanguage, appointment.getEventType().getLabelFr(), appointment.getEventType().getLabelEn(), appointment.getEventType().getLabelNl()));
+        model.put("appointment_type", Utils.getLabel(enumLanguage, appointment.getEventType().getLabelFr(), appointment.getEventType().getLabelEn(), appointment.getEventType().getLabelNl(), appointment.getEventType().getLabelNl()));
         model.put("appointment_date", formatDateToString(startDate));
         model.put("appointment_time", formatTimeToString(startDate));
         model.put("appointment_time_end", endDate != null ? formatTimeToString(endDate) : null);

@@ -1,7 +1,7 @@
 package com.ulegalize.lawfirm.model.entity;
 
+import com.ulegalize.enumeration.EnumFactureType;
 import com.ulegalize.lawfirm.model.entity.converter.FactureTypeConverter;
-import com.ulegalize.lawfirm.model.enumeration.EnumFactureType;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.NotFound;

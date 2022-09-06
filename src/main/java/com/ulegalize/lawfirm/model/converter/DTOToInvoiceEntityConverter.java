@@ -1,8 +1,8 @@
 package com.ulegalize.lawfirm.model.converter;
 
 import com.ulegalize.dto.InvoiceDTO;
+import com.ulegalize.enumeration.EnumFactureType;
 import com.ulegalize.lawfirm.model.entity.TFactures;
-import com.ulegalize.lawfirm.model.enumeration.EnumFactureType;
 import com.ulegalize.lawfirm.utils.SuperTriConverter;
 import org.springframework.stereotype.Component;
 

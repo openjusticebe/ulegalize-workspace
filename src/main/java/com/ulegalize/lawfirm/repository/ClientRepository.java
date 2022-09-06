@@ -82,4 +82,10 @@ public interface ClientRepository extends JpaRepository<TClients, Long> {
             " where d.id_client in :clientIds " +
             " and (lawfirm.vckey = :vcKey or d.user_id = :userId)")
     List<TClients> findByIds(List<Long> clientIds, String vcKey, Long userId);
+
+    @Query(value = "SELECT d from TClients d " +
+            " join d.virtualcabClientList vcc " +
+            " join vcc.lawfirm lawfirm " +
+            " where lawfirm.vckey = :vcKey and d.f_email = :email ")
+    List<TClients> findByClientEmail(String vcKey, String email);
 }

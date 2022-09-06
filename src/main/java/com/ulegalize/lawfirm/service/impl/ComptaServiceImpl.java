@@ -4,12 +4,12 @@ import com.ulegalize.dto.ComptaDTO;
 import com.ulegalize.dto.InvoiceDTO;
 import com.ulegalize.dto.ItemBigDecimalDto;
 import com.ulegalize.dto.ItemDto;
+import com.ulegalize.enumeration.EnumRefTransaction;
+import com.ulegalize.enumeration.EnumTType;
 import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.converter.DTOToFraisEntityConverter;
 import com.ulegalize.lawfirm.model.converter.EntityToComptaDTOConverter;
 import com.ulegalize.lawfirm.model.entity.*;
-import com.ulegalize.lawfirm.model.enumeration.EnumRefTransaction;
-import com.ulegalize.lawfirm.model.enumeration.EnumTType;
 import com.ulegalize.lawfirm.repository.*;
 import com.ulegalize.lawfirm.service.ComptaService;
 import lombok.extern.slf4j.Slf4j;
@@ -180,6 +180,39 @@ public class ComptaServiceImpl implements ComptaService {
         return invoiceDTO;
     }
 
+    @Override
+    public ComptaDTO totalThirdPartyByDossierId(Long dossierId) {
+        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        log.info("Entering totalThirdPartyByDossierId {} and vckey {}", dossierId, lawfirmToken.getVcKey());
+
+        // sum of all invoice paid (honoraire) per dossier
+        BigDecimal sumTiers = tFraisRepository.sumAllTiersByVcKey(dossierId, lawfirmToken.getVcKey());
+
+        ComptaDTO comptaDTO = new ComptaDTO();
+        comptaDTO.setMontant(sumTiers);
+        log.debug("Total tiers {} found in the vckey {} and dossierId {}", sumTiers, lawfirmToken.getVcKey(), dossierId);
+
+        return comptaDTO;
+    }
+
+    @Override
+    public void deactivateCompta(Long fraisId) {
+        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        log.info("Entering deactivateCompta with fraisId {}", fraisId);
+        log.info("deactivateCompta vckey {} ", lawfirmToken.getVcKey());
+
+        Optional<TFrais> tFraisOptional = tFraisRepository.findByIdFraisAndVcKey(fraisId, lawfirmToken.getVcKey());
+
+        if (tFraisOptional.isPresent()) {
+            tFraisOptional.get().setIsDeleted(true);
+            tFraisRepository.save(tFraisOptional.get());
+        } else {
+            log.warn("Compta with fraisId {} already deactivated", fraisId);
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Compta already deactivated");
+        }
+    }
+
     private void commonRuleToSave(ComptaDTO comptaDTO) {
         if (comptaDTO == null) {
             log.warn("Compta is not filled in");
@@ -270,4 +303,6 @@ public class ComptaServiceImpl implements ComptaService {
 
         return compta;
     }
+
+
 }

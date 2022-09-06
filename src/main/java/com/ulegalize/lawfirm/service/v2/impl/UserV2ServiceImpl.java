@@ -3,11 +3,11 @@ package com.ulegalize.lawfirm.service.v2.impl;
 import com.ulegalize.dto.LawfirmUserDTO;
 import com.ulegalize.dto.LawyerDTO;
 import com.ulegalize.enumeration.EnumLanguage;
+import com.ulegalize.enumeration.EnumValid;
 import com.ulegalize.lawfirm.model.converter.EntityToLawfirmUserDTOConverter;
 import com.ulegalize.lawfirm.model.converter.EntityToUserConverter;
 import com.ulegalize.lawfirm.model.entity.LawfirmUsers;
 import com.ulegalize.lawfirm.model.entity.TUsers;
-import com.ulegalize.lawfirm.model.enumeration.EnumValid;
 import com.ulegalize.lawfirm.repository.LawfirmUserRepository;
 import com.ulegalize.lawfirm.repository.TUsersRepository;
 import com.ulegalize.lawfirm.repository.VirtualRepository;
@@ -69,17 +69,22 @@ public class UserV2ServiceImpl implements UserV2Service {
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
-    public TUsers createUsers(String userEmail, String clientFrom, EnumLanguage language) {
+    public TUsers createUsers(String userEmail, String clientFrom, EnumLanguage language, boolean emailVerified) {
         TUsers user = new TUsers();
         user.setEmail(userEmail);
         String fullname = StringUtils.substringBefore(userEmail, "@");
         user.setFullname(fullname);
         user.setAvatar(new byte[0]);
         user.setInitiales("");
-        // temporary
-        user.setIdUser("ul" + String.valueOf(UUID.randomUUID()).substring(0, 4));
+        // temporary, with 2 + 10 char must be unique
+        user.setIdUser("ul" + String.valueOf(UUID.randomUUID()).substring(0, 10));
         user.setHashkey(Utils.generateHashkey());
-        user.setIdValid(EnumValid.VERIFIED);
+        // sometimes verified or not
+        if (emailVerified) {
+            user.setIdValid(EnumValid.VERIFIED);
+        } else {
+            user.setIdValid(EnumValid.UNVERIFIED);
+        }
         user.setLoginCount(0L);
         user.setUserpass("");
         String alias = userEmail.toLowerCase().substring(0, userEmail.indexOf("@"));

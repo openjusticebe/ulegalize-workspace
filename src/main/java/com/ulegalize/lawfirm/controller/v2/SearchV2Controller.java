@@ -3,7 +3,6 @@ package com.ulegalize.lawfirm.controller.v2;
 import com.ulegalize.dto.*;
 import com.ulegalize.enumeration.*;
 import com.ulegalize.lawfirm.model.LawfirmToken;
-import com.ulegalize.lawfirm.model.enumeration.EnumTType;
 import com.ulegalize.lawfirm.service.SearchService;
 import com.ulegalize.utils.Utils;
 import lombok.extern.slf4j.Slf4j;
@@ -73,7 +72,7 @@ public class SearchV2Controller {
     }
 
     @GetMapping(path = "/matieres")
-    public ResponseEntity<List<ItemDto>> getMatieres() {
+    public ResponseEntity<List<ItemLongDto>> getMatieres(@RequestParam(required = false) String tDossiersType) {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         log.debug("getMatieres() for vckey {}", lawfirmToken.getVcKey());
@@ -81,7 +80,7 @@ public class SearchV2Controller {
         return ResponseEntity
                 .ok()
                 .cacheControl(CacheControl.maxAge(120, TimeUnit.SECONDS))
-                .body(searchService.getMatieres());
+                .body(searchService.getMatieres(tDossiersType, lawfirmToken.getLanguage()));
     }
 
     @GetMapping(path = "/languages")
@@ -163,6 +162,7 @@ public class SearchV2Controller {
                                     Utils.getLabel(enumLanguage,
                                             enumTType.getDescriptionFr(),
                                             enumTType.getDescriptionEn(),
+                                            enumTType.getDescriptionNl(),
                                             enumTType.getDescriptionNl()));
                         })
                         .collect(Collectors.toList()));
@@ -200,14 +200,17 @@ public class SearchV2Controller {
     }
 
     @GetMapping(path = "/timesheetTypes")
-    public ResponseEntity<List<ItemDto>> getTimesheetTypes() {
+    public ResponseEntity<List<ItemDto>> getTimesheetTypes(@RequestParam(required = false) String vcKey) {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         log.debug("getTimesheetTypes() for vckey {}", lawfirmToken.getVcKey());
 
-        return ResponseEntity
-                .ok()
-                .cacheControl(CacheControl.maxAge(120, TimeUnit.SECONDS))
+        ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.ok();
+        if (vcKey != null && vcKey.equalsIgnoreCase(lawfirmToken.getVcKey())) {
+            responseBuilder
+                    .cacheControl(CacheControl.maxAge(120, TimeUnit.SECONDS));
+        }
+        return responseBuilder
                 .body(searchService.getTimesheetTypes(lawfirmToken.getVcKey()));
     }
 
@@ -220,18 +223,20 @@ public class SearchV2Controller {
         return ResponseEntity
                 .ok()
                 .cacheControl(CacheControl.maxAge(120, TimeUnit.SECONDS))
-                .body(searchService.getFacturesTypes(lawfirmToken.getVcKey(), isCreated));
+                .body(searchService.getFacturesTypes(lawfirmToken.getVcKey(), isCreated, lawfirmToken.getLanguage()));
     }
 
     @GetMapping(path = "/deboursTypes")
-    public ResponseEntity<List<ItemLongDto>> getDeboursType() {
+    public ResponseEntity<List<ItemLongDto>> getDeboursType(@RequestParam(required = false) String vcKey) {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         log.debug("getDeboursType() for vckey {}", lawfirmToken.getVcKey());
-
-        return ResponseEntity
-                .ok()
-                .cacheControl(CacheControl.maxAge(120, TimeUnit.SECONDS))
+        ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.ok();
+        if (vcKey != null && vcKey.equalsIgnoreCase(lawfirmToken.getVcKey())) {
+            responseBuilder
+                    .cacheControl(CacheControl.maxAge(120, TimeUnit.SECONDS));
+        }
+        return responseBuilder
                 .body(searchService.getDeboursType(lawfirmToken.getVcKey()));
     }
 
@@ -311,6 +316,7 @@ public class SearchV2Controller {
                                     Utils.getLabel(enumLanguage,
                                             enumAccountType.getLabelFr(),
                                             enumAccountType.getLabelEn(),
+                                            enumAccountType.getLabelNl(),
                                             enumAccountType.getLabelNl()));
                         })
                         .collect(Collectors.toList()));
@@ -332,6 +338,7 @@ public class SearchV2Controller {
                                     Utils.getLabel(enumLanguage,
                                             enumRole.getLabelFr(),
                                             enumRole.getLabelEn(),
+                                            enumRole.getLabelNl(),
                                             enumRole.getLabelNl()));
                         })
                         .collect(Collectors.toList()));

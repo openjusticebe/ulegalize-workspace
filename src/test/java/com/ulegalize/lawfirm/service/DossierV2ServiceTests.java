@@ -9,7 +9,6 @@ import com.ulegalize.lawfirm.EntityTest;
 import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.converter.EntityToDossierConverter;
 import com.ulegalize.lawfirm.model.entity.*;
-import com.ulegalize.lawfirm.model.enumeration.EnumValid;
 import com.ulegalize.lawfirm.repository.TDossierRightsRepository;
 import com.ulegalize.lawfirm.repository.TUsersRepository;
 import com.ulegalize.lawfirm.service.v2.DossierV2Service;

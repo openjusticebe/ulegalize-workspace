@@ -5,9 +5,6 @@ import com.ulegalize.enumeration.*;
 import com.ulegalize.lawfirm.EntityTest;
 import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.entity.*;
-import com.ulegalize.lawfirm.model.enumeration.EnumFactureType;
-import com.ulegalize.lawfirm.model.enumeration.EnumTType;
-import com.ulegalize.lawfirm.model.enumeration.EnumValid;
 import com.ulegalize.security.EnumRights;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
@@ -174,6 +171,7 @@ public class SearchV2ControllerTest extends EntityTest {
     void test_H_getCalendarEventType() throws Exception {
         mvc.perform(get("/v2/search/calendarEventType")
                         .with(authentication(authentication))
+                        .param("search", "new")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.*", hasSize(EnumCalendarEventType.values().length)))
                 .andExpect(status().isOk());
@@ -185,4 +183,16 @@ public class SearchV2ControllerTest extends EntityTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().is4xxClientError());
     }
+
+    @Test
+    void test_J_getMatieres() throws Exception {
+        TDossiersType tDossiersType = createTDossierType(EnumDossierType.MD.getDossType(), EnumDossierType.MD.getLabelEn());
+
+        mvc.perform(get("/v2/search/matieres")
+                        .with(authentication(authentication))
+                        .param("tDossiersType", tDossiersType.getDossType())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+    }
+
 }

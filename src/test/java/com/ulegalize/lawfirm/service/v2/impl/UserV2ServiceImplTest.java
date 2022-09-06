@@ -1,9 +1,9 @@
 package com.ulegalize.lawfirm.service.v2.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ulegalize.enumeration.EnumValid;
 import com.ulegalize.lawfirm.EntityTest;
 import com.ulegalize.lawfirm.model.entity.TUsers;
-import com.ulegalize.lawfirm.model.enumeration.EnumValid;
 import com.ulegalize.lawfirm.repository.TUsersRepository;
 import com.ulegalize.lawfirm.service.v2.UserV2Service;
 import org.junit.jupiter.api.MethodOrderer;

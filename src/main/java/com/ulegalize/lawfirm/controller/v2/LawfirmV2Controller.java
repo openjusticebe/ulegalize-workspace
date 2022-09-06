@@ -136,16 +136,27 @@ public class LawfirmV2Controller {
         return lawfirmV2Service.searchLawfirmInfoByVcKey(name);
     }
 
+    @GetMapping(value = "/searchbystatus")
+    @ApiIgnore
+    public List<LawfirmDTO> searchLawfirmByNameAndStatus(@RequestParam String name) {
+        log.debug("searchLawfirmByName({})", name);
+        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+
+        return lawfirmV2Service.searchLawfirmInfoByVcKeyAndStatusAssociation(name);
+    }
+
 
     @PostMapping
     @ApiIgnore
-    public ProfileDTO createLawfirm(@RequestBody String newVcKey, @RequestParam String countryCode) {
-        log.debug("createLawfirm({})", newVcKey);
+    public ProfileDTO validateLawfirm(@RequestBody String newVcKey, @RequestParam String countryCode) {
+        log.debug("validateLawfirm({})", newVcKey);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
         EnumLanguage enumLanguage = EnumLanguage.fromshortCode(lawfirmToken.getLanguage());
 
-        lawfirmV2Service.createSingleVcKey(lawfirmToken.getUserEmail(), newVcKey, lawfirmToken.getClientFrom(), true, enumLanguage, countryCode);
+        lawfirmV2Service.createSingleVcKey(lawfirmToken.getUserEmail(), newVcKey, lawfirmToken.getClientFrom(), true, enumLanguage, countryCode, lawfirmToken.isVerified());
 
         ProfileDTO profileDTO = lawfirmV2Service.validateVc(newVcKey, lawfirmToken.getUserId(), lawfirmToken.getUserEmail());
 

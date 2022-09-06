@@ -15,5 +15,4 @@ public interface AffaireService {
     public boolean hasRightAffaire(String vckey, Long affaireId);
 
     void switchDossierDigital(DossierDTO dossierSummary, Long userId, String vcKey);
-
 }

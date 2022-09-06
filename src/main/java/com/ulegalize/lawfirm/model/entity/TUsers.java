@@ -1,8 +1,8 @@
 package com.ulegalize.lawfirm.model.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.ulegalize.enumeration.EnumValid;
 import com.ulegalize.lawfirm.model.entity.converter.EnumValidConverter;
-import com.ulegalize.lawfirm.model.enumeration.EnumValid;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -27,7 +27,7 @@ public class TUsers implements Serializable {
     @Setter
     private Long id;
 
-    @Column(name = "id_user", nullable = false)
+    @Column(name = "id_user", nullable = false, length = 50)
     @Getter
     @Setter
     private String idUser;

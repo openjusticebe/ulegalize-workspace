@@ -6,10 +6,10 @@ import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.converter.EntityToSecurityGroupConverter;
 import com.ulegalize.lawfirm.model.converter.EntityToUserConverter;
 import com.ulegalize.lawfirm.model.entity.*;
-import com.ulegalize.lawfirm.model.enumeration.EnumValid;
 import com.ulegalize.lawfirm.repository.*;
 import com.ulegalize.lawfirm.service.MailService;
 import com.ulegalize.lawfirm.service.SecurityGroupService;
+import com.ulegalize.lawfirm.service.v2.ClientV2Service;
 import com.ulegalize.lawfirm.service.v2.DossierV2Service;
 import com.ulegalize.lawfirm.service.v2.UserV2Service;
 import com.ulegalize.lawfirm.utils.EmailUtils;
@@ -50,6 +50,8 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
     private final UserV2Service userV2Service;
     private final DossierV2Service dossierV2Service;
     private final MailService mailService;
+    private final ClientV2Service clientV2Service;
+    private final ClientRepository clientRepository;
 
     @Autowired
     public SecurityGroupServiceImpl(TUsersRepository tUsersRepository,
@@ -59,7 +61,7 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
                                     TSecurityGroupRightsRepository tSecurityGroupRightsRepository, TSecurityGroupsRepository tSecurityGroupsRepository,
                                     TStripeSubscribersRepository tStripeSubscribersRepository,
                                     TFirstTimeRepository tFirstTimeRepository, EntityToUserConverter entityToUserConverter,
-                                    EntityToSecurityGroupConverter entityToSecurityGroupConverter, UserV2Service userV2Service, DossierV2Service dossierV2Service, MailService mailService) {
+                                    EntityToSecurityGroupConverter entityToSecurityGroupConverter, UserV2Service userV2Service, DossierV2Service dossierV2Service, MailService mailService, ClientV2Service clientV2Service, ClientRepository clientRepository) {
         this.tUsersRepository = tUsersRepository;
         this.lawfirmUserRepository = lawfirmUserRepository;
         this.lawfirmRepository = lawfirmRepository;
@@ -75,22 +77,24 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
         this.userV2Service = userV2Service;
         this.dossierV2Service = dossierV2Service;
         this.mailService = mailService;
+        this.clientV2Service = clientV2Service;
+        this.clientRepository = clientRepository;
     }
 
     @Override
-    public LawfirmToken getUserProfile(String clientFrom, String userEmail, String token, boolean withSecurity) {
+    public LawfirmToken getUserProfile(String clientFrom, String userEmail, String token, boolean withSecurity, boolean emailVerified) {
         log.debug("Entering getUserProfile email {}", userEmail);
-        return profile(clientFrom, userEmail, token, withSecurity, EnumValid.VERIFIED);
+        return profile(clientFrom, userEmail, token, withSecurity, emailVerified);
 
     }
 
     @Override
-    public LawfirmToken getSimpleUserProfile(String email, String token) {
+    public LawfirmToken getSimpleUserProfile(String email, String token, boolean emailVerified) {
         log.debug("Entering getSimpleUserProfile email {}", email);
-        return profile(null, email, token, false, EnumValid.VERIFIED);
+        return profile(null, email, token, false, emailVerified);
     }
 
-    private LawfirmToken profile(String clientFrom, String email, String token, boolean fullProfile, EnumValid enumValid) {
+    private LawfirmToken profile(String clientFrom, String email, String token, boolean fullProfile, boolean emailVerified) {
 
         Optional<LawyerDTO> lawyerDTOOptional = tUsersRepository.findDTOByEmail(email);
 
@@ -100,7 +104,16 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
         String vcKey = "";
         String dropboxToken = "";
         Boolean temporaryVc = false;
-        boolean verified = false;
+
+        // if NOT verified check auth0
+        boolean verified = emailVerified;
+
+        // check first avogest db
+        // if verified it's ok nothing to do
+        if (lawyerDTOOptional.get().getEnumValid().equals(EnumValid.VERIFIED)) {
+            verified = true;
+        }
+
         String currency = EnumRefCurrency.EUR.getSymbol();
         DriveType driveType = DriveType.openstack;
         List<EnumRights> roleIdList = new ArrayList<>();
@@ -114,7 +127,7 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
             }
             // get the first to be sure
             LawfirmEntity lawfirmEntity = lawfirmUsersList.get(0).getLawfirm();
-            verified = lawfirmUsersList.get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
+
             vcKey = lawfirmEntity.getVckey();
 
 //            if(!lawfirmEntity.getclientFrom().equalsIgnore(clientFrom)){
@@ -166,6 +179,7 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
                     Utils.getLabel(enumLanguage,
                             lawfirmUsers.getIdRole().getLabelFr(),
                             lawfirmUsers.getIdRole().getLabelEn(),
+                            lawfirmUsers.getIdRole().getLabelNl(),
                             lawfirmUsers.getIdRole().getLabelNl()
                     )));
             lawyerDTO.setActive(lawfirmUsers.isActive());
@@ -184,10 +198,9 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
     }
 
     @Override
-    public List<SecurityGroupDTO> getSecurityGroup() {
-        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-
-        List<TSecurityGroups> tSecurityGroupsList = tSecurityGroupsRepository.findAllByVcKey(lawfirmToken.getVcKey());
+    public List<SecurityGroupDTO> getSecurityGroup(String vcKey) {
+        log.info("Entreing getSecurityGroup {}", vcKey);
+        List<TSecurityGroups> tSecurityGroupsList = tSecurityGroupsRepository.findAllByVcKey(vcKey);
 
         return tSecurityGroupsList.stream()
                 .map(groups -> {
@@ -207,7 +220,7 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
     }
 
     @Override
-    public Integer createUserSecurity(Long userId, SecurityGroupUserDTO securityGroupUserDTO) throws ResponseStatusException {
+    public Integer createUserSecurity(Long userId, String vcKey, SecurityGroupUserDTO securityGroupUserDTO) throws ResponseStatusException {
         log.info("Entering createUserSecurity userId {}", userId);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
@@ -237,19 +250,19 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
         // NOT EXIST -> new user
         if (usersOptional.isEmpty()) {
             EnumLanguage language = EnumLanguage.fromshortCode(lawfirmToken.getLanguage());
-            user = userV2Service.createUsers(securityGroupUserDTO.getEmail(), lawfirmToken.getClientFrom(), language);
+            user = userV2Service.createUsers(securityGroupUserDTO.getEmail(), lawfirmToken.getClientFrom(), language, true);
 
             log.debug("user created");
         } else {
             user = usersOptional.get();
             // check if this user exist in the cab
-            List<TSecurityGroupUsers> securityGroupUsersList = tSecurityGroupUsersRepository.findByIdAndVckey(user.getId(), lawfirmToken.getVcKey());
+            List<TSecurityGroupUsers> securityGroupUsersList = tSecurityGroupUsersRepository.findByIdAndVckey(user.getId(), vcKey);
             if (securityGroupUsersList != null && !securityGroupUsersList.isEmpty()) {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "user is already a member to this vckey (with security group)");
             }
 
             // check if this client is already a member without security right
-            Optional<LawfirmUsers> optionalLawfirmUsers = lawfirmUserRepository.findLawfirmUsersByVcKeyAndUserId(lawfirmToken.getVcKey(), user.getId());
+            Optional<LawfirmUsers> optionalLawfirmUsers = lawfirmUserRepository.findLawfirmUsersByVcKeyAndUserId(vcKey, user.getId());
 
             if (optionalLawfirmUsers.isPresent()) {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "user is already a member to this vckey (without right)");
@@ -291,7 +304,7 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
         tSecurityGroupUsersRepository.save(tSecurityGroupUsers);
 
 
-        Optional<LawfirmEntity> lawfirmEntityOptional = lawfirmRepository.findLawfirmByVckey(lawfirmToken.getVcKey());
+        Optional<LawfirmEntity> lawfirmEntityOptional = lawfirmRepository.findLawfirmByVckey(vcKey);
 
         if (lawfirmEntityOptional.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "BIG ISSUE MOTHERFUCKER");
@@ -314,10 +327,24 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
 
         lawfirmUserRepository.save(lawfirmUsers);
 
+
+        //add to t_client
+        ContactSummary contactSummary = new ContactSummary();
+        contactSummary.setVcKey(vcKey);
+        contactSummary.setFullName(user.getFullname());
+        contactSummary.setLastname(user.getFullname());
+        contactSummary.setFirstname("");
+        contactSummary.setEmail(user.getEmail());
+        contactSummary.setLanguage(user.getLanguage());
+        contactSummary.setUserId(user.getId());
+
+        clientV2Service.createContact(contactSummary);
+
+
         // all dossier
         if (securityGroupUserDTO.isShareDossier()) {
 
-            List<TDossiers> dossiersList = dossierRepository.findAllByVCKey(lawfirmToken.getVcKey());
+            List<TDossiers> dossiersList = dossierRepository.findAllByVCKey(vcKey);
 //
             dossiersList.forEach(dossiers -> {
                 ShareAffaireDTO shareAffaireDTO = new ShareAffaireDTO();
@@ -335,10 +362,11 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
         mailService.sendMailWithoutMeetingAndIcs(EnumMailTemplate.MAILSHAREDUSERSECURITYTEMPLATE,
                 EmailUtils.prepareContextForSharedUserSecurity(
                         lawfirmUsers.getUser().getEmail(),
-                        lawfirmToken.getVcKey(),
+                        vcKey,
                         lawfirmToken.getClientFrom()),
                 language
         );
+
 
         return null;
     }
@@ -544,15 +572,19 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
     @Override
     public List<ItemLongDto> getSecurityRightGroupBySecurityGroupId(Long securityGroupId) {
         log.info("Entering getSecurityRightGroupBySecurityGroupId securityGroupUserId {}", securityGroupId);
+        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         List<TSecurityGroupRights> securityGroupRights = tSecurityGroupRightsRepository.findByTSecurityGroups_Id(securityGroupId);
         return securityGroupRights.stream()
-                .map(securityGroupRight -> new ItemLongDto(securityGroupRight.getId(), securityGroupRight.getIdRight().getDescription()))
+                .map(securityGroupRight -> new ItemLongDto(securityGroupRight.getId(), Utils.getLabel(EnumLanguage.fromshortCode(lawfirmToken.getLanguage()), securityGroupRight.getIdRight().getDescriptionFr(), securityGroupRight.getIdRight().getDescriptionNl(), securityGroupRight.getIdRight().getDescriptionEn(), securityGroupRight.getIdRight().getDescriptionDe())))
                 .collect(Collectors.toList());
     }
 
     @Override
     public List<ItemDto> getOutSecurityRightGroupBySecurityGroupId(Long securityGroupId) {
+        log.info("Entering getOutSecurityRightGroupBySecurityGroupId securityGroupUserId {}", securityGroupId);
+        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication()
+                .getPrincipal();
         List<TSecurityGroupRights> securityGroupRights = tSecurityGroupRightsRepository.findByTSecurityGroups_Id(securityGroupId);
         List<ItemDto> rightOut = new ArrayList<>();
 
@@ -565,8 +597,8 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
                 }
             }
             if (!exist) {
-                log.debug("This right {} does not exist in the security group", enumRights.getDescription());
-                rightOut.add(new ItemDto(enumRights.getId(), enumRights.getDescription()));
+                log.debug("This right {} does not exist in the security group", Utils.getLabel(EnumLanguage.fromshortCode(lawfirmToken.getLanguage()), enumRights.getDescriptionFr(), enumRights.getDescriptionDe(), enumRights.getDescriptionEn(), enumRights.getDescriptionNl()));
+                rightOut.add(new ItemDto(enumRights.getId(), Utils.getLabel(EnumLanguage.fromshortCode(lawfirmToken.getLanguage()), enumRights.getDescriptionFr(), enumRights.getDescriptionNl(), enumRights.getDescriptionEn(), enumRights.getDescriptionDe())));
             }
         });
         return rightOut;

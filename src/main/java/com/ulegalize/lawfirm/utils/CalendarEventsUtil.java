@@ -6,7 +6,6 @@ import java.time.ZonedDateTime;
 import java.util.Date;
 
 public class CalendarEventsUtil {
-    public static int SLOT_EVENT = 30;
 
     public static LocalDateTime convertToLocalDateTimeViaInstant(Date dateToConvert) {
         return dateToConvert
@@ -28,18 +27,18 @@ public class CalendarEventsUtil {
     }
 
     public static Date convertToDateViaInstant(LocalDateTime dateToConvert) {
-        return Date
+        return java.util.Date
                 .from(dateToConvert.atZone(ZoneId.systemDefault())
                         .toInstant());
     }
 
     public static Date convertToDateViaInstant(ZonedDateTime dateToConvert) {
-        return dateToConvert != null ? Date
+        return dateToConvert != null ? java.util.Date
                 .from(dateToConvert.toInstant()) : null;
     }
 
     public static Date convertZoneToDateViaInstant(ZonedDateTime dateToConvert) {
-        return Date
+        return java.util.Date
                 .from(dateToConvert.toInstant());
     }
 

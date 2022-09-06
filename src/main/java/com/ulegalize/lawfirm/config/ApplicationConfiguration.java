@@ -19,9 +19,17 @@ public class ApplicationConfiguration {
     @Value("${app.scheduler.calendar}")
     String schedulerCalendar;
 
+    @Value("${app.scheduler.reminder}")
+    String schedulerReminderEmail;
+
     @Bean
     public String getSchedulerValue() {
         return schedulerCalendar;
+    }
+
+    @Bean
+    public String getSchedulerReminderEmail() {
+        return schedulerReminderEmail;
     }
 
 

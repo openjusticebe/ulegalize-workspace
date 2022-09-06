@@ -1,16 +1,12 @@
 package com.ulegalize.lawfirm.controller.v2;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ulegalize.enumeration.DriveType;
-import com.ulegalize.enumeration.EnumLanguage;
-import com.ulegalize.enumeration.EnumRefCurrency;
-import com.ulegalize.enumeration.EnumVCOwner;
+import com.ulegalize.enumeration.*;
 import com.ulegalize.lawfirm.EntityTest;
 import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.entity.LawfirmEntity;
 import com.ulegalize.lawfirm.model.entity.TDossiers;
 import com.ulegalize.lawfirm.model.entity.TFrais;
-import com.ulegalize.lawfirm.model.enumeration.EnumValid;
 import com.ulegalize.security.EnumRights;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
@@ -22,12 +18,13 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -128,9 +125,55 @@ public class ComptaV2ControllerTests extends EntityTest {
 
         TFrais tFrais = createTFrais(lawfirm, dossier);
         mvc.perform(post("/v2/compta")
-                .with(authentication(authentication))
-                .contentType(MediaType.APPLICATION_JSON))
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().is4xxClientError());
     }
 
+    @Test
+    public void test_F_totalHonoraireByDossierId() throws Exception {
+        TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
+        TFrais tFrais = createTFrais(lawfirm, dossier);
+
+        lawfirmToken.setEnumRights(new ArrayList<>());
+        authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
+
+        mvc.perform(get("/v2/compta/dossier/" + dossier.getIdDoss() + "/total")
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.totalHonoraire", greaterThan(BigDecimal.ONE.doubleValue())))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    public void test_G_totalThirdPartyByDossierId() throws Exception {
+        TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
+        TFrais tFrais = createTFrais(lawfirm, dossier);
+
+        tFrais.getRefCompte().setAccountTypeId(EnumAccountType.ACCOUNT_TIERS);
+        testEntityManager.persist(tFrais.getRefCompte());
+
+        lawfirmToken.setEnumRights(new ArrayList<>());
+        authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
+
+        mvc.perform(get("/v2/compta/dossier/" + dossier.getIdDoss() + "/tiers/total")
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.montant", greaterThan(BigDecimal.ONE.doubleValue())))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void test_H_deactivateCompta() throws Exception {
+        TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
+        TFrais tFrais = createTFrais(lawfirm, dossier);
+
+        lawfirmToken.setEnumRights(new ArrayList<>());
+        authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
+
+        mvc.perform(put("/v2/compta/deactivate/" + tFrais.getIdFrais())
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+    }
 }

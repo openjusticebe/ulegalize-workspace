@@ -1,6 +1,6 @@
 package com.ulegalize.lawfirm.model.entity.converter;
 
-import com.ulegalize.lawfirm.model.enumeration.EnumFactureType;
+import com.ulegalize.enumeration.EnumFactureType;
 
 import javax.persistence.AttributeConverter;
 import javax.persistence.Converter;

@@ -1,7 +1,7 @@
 package com.ulegalize.lawfirm.repository;
 
+import com.ulegalize.enumeration.EnumFactureType;
 import com.ulegalize.lawfirm.model.entity.TFactures;
-import com.ulegalize.lawfirm.model.enumeration.EnumFactureType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

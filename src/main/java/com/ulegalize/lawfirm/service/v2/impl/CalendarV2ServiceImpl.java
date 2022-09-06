@@ -416,9 +416,9 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
         switch (calendarEvent.getEventType()) {
             case PERM:
                 // create by slot of 1/2h
-                List<ZonedDateTime> slots = getSlots(startime, endtime, CalendarEventsUtil.SLOT_EVENT);
+                List<ZonedDateTime> slots = getSlots(startime, endtime, calendarEvent.getSlot());
 
-                createEventBySlot(lawfirmToken.getUsername(), lawfirmToken.getLanguage(), vcKey, slots, calendarEvent, CalendarEventsUtil.SLOT_EVENT, lawfirmToken.getClientFrom());
+                createEventBySlot(lawfirmToken.getUsername(), lawfirmToken.getLanguage(), vcKey, slots, calendarEvent, calendarEvent.getSlot(), lawfirmToken.getClientFrom());
 
                 break;
             case RDV:
@@ -612,8 +612,6 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
         }
 
         TCalendarEvent savedEvent = calendarEventRepository.save(calendarEvent);
-
-        lawfirmCalendarEventDTO.setId(savedEvent.getId());
 
         // send email cancellation and enroll email
         log.debug("Send email cancellation and enroll email");

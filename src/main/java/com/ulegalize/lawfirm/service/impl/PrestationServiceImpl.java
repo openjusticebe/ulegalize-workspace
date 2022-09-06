@@ -14,6 +14,8 @@ import com.ulegalize.lawfirm.repository.TTimesheetRepository;
 import com.ulegalize.lawfirm.service.ComptaService;
 import com.ulegalize.lawfirm.service.PrestationService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
@@ -48,24 +50,29 @@ public class PrestationServiceImpl implements PrestationService {
         this.comptaService = comptaService;
     }
 
-    public List<PrestationSummary> getAllPrestations(int limit, int offset, Long userId, String vcKey) {
+    public Page<PrestationSummary> getAllPrestations(int limit, int offset, Long userId, String vcKey, String searchCriteriaYear, Long searchCriteriaNumber, Integer searchCriteriaIdTsType) {
         log.debug("Get all presations with user {} limit {} and offset {}", userId, limit, offset);
         Optional<LawfirmUsers> lawfirmUsers = lawfirmUserRepository.findLawfirmUsersByVcKeyAndUserId(vcKey, userId);
 
         if (lawfirmUsers.isPresent()) {
             log.debug("Law firm list {} user id {}", lawfirmUsers.get().getId(), userId);
 
+            Long numberDossier = searchCriteriaNumber != null && searchCriteriaNumber == 0 ? null : searchCriteriaNumber;
+            Integer idTsType = searchCriteriaIdTsType != null && searchCriteriaIdTsType == 0 ? null : searchCriteriaIdTsType;
+
             Pageable pageable = new OffsetBasedPageRequest(limit, offset, Sort.by(Sort.Direction.DESC, "idTs"));
-            List<TTimesheet> allPrestations = timesheetRepository.findAllWithPagination(lawfirmUsers.get().getId(), pageable);
-            return entityToPrestationConverter.convertToList(allPrestations);
+            Page<TTimesheet> allPrestations = timesheetRepository.findAllWithPagination(lawfirmUsers.get().getId(), searchCriteriaYear, numberDossier, idTsType, pageable);
+
+            List<PrestationSummary> prestationSummaryList = entityToPrestationConverter.convertToList(allPrestations.getContent());
+            return new PageImpl<>(prestationSummaryList, Pageable.unpaged(), allPrestations.getTotalElements());
 
         }
 
-        return new ArrayList<>();
+        return Page.empty();
     }
 
     @Override
-    public List<PrestationSummary> getAllPrestationsByDossierId(int limit, int offset, Long dossierId, Long userId, String vcKey) {
+    public Page<PrestationSummary> getAllPrestationsByDossierId(int limit, int offset, Long dossierId, Long userId, String vcKey) {
         log.debug("Get all presations with user {} limit {} , offset {} and dossierId {}", userId, limit, offset, dossierId);
         Optional<LawfirmUsers> lawfirmUsers = lawfirmUserRepository.findLawfirmUsersByVcKeyAndUserId(vcKey, userId);
 
@@ -73,13 +80,14 @@ public class PrestationServiceImpl implements PrestationService {
             log.debug("Law firm list {} user id {}", lawfirmUsers.get().getId(), userId);
 
             Pageable pageable = new OffsetBasedPageRequest(limit, offset, Sort.by(Sort.Direction.DESC, "idTs"));
-            List<TTimesheet> allPrestations = timesheetRepository.findAllByDossierIdWithPagination(dossierId, lawfirmUsers.get().getId(), pageable);
+            Page<TTimesheet> allPrestations = timesheetRepository.findAllByDossierIdWithPagination(dossierId, lawfirmUsers.get().getId(), pageable);
 
-            return entityToPrestationConverter.convertToList(allPrestations);
+            List<PrestationSummary> prestationSummaryList = entityToPrestationConverter.convertToList(allPrestations.getContent());
+            return new PageImpl<>(prestationSummaryList, Pageable.unpaged(), allPrestations.getTotalElements());
 
         }
 
-        return new ArrayList<>();
+        return Page.empty();
     }
 
     @Override

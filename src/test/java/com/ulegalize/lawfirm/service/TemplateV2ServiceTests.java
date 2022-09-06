@@ -8,7 +8,6 @@ import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.converter.EntityToTemplateConverter;
 import com.ulegalize.lawfirm.model.entity.LawfirmEntity;
 import com.ulegalize.lawfirm.model.entity.TTemplates;
-import com.ulegalize.lawfirm.model.enumeration.EnumValid;
 import com.ulegalize.lawfirm.service.v2.TemplateV2Service;
 import com.ulegalize.security.EnumRights;
 import lombok.extern.slf4j.Slf4j;

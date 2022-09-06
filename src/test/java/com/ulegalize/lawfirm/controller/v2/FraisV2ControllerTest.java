@@ -1,16 +1,12 @@
 package com.ulegalize.lawfirm.controller.v2;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ulegalize.enumeration.DriveType;
-import com.ulegalize.enumeration.EnumLanguage;
-import com.ulegalize.enumeration.EnumRefCurrency;
-import com.ulegalize.enumeration.EnumVCOwner;
+import com.ulegalize.enumeration.*;
 import com.ulegalize.lawfirm.EntityTest;
 import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.entity.LawfirmEntity;
 import com.ulegalize.lawfirm.model.entity.TDebour;
 import com.ulegalize.lawfirm.model.entity.TDossiers;
-import com.ulegalize.lawfirm.model.enumeration.EnumValid;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;

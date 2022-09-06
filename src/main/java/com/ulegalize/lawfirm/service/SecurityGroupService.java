@@ -8,15 +8,22 @@ import java.util.List;
 
 public interface SecurityGroupService {
 
-    LawfirmToken getUserProfile(String clientFrom, String email, String token, boolean withSecurity);
+    LawfirmToken getUserProfile(String clientFrom, String email, String token, boolean withSecurity, boolean emailVerified);
 
-    LawfirmToken getSimpleUserProfile(String email, String token);
+    LawfirmToken getSimpleUserProfile(String email, String token, boolean emailVerified);
 
     List<LawyerDTO> getFullUserResponsableList(String vcKey);
 
-    List<SecurityGroupDTO> getSecurityGroup();
+    List<SecurityGroupDTO> getSecurityGroup(String vcKey);
 
-    Integer createUserSecurity(Long userId, SecurityGroupUserDTO securityGroupUserDTO) throws ResponseStatusException;
+    /**
+     * @param userId
+     * @param vcKey                must come from LawfirmToken
+     * @param securityGroupUserDTO
+     * @return
+     * @throws ResponseStatusException
+     */
+    Integer createUserSecurity(Long userId, String vcKey, SecurityGroupUserDTO securityGroupUserDTO) throws ResponseStatusException;
 
     Long deleteSecurityUsersGroup(Long securityGroupId);
 

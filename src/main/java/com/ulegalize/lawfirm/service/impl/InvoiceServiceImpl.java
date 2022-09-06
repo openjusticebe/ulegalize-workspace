@@ -1,12 +1,13 @@
 package com.ulegalize.lawfirm.service.impl;
 
 import com.ulegalize.dto.*;
+import com.ulegalize.enumeration.EnumFactureType;
+import com.ulegalize.enumeration.EnumLanguage;
 import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.converter.DTOToInvoiceDetailsEntityConverter;
 import com.ulegalize.lawfirm.model.converter.DTOToInvoiceEntityConverter;
 import com.ulegalize.lawfirm.model.converter.EntityToInvoiceConverter;
 import com.ulegalize.lawfirm.model.entity.*;
-import com.ulegalize.lawfirm.model.enumeration.EnumFactureType;
 import com.ulegalize.lawfirm.repository.*;
 import com.ulegalize.lawfirm.rest.DriveFactory;
 import com.ulegalize.lawfirm.rest.v2.DriveApi;
@@ -15,6 +16,7 @@ import com.ulegalize.lawfirm.service.InvoiceService;
 import com.ulegalize.lawfirm.service.SearchService;
 import com.ulegalize.lawfirm.utils.DriveUtils;
 import com.ulegalize.lawfirm.utils.InvoicesUtils;
+import com.ulegalize.utils.Utils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
@@ -50,7 +52,6 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final RefPosteRepository refPosteRepository;
     private final LawfirmUserRepository lawfirmUserRepository;
     private final TTimesheetRepository timesheetRepository;
-    private final TFactureTimesheetRepository factureTimesheetRepository;
     private final TDebourRepository tDebourRepository;
     private final SearchService searchService;
     private final EntityToInvoiceConverter entityToInvoiceConverter;
@@ -60,9 +61,6 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final ClientRepository clientRepository;
     private final TFraisRepository fraisRepository;
     private final TFactureEcheanceRepository tfactureEcheanceRepository;
-    private final FactureFraisAdminRepository factureFraisAdminRepository;
-    private final FactureFraisRepository factureFraisRepository;
-    private final FactureFraisCollaboratRepository factureFraisCollaboratRepository;
     private final ReportApi reportApi;
     private final DriveFactory driveFactory;
     @Value("${spring.profiles.active}")
@@ -73,7 +71,6 @@ public class InvoiceServiceImpl implements InvoiceService {
                               RefPosteRepository refPosteRepository,
                               LawfirmUserRepository lawfirmUserRepository,
                               TTimesheetRepository timesheetRepository,
-                              TFactureTimesheetRepository factureTimesheetRepository,
                               TDebourRepository tDebourRepository,
                               SearchService searchService,
                               EntityToInvoiceConverter entityToInvoiceConverter,
@@ -82,11 +79,11 @@ public class InvoiceServiceImpl implements InvoiceService {
                               DossierRepository dossierRepository,
                               ClientRepository clientRepository,
                               TFraisRepository fraisRepository,
-                              TFactureEcheanceRepository tfactureEcheanceRepository, FactureFraisAdminRepository factureFraisAdminRepository, FactureFraisRepository factureFraisRepository, FactureFraisCollaboratRepository factureFraisCollaboratRepository, ReportApi reportApi,
+                              TFactureEcheanceRepository tfactureEcheanceRepository,
+                              ReportApi reportApi,
                               DriveFactory driveFactory) {
         this.facturesRepository = facturesRepository;
         this.lawfirmRepository = lawfirmRepository;
-        this.factureTimesheetRepository = factureTimesheetRepository;
         this.tDebourRepository = tDebourRepository;
         this.entityToInvoiceConverter = entityToInvoiceConverter;
         this.refPosteRepository = refPosteRepository;
@@ -99,9 +96,6 @@ public class InvoiceServiceImpl implements InvoiceService {
         this.clientRepository = clientRepository;
         this.fraisRepository = fraisRepository;
         this.tfactureEcheanceRepository = tfactureEcheanceRepository;
-        this.factureFraisAdminRepository = factureFraisAdminRepository;
-        this.factureFraisRepository = factureFraisRepository;
-        this.factureFraisCollaboratRepository = factureFraisCollaboratRepository;
         this.reportApi = reportApi;
         this.driveFactory = driveFactory;
     }
@@ -169,8 +163,11 @@ public class InvoiceServiceImpl implements InvoiceService {
     }
 
     @Override
-    public InvoiceDTO getDefaultInvoice(Long userId, String vcKey) {
-
+    public InvoiceDTO getDefaultInvoice(Long userId, String vcKey, String language) {
+        EnumLanguage enumLanguage = EnumLanguage.FR;
+        if (language != null) {
+            enumLanguage = EnumLanguage.fromshortCode(language);
+        }
         log.debug("Entering getDefaultInvoice with user id {} and vckey {}", userId, vcKey);
 
         InvoiceDTO invoiceDTO = new InvoiceDTO();
@@ -179,9 +176,14 @@ public class InvoiceServiceImpl implements InvoiceService {
 
         // facture type must be an enum
         invoiceDTO.setTypeId(EnumFactureType.TEMP.getId());
+
         invoiceDTO.setTypeItem(new ItemLongDto(
                 EnumFactureType.TEMP.getId(),
-                EnumFactureType.TEMP.getDescription()
+                Utils.getLabel(enumLanguage,
+                        EnumFactureType.TEMP.getDescriptionFr(),
+                        EnumFactureType.TEMP.getDescriptionEn(),
+                        EnumFactureType.TEMP.getDescriptionNl(),
+                        EnumFactureType.TEMP.getDescriptionDe())
         ));
 
         invoiceDTO.setMontant(BigDecimal.ZERO);

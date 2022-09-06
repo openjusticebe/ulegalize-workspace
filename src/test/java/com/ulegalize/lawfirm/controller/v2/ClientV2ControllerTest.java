@@ -8,7 +8,6 @@ import com.ulegalize.lawfirm.model.entity.DossierContact;
 import com.ulegalize.lawfirm.model.entity.LawfirmEntity;
 import com.ulegalize.lawfirm.model.entity.TClients;
 import com.ulegalize.lawfirm.model.entity.TDossiers;
-import com.ulegalize.lawfirm.model.enumeration.EnumValid;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;

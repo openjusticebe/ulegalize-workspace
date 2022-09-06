@@ -14,12 +14,13 @@ public interface LawfirmV2Service {
     /**
      * @param userEmail
      * @param clientFrom
+     * @param isEmailVerified
      * @return the new temp vc
      * @throws ResponseStatusException
      */
-    String createTempVc(String userEmail, String clientFrom) throws ResponseStatusException;
+    String createTempVc(String userEmail, String clientFrom, boolean isEmailVerified) throws ResponseStatusException;
 
-    public void createSingleVcKey(String userEmail, String tempVcKey, String clientFrom, boolean fullLawfirm, EnumLanguage enumLanguage, String countryCode);
+    public void createSingleVcKey(String userEmail, String tempVcKey, String clientFrom, boolean fullLawfirm, EnumLanguage enumLanguage, String countryCode, boolean verified);
 
     Boolean deleteTempVcKey(String vcKey);
 
@@ -32,6 +33,8 @@ public interface LawfirmV2Service {
     LawfirmDTO updateLawfirmInfoByVcKey(LawfirmDTO lawfirmDTO);
 
     List<LawfirmDTO> searchLawfirmInfoByVcKey(String name);
+
+    List<LawfirmDTO> searchLawfirmInfoByVcKeyAndStatusAssociation(String name);
 
     String uploadImageVirtualcab(byte[] bytes);
 

@@ -3,11 +3,13 @@ package com.ulegalize.lawfirm.model.converter;
 import com.ulegalize.dto.InvoiceDTO;
 import com.ulegalize.dto.ItemDto;
 import com.ulegalize.dto.ItemLongDto;
+import com.ulegalize.enumeration.EnumLanguage;
 import com.ulegalize.lawfirm.model.entity.TFactures;
 import com.ulegalize.lawfirm.repository.TFraisRepository;
 import com.ulegalize.lawfirm.utils.SuperTriConverter;
 import com.ulegalize.utils.ClientsUtils;
 import com.ulegalize.utils.DossiersUtils;
+import com.ulegalize.utils.Utils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -60,9 +62,15 @@ public class EntityToInvoiceConverter implements SuperTriConverter<TFactures, Bo
 
         if (factures.getIdFactureType() != null) {
             invoiceDTO.setTypeId(factures.getIdFactureType().getId());
+            EnumLanguage enumLanguage = EnumLanguage.FR;
+
             invoiceDTO.setTypeItem(new ItemLongDto(
                     factures.getIdFactureType().getId(),
-                    factures.getIdFactureType().getDescription()
+                    Utils.getLabel(enumLanguage,
+                            factures.getIdFactureType().getDescriptionFr(),
+                            factures.getIdFactureType().getDescriptionEn(),
+                            factures.getIdFactureType().getDescriptionNl(),
+                            factures.getIdFactureType().getDescriptionDe())
             ));
         }
         invoiceDTO.setMontant(factures.getMontant());

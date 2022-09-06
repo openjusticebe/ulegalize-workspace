@@ -1,13 +1,13 @@
 package com.ulegalize.lawfirm.service;
 
-import com.ulegalize.enumeration.DriveType;
-import com.ulegalize.enumeration.EnumLanguage;
-import com.ulegalize.enumeration.EnumRefCurrency;
-import com.ulegalize.enumeration.EnumSecurityAppGroups;
+import com.ulegalize.dto.SecurityGroupUserDTO;
+import com.ulegalize.enumeration.*;
 import com.ulegalize.lawfirm.EntityTest;
 import com.ulegalize.lawfirm.model.LawfirmToken;
+import com.ulegalize.lawfirm.model.converter.EntityToSecurityGroupConverter;
 import com.ulegalize.lawfirm.model.entity.*;
-import com.ulegalize.lawfirm.model.enumeration.EnumValid;
+import com.ulegalize.lawfirm.repository.ClientRepository;
+import com.ulegalize.lawfirm.repository.VirtualcabClientRepository;
 import com.ulegalize.security.EnumRights;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.MethodOrderer;
@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -27,18 +28,27 @@ import static org.junit.jupiter.api.Assertions.*;
 @TestMethodOrder(MethodOrderer.MethodName.class)
 @Slf4j
 public class SecurityGroupServiceTests extends EntityTest {
+
     @Autowired
     private SecurityGroupService securityGroupService;
 
+    @Autowired
+    private ClientRepository clientRepository;
+
+    @Autowired
+    private VirtualcabClientRepository virtualcabClientRepository;
+    @Autowired
+    private EntityToSecurityGroupConverter entityToSecurityGroupConverter;
 
     @Test
     public void test_A_getUserProfile() {
         LawfirmEntity lawfirm = createLawfirm("MYLAW");
         TSecurityGroups tSecurityGroups = createTSecurityGroups(lawfirm, true);
+        boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
 
         String email = lawfirm.getLawfirmUsers().get(0).getUser().getEmail();
 
-        LawfirmToken userProfile = securityGroupService.getUserProfile(null, email, "", true);
+        LawfirmToken userProfile = securityGroupService.getUserProfile(null, email, "", true, verifyUser);
 
         assertNotNull(userProfile);
         assertEquals(lawfirm.getVckey(), userProfile.getVcKey());
@@ -233,5 +243,33 @@ public class SecurityGroupServiceTests extends EntityTest {
             Long aLong = securityGroupService.deleteSecurityGroupById(tSecurityGroups.getTSecurityGroupUsersList().get(0).getId());
         });
 
+    }
+
+    @Test
+    void test_H_createUserSecurity_User_Exist() {
+        String email = "my@gmail.com";
+        LawfirmEntity lawfirm = createLawfirm("MYLAW");
+        String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
+        boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
+
+        LawfirmToken lawfirmToken = new LawfirmToken(1L, email, email, lawfirm.getVckey(), null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", verifyUser);
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        TSecurityGroups tSecurityGroups = createTSecurityGroups(lawfirm, true);
+        LawfirmUsers lawfirmUsers = createLawfirmUsers(lawfirm, "newSecu@gmail.com");
+
+        TSecurityGroupUsers tSecurityGroupUsers = createTSecurityGroupUsers(lawfirmUsers, tSecurityGroups);
+
+        SecurityGroupUserDTO securityGroupUserDTO = entityToSecurityGroupConverter.apply(tSecurityGroupUsers);
+
+        securityGroupUserDTO.setFunctionId(EnumRole.AVOCAT.getIdRole());
+
+        securityGroupService.createUserSecurity(lawfirm.getLawfirmUsers().get(0).getUser().getId(), lawfirm.getVckey(), securityGroupUserDTO);
+
+        List<TClients> tClientsList = clientRepository.findByClientEmail("MYLAW", "newSecu@gmail.com");
+
+        assertNotNull(tClientsList);
+        assertTrue(virtualcabClientRepository.findByTClientsIdAndVcKey("MYLAW", tClientsList.get(0).getId_client()).isPresent());
     }
 }

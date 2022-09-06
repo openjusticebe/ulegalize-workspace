@@ -36,7 +36,7 @@ public class UserV2Controller {
         log.debug("getUserInfo()");
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        LawfirmToken userProfile = securityGroupService.getUserProfile(lawfirmToken.getClientFrom(), lawfirmToken.getUserEmail(), lawfirmToken.getToken(), true);
+        LawfirmToken userProfile = securityGroupService.getUserProfile(lawfirmToken.getClientFrom(), lawfirmToken.getUserEmail(), lawfirmToken.getToken(), true, lawfirmToken.isVerified());
         log.info("Lawfirm connected {}", userProfile);
 
         return new ProfileDTO(userProfile.getUserId(), userProfile.getUsername(), userProfile.getUserEmail(), null,
@@ -67,7 +67,7 @@ public class UserV2Controller {
             log.debug("getUserSelected({})", userEmail);
             LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-            LawfirmToken userProfile = securityGroupService.getUserProfile(lawfirmToken.getClientFrom(), userEmail, lawfirmToken.getToken(), false);
+            LawfirmToken userProfile = securityGroupService.getUserProfile(lawfirmToken.getClientFrom(), userEmail, lawfirmToken.getToken(), false, lawfirmToken.isVerified());
             log.info("Lawfirm connected {}", userProfile);
 
             return ResponseEntity.ok(new ProfileDTO(userProfile.getUserId(), userProfile.getUsername(), userProfile.getUserEmail(), null,

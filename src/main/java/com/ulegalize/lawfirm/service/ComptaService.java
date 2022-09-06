@@ -28,4 +28,7 @@ public interface ComptaService {
 
     InvoiceDTO totalHonoraireByDossierId(Long dossierId);
 
+    ComptaDTO totalThirdPartyByDossierId(Long dossierId);
+
+    void deactivateCompta(Long fraisId);
 }

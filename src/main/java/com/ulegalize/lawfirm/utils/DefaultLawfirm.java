@@ -66,6 +66,29 @@ public class DefaultLawfirm {
             descriptions.add("Open map");
             descriptions.add("Opvolging van het bestand");
             descriptions.add("Mail");
+        } else if (EnumLanguage.DE.equals(enumLanguage)) {
+            descriptions.add("Mail");
+            descriptions.add("Treffen");
+            descriptions.add("Publikum geliefert");
+            descriptions.add("Publikumsstandard");
+            descriptions.add("Strittige Anhörung");
+            descriptions.add("Verfahren");
+            descriptions.add("Hinweis");
+            descriptions.add("Suche");
+            descriptions.add("Untersuchung der Datei");
+            descriptions.add("Anfrage");
+            descriptions.add("Abhilfe");
+            descriptions.add("Schlussfolgerungen");
+            descriptions.add("Mail");
+            descriptions.add("Telefoninterview");
+            descriptions.add("Verschiebung");
+            descriptions.add("Zitat");
+            descriptions.add("Expertise");
+            descriptions.add("Fotokopie");
+            descriptions.add("Ordnerarchivierung");
+            descriptions.add("Ordner öffnen");
+            descriptions.add("Nachverfolgung der Datei");
+            descriptions.add("Mail");
         } else {
             descriptions.add("Courrier");
             descriptions.add("Réunion");
@@ -278,6 +301,94 @@ public class DefaultLawfirm {
             tDebourType.setPricePerUnit(new BigDecimal("15"));
             tDebourType.setVcKey(vcKey);
             tDebourType.setDescription("verplaatsing in Bxl");
+            tDebourType.setUserUpd("ulegalize");
+            tDebourType.setArchived(false);
+            tDebourType.setDateUpd(new Date());
+
+            tDebourTypes.add(tDebourType);
+        } else if (EnumLanguage.DE.equals(enumLanguage)) {
+            TDebourType tDebourType = new TDebourType();
+            tDebourType.setIdMesureType(EnumMesureType.PAGE.getId());
+            tDebourType.setPricePerUnit(new BigDecimal("0.2"));
+            tDebourType.setVcKey(vcKey);
+            tDebourType.setDescription("Fotokopie(n)");
+            tDebourType.setUserUpd("ulegalize");
+            tDebourType.setArchived(false);
+            tDebourType.setDateUpd(new Date());
+
+            tDebourTypes.add(tDebourType);
+
+            tDebourType = new TDebourType();
+            tDebourType.setIdMesureType(EnumMesureType.PAGE.getId());
+            tDebourType.setPricePerUnit(new BigDecimal("10"));
+            tDebourType.setVcKey(vcKey);
+            tDebourType.setDescription("getippte Seite");
+            tDebourType.setUserUpd("ulegalize");
+            tDebourType.setArchived(false);
+            tDebourType.setDateUpd(new Date());
+
+            tDebourTypes.add(tDebourType);
+
+            tDebourType = new TDebourType();
+            tDebourType.setIdMesureType(EnumMesureType.PAGE.getId());
+            tDebourType.setPricePerUnit(new BigDecimal("10"));
+            tDebourType.setVcKey(vcKey);
+            tDebourType.setDescription("Getippter Brief");
+            tDebourType.setUserUpd("ulegalize");
+            tDebourType.setArchived(false);
+            tDebourType.setDateUpd(new Date());
+
+            tDebourTypes.add(tDebourType);
+
+            tDebourType = new TDebourType();
+            tDebourType.setIdMesureType(EnumMesureType.PAGE.getId());
+            tDebourType.setPricePerUnit(new BigDecimal("8"));
+            tDebourType.setVcKey(vcKey);
+            tDebourType.setDescription("E-Mails");
+            tDebourType.setUserUpd("ulegalize");
+            tDebourType.setArchived(false);
+            tDebourType.setDateUpd(new Date());
+
+            tDebourTypes.add(tDebourType);
+
+            tDebourType = new TDebourType();
+            tDebourType.setIdMesureType(EnumMesureType.PAGE.getId());
+            tDebourType.setPricePerUnit(new BigDecimal("25"));
+            tDebourType.setVcKey(vcKey);
+            tDebourType.setDescription("Einschreiben");
+            tDebourType.setUserUpd("ulegalize");
+            tDebourType.setArchived(false);
+            tDebourType.setDateUpd(new Date());
+
+            tDebourTypes.add(tDebourType);
+
+            tDebourType = new TDebourType();
+            tDebourType.setIdMesureType(EnumMesureType.KM.getId());
+            tDebourType.setPricePerUnit(new BigDecimal("0.7"));
+            tDebourType.setVcKey(vcKey);
+            tDebourType.setDescription("Reisekosten außerhalb von Brüssel");
+            tDebourType.setUserUpd("ulegalize");
+            tDebourType.setArchived(false);
+            tDebourType.setDateUpd(new Date());
+
+            tDebourTypes.add(tDebourType);
+
+            tDebourType = new TDebourType();
+            tDebourType.setIdMesureType(EnumMesureType.FORFAIT.getId());
+            tDebourType.setPricePerUnit(new BigDecimal("50"));
+            tDebourType.setVcKey(vcKey);
+            tDebourType.setDescription("Öffnen und Archivieren von Dateien");
+            tDebourType.setUserUpd("ulegalize");
+            tDebourType.setArchived(false);
+            tDebourType.setDateUpd(new Date());
+
+            tDebourTypes.add(tDebourType);
+
+            tDebourType = new TDebourType();
+            tDebourType.setIdMesureType(EnumMesureType.FORFAIT.getId());
+            tDebourType.setPricePerUnit(new BigDecimal("15"));
+            tDebourType.setVcKey(vcKey);
+            tDebourType.setDescription("Reisen in Brüssel");
             tDebourType.setUserUpd("ulegalize");
             tDebourType.setArchived(false);
             tDebourType.setDateUpd(new Date());
@@ -620,6 +731,128 @@ public class DefaultLawfirm {
             refPosteList.add(refPoste);
             refPoste = getRefPoste(vcKey);
             refPoste.setRefPoste("tegenbetaling");
+
+            refPosteList.add(refPoste);
+
+        } else if (EnumLanguage.DE.equals(enumLanguage)) {
+            RefPoste refPoste = getRefPoste(vcKey);
+            refPoste.setRefPoste("Honorare");
+            refPoste.setHonoraires(true);
+            refPoste.setFacturable(true);
+            refPosteList.add(refPoste);
+
+            refPoste = getRefPoste(vcKey);
+            refPoste.setRefPoste("Sozialbeiträge");
+            refPoste.setArchived(true);
+
+            refPosteList.add(refPoste);
+
+            refPoste = getRefPoste(vcKey);
+            refPoste.setRefPoste("Bücher, Zeitschriften");
+
+            refPosteList.add(refPoste);
+
+            refPoste = getRefPoste(vcKey);
+            refPoste.setRefPoste("Konferenzen, Symposien");
+            refPoste.setArchived(true);
+
+            refPosteList.add(refPoste);
+
+            refPoste = getRefPoste(vcKey);
+            refPoste.setRefPoste("Gerichtsvollziehergebühren");
+            refPoste.setFraisProcedure(true);
+
+            refPosteList.add(refPoste);
+
+            refPoste = getRefPoste(vcKey);
+            refPoste.setRefPoste("Registrierungsbeleg");
+            refPoste.setFraisProcedure(true);
+
+            refPosteList.add(refPoste);
+
+            refPoste = getRefPoste(vcKey);
+            refPoste.setRefPoste("Verwaltungsgebühren");
+
+            refPosteList.add(refPoste);
+            refPoste = getRefPoste(vcKey);
+            refPoste.setRefPoste("Briefmarken");
+
+            refPosteList.add(refPoste);
+            refPoste = getRefPoste(vcKey);
+            refPoste.setRefPoste("Empfohlen");
+
+            refPosteList.add(refPoste);
+            refPoste = getRefPoste(vcKey);
+            refPoste.setRefPoste("Gebühren für die Zusammenarbeit");
+            refPoste.setFraisCollaboration(true);
+
+            refPosteList.add(refPoste);
+            refPoste = getRefPoste(vcKey);
+            refPoste.setRefPoste("Sekretär");
+
+            refPosteList.add(refPoste);
+            refPoste = getRefPoste(vcKey);
+            refPoste.setRefPoste("Sozialsekretär");
+            refPosteList.add(refPoste);
+            refPoste = getRefPoste(vcKey);
+            refPoste.setRefPoste("Telefon");
+
+            refPosteList.add(refPoste);
+            refPoste = getRefPoste(vcKey);
+            refPoste.setRefPoste("Restaurant");
+
+            refPosteList.add(refPoste);
+            refPoste = getRefPoste(vcKey);
+            refPoste.setRefPoste("öffentlicher Verkehr");
+
+            refPosteList.add(refPoste);
+            refPoste = getRefPoste(vcKey);
+            refPoste.setRefPoste("Taxi");
+
+            refPosteList.add(refPoste);
+            refPoste = getRefPoste(vcKey);
+            refPoste.setRefPoste("Büromiete");
+
+            refPosteList.add(refPoste);
+            refPoste = getRefPoste(vcKey);
+            refPoste.setRefPoste("Vorauszahlungen");
+
+            refPosteList.add(refPoste);
+            refPoste = getRefPoste(vcKey);
+            refPoste.setRefPoste("Büro - Lieferungen");
+
+            refPosteList.add(refPoste);
+            refPoste = getRefPoste(vcKey);
+            refPoste.setRefPoste("Abzuschreibende Bürogeräte");
+
+            refPosteList.add(refPoste);
+            refPoste = getRefPoste(vcKey);
+            refPoste.setRefPoste("Mastercard");
+
+            refPosteList.add(refPoste);
+            refPoste = getRefPoste(vcKey);
+            refPoste.setRefPoste("Mieten");
+
+            refPosteList.add(refPoste);
+            refPoste = getRefPoste(vcKey);
+            refPoste.setRefPoste("zivilrechtliche Erstattung");
+
+            refPosteList.add(refPoste);
+            refPoste = getRefPoste(vcKey);
+            refPoste.setRefPoste("Azubi Gehalt");
+
+            refPosteList.add(refPoste);
+            refPoste = getRefPoste(vcKey);
+            refPoste.setRefPoste("Übersetzungskosten");
+            refPoste.setFraisProcedure(true);
+
+            refPosteList.add(refPoste);
+            refPoste = getRefPoste(vcKey);
+            refPoste.setRefPoste("Kundenrückerstattung");
+
+            refPosteList.add(refPoste);
+            refPoste = getRefPoste(vcKey);
+            refPoste.setRefPoste("Zahlung des Gegners");
 
             refPosteList.add(refPoste);
 

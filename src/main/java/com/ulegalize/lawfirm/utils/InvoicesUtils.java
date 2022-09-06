@@ -1,6 +1,6 @@
 package com.ulegalize.lawfirm.utils;
 
-import com.ulegalize.lawfirm.model.enumeration.EnumFactureType;
+import com.ulegalize.enumeration.EnumFactureType;
 import org.apache.commons.lang3.StringUtils;
 
 public class InvoicesUtils {

@@ -3,7 +3,10 @@ package com.ulegalize.lawfirm;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ulegalize.enumeration.*;
 import com.ulegalize.lawfirm.model.entity.*;
-import com.ulegalize.lawfirm.model.enumeration.*;
+import com.ulegalize.lawfirm.model.enumeration.EnumMatiereRubrique;
+import com.ulegalize.lawfirm.model.enumeration.EnumSequenceType;
+import com.ulegalize.lawfirm.model.enumeration.EnumStatusAssociation;
+import com.ulegalize.lawfirm.utils.Utils;
 import com.ulegalize.security.EnumRights;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateUtils;
@@ -23,7 +26,8 @@ import java.util.*;
 @Slf4j
 public abstract class EntityTest extends ConfigureTest {
     protected static String USER = "BEST";
-    protected static String EMAIL = "my@gmail.com";
+    //    protected static String EMAIL = "my@gmail.com";
+    protected static String EMAIL = "julien.fumanti@finauxa.com";
     protected static BigDecimal VAT = BigDecimal.valueOf(21);
     @Autowired
     protected TestEntityManager testEntityManager;
@@ -36,6 +40,7 @@ public abstract class EntityTest extends ConfigureTest {
         lawfirmEntity.setName("MYLAW name");
         lawfirmEntity.setAlias("MYLAW");
         lawfirmEntity.setEmail("MYLAW@");
+        lawfirmEntity.setEmailAdmin("MYLAW@test.com");
         lawfirmEntity.setCity("my city");
         lawfirmEntity.setLicenseId(1);
         lawfirmEntity.setDriveType(DriveType.openstack);
@@ -45,6 +50,7 @@ public abstract class EntityTest extends ConfigureTest {
         lawfirmEntity.setStartInvoiceNumber(10);
         lawfirmEntity.setNotification(true);
         lawfirmEntity.setTemporaryVc(false);
+        lawfirmEntity.setCreUser(USER);
 
         lawfirmEntity.setLawfirmUsers(new ArrayList<>());
         createLawfirmUsers(lawfirmEntity, EMAIL);
@@ -97,6 +103,16 @@ public abstract class EntityTest extends ConfigureTest {
 
     }
 
+    protected TDossiersType createTDossierType(String typeDossier, String dossierDesc) {
+        TDossiersType tDossiersType = new TDossiersType();
+
+        tDossiersType.setDossType(typeDossier);
+        tDossiersType.setTypeDesc(dossierDesc);
+        testEntityManager.persist(tDossiersType);
+
+        return tDossiersType;
+    }
+
     protected TDossiers createDossier(LawfirmEntity lawfirmEntity, EnumVCOwner enumVCOwner) {
         TDossiers tDossiers = new TDossiers();
         tDossiers.setYear_doss(String.valueOf(LocalDate.now().getYear()));
@@ -127,8 +143,7 @@ public abstract class EntityTest extends ConfigureTest {
         tDossiers.getDossierContactList().add(dossierContactAdv);
 
 
-        TMatiereRubriques tMatiereRubriques = createTMatiereRubriques();
-        tDossiers.setTMatiereRubriques(tMatiereRubriques);
+        tDossiers.setEnumMatiereRubrique(EnumMatiereRubrique.MEDIATION_MATIERE_SOCIALE);
         tDossiers.setKeywords("");
         tDossiers.setCouthoraire(100);
         tDossiers.setMemo("");
@@ -210,6 +225,37 @@ public abstract class EntityTest extends ConfigureTest {
         return clients;
     }
 
+    protected TMessage createMessage() {
+        TMessage tMessage = new TMessage();
+        tMessage.setId(Long.valueOf("1"));
+        tMessage.setMessageNl("Message NL");
+        tMessage.setMessageFr("Message FR");
+        tMessage.setMessageDe("Message DE");
+        tMessage.setMessageEn("Message En");
+
+        testEntityManager.persist(tMessage);
+
+        return tMessage;
+    }
+
+    protected TMessageUser createTMessageUser(TUsers tUsers, Boolean valid) {
+        TMessageUser tMessageUser = new TMessageUser();
+        tMessageUser.setUserId(tUsers.getId());
+        tMessageUser.setValid(valid);
+        tMessageUser.setCreUser(USER);
+        LocalDateTime now = LocalDateTime.now();
+        tMessageUser.setCreDate(now);
+        tMessageUser.setDateTo(now.plusHours(1));
+
+        TMessage tmessage = createMessage();
+
+        tMessageUser.setTMessage(tmessage);
+
+        testEntityManager.persist(tMessageUser);
+
+        return tMessageUser;
+    }
+
     protected LawfirmWebsiteEntity createLawfirmWebsiteEntity(LawfirmEntity lawfirmEntity) {
         LawfirmWebsiteEntity lawfirmWebsiteEntity = new LawfirmWebsiteEntity();
         lawfirmWebsiteEntity.setVcKey(lawfirmEntity.getVckey());
@@ -274,6 +320,7 @@ public abstract class EntityTest extends ConfigureTest {
         tFrais.setTDossiers(dossier);
         tFrais.setVcKey(lawfirm.getVckey());
         RefCompte refCompte = createRefCompte(lawfirm);
+        tFrais.setRefCompte(refCompte);
         tFrais.setIdCompte(refCompte.getIdCompte());
         tFrais.setIdType(EnumTType.ENTREE);
         RefPoste refPoste = createRefPoste(lawfirm);
@@ -289,6 +336,7 @@ public abstract class EntityTest extends ConfigureTest {
         TGrid grids = createGrids();
         tFrais.setGridId(grids.getID());
         tFrais.setDateUpd(LocalDateTime.now());
+        tFrais.setIsDeleted(false);
 
 
         testEntityManager.persist(tFrais);
@@ -699,5 +747,28 @@ public abstract class EntityTest extends ConfigureTest {
         testEntityManager.persist(entity);
 
         return entity;
+    }
+
+    protected EmailsEntity createEmailsEntity(LawfirmEntity lawfirmEntity) {
+        EmailsEntity entity = new EmailsEntity();
+
+        entity.setLawfirm(lawfirmEntity);
+        entity.setCreUser(USER);
+        entity.setReminderDate(ZonedDateTime.now());
+
+        testEntityManager.persist(entity);
+
+        return entity;
+    }
+
+    protected TWorkspaceAssociated createWorkspaceAssociation(LawfirmEntity sender, LawfirmEntity recipient) {
+        TWorkspaceAssociated tWorkspaceAssociated = new TWorkspaceAssociated();
+        tWorkspaceAssociated.setLawfirmSender(sender);
+        tWorkspaceAssociated.setLawfirmRecipient(recipient);
+        tWorkspaceAssociated.setStatus(EnumStatusAssociation.PENDING);
+        tWorkspaceAssociated.setHashkey(Utils.generateHashkey());
+
+        testEntityManager.persist(tWorkspaceAssociated);
+        return tWorkspaceAssociated;
     }
 }

@@ -1,36 +1,73 @@
 package com.ulegalize.lawfirm.model.entity;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 import java.io.Serializable;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Objects;
 
-@Data
+
 @Entity
 @Table(name = "t_message_user")
 public class TMessageUser implements Serializable {
+
     private static final long serialVersionUID = 1L;
 
     @Id
     @Column(insertable = false, name = "user_id", nullable = false)
-    private String userId;
+    @Getter
+    @Setter
+    private Long userId;
 
     @Column(name = "IS_VALID", nullable = false)
-    private String valid;
+    @Getter
+    @Setter
+    private Boolean valid;
 
     @Column(name = "DATE_TO", nullable = false)
-    private LocalDate dateTo;
+    @Getter
+    @Setter
+    private LocalDateTime dateTo;
 
     @Column(name = "CRE_USER", nullable = false)
+    @Getter
+    @Setter
     private String creUser;
 
     @Column(name = "CRE_DATE")
+    @Getter
+    @Setter
     private LocalDateTime creDate;
 
+    @ManyToOne
+    @JoinColumn(name = "message_id")
+    @Getter
+    @Setter
+    private TMessage tMessage;
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        TMessageUser that = (TMessageUser) o;
+        return Objects.equals(userId, that.userId) && Objects.equals(valid, that.valid) && Objects.equals(dateTo, that.dateTo) && Objects.equals(creUser, that.creUser) && Objects.equals(creDate, that.creDate);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(userId, valid, dateTo, creUser, creDate);
+    }
+
+    @Override
+    public String toString() {
+        return "TMessageUser{" +
+                "userId='" + userId + '\'' +
+                ", valid='" + valid + '\'' +
+                ", dateTo=" + dateTo +
+                ", creUser='" + creUser + '\'' +
+                ", creDate=" + creDate +
+                '}';
+    }
 }

@@ -1,8 +1,8 @@
 package com.ulegalize.lawfirm.repository;
 
 import com.ulegalize.dto.LawyerDTO;
+import com.ulegalize.enumeration.EnumValid;
 import com.ulegalize.lawfirm.model.entity.TUsers;
-import com.ulegalize.lawfirm.model.enumeration.EnumValid;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
@@ -25,10 +25,10 @@ public interface TUsersRepository extends CrudRepository<TUsers, Long> {
     @Query("select u from TUsers u inner join u.lawfirmUsers lu where u.aliasPublic = :aliasPublic and lu.isPublic = true")
     Optional<TUsers> findPublicUserByAliasPublic(@Param("aliasPublic") String aliasPublic);
 
-    @Query("select new com.ulegalize.dto.LawyerDTO(u.id, u.idUser, u.email, u.language, u.fullname) from TUsers u where u.email = :email")
+    @Query("select new com.ulegalize.dto.LawyerDTO(u.id, u.idUser, u.email, u.language, u.fullname, u.idValid) from TUsers u where u.email = :email")
     Optional<LawyerDTO> findDTOByEmail(String email);
 
-    @Query("select new com.ulegalize.dto.LawyerDTO(u.id, u.idUser, u.email, u.language, u.fullname) from TUsers u where u.email = :email and u.idValid = :idValid")
+    @Query("select new com.ulegalize.dto.LawyerDTO(u.id, u.idUser, u.email, u.language, u.fullname, u.idValid) from TUsers u where u.email = :email and u.idValid = :idValid")
     Optional<LawyerDTO> findDTOByEmailAndValid(String email, EnumValid idValid);
 
     Optional<TUsers> findByEmail(String email);
@@ -40,7 +40,7 @@ public interface TUsersRepository extends CrudRepository<TUsers, Long> {
             " or u.email like CONCAT('%', :searchValue,'%') )")
     List<TUsers> findBySearchAndIdValidAndValid(String searchValue, EnumValid enumValid, boolean isValid);
 
-    @Query("select new com.ulegalize.dto.LawyerDTO(u.id, u.idUser, u.email, u.language, u.fullname) " +
+    @Query("select new com.ulegalize.dto.LawyerDTO(u.id, u.idUser, u.email, u.language, u.fullname, u.idValid) " +
             " from TUsers u where u.idValid = :idValid and u.valid = true")
     List<LawyerDTO> findDTOByValid(EnumValid idValid);
 }

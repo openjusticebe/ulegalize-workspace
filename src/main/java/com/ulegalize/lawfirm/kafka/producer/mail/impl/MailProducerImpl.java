@@ -65,7 +65,7 @@ public class MailProducerImpl implements IMailProducer {
     public void sendEmail(String location, ZonedDateTime start, ZonedDateTime end, EnumMailTemplate enumMailTemplate, EnumLanguage enumLanguage, String template, String subject, Map<String, Object> context) {
         log.debug("Entering producer sendEmail enumLanguage {} and template {}", enumLanguage, template);
         if (!activeProfile.equalsIgnoreCase("integrationtest")
-//                && !activeProfile.equalsIgnoreCase("dev")
+                /*&& !activeProfile.equalsIgnoreCase("dev")*/
                 && !activeProfile.equalsIgnoreCase("devDocker")) {
             try {
                 KafkaMailObject messageKafka = new KafkaMailObject();

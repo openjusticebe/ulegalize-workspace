@@ -137,4 +137,26 @@ public class ComptaV2Controller {
                 .body(invoiceDTO);
 
     }
+
+    @GetMapping(value = "/dossier/{dossierId}/tiers/total")
+    public ResponseEntity<ComptaDTO> totalThirdPartyByDossierId(@PathVariable Long dossierId) {
+        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        log.debug("totalHonoraireByDossierId for vckey {} and dossierId {}", lawfirmToken.getVcKey(), dossierId);
+
+        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+        ComptaDTO total = comptaService.totalThirdPartyByDossierId(dossierId);
+
+        return ResponseEntity.ok()
+                .body(total);
+
+    }
+
+    @PutMapping(value = "/deactivate/{fraisId}")
+    public void deactivateCompta(@PathVariable Long fraisId) {
+        log.debug("deactivateCompta with fraisID {}", fraisId);
+
+        comptaService.deactivateCompta(fraisId);
+    }
+
+
 }

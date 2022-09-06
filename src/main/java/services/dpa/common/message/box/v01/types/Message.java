@@ -76,7 +76,7 @@ public abstract class Message {
     protected double basePrice;
     @XmlElement(required = true)
     protected Sender sender;
-    protected CaseReference caseReference;
+    protected Message.CaseReference caseReference;
     @XmlElement(required = true)
     @XmlSchemaType(name = "dateTime")
     protected XMLGregorianCalendar sent;
@@ -199,9 +199,9 @@ public abstract class Message {
      * Gets the value of the caseReference property.
      *
      * @return possible object is
-     * {@link CaseReference }
+     * {@link Message.CaseReference }
      */
-    public CaseReference getCaseReference() {
+    public Message.CaseReference getCaseReference() {
         return caseReference;
     }
 
@@ -209,9 +209,9 @@ public abstract class Message {
      * Sets the value of the caseReference property.
      *
      * @param value allowed object is
-     *              {@link CaseReference }
+     *              {@link Message.CaseReference }
      */
-    public void setCaseReference(CaseReference value) {
+    public void setCaseReference(Message.CaseReference value) {
         this.caseReference = value;
     }
 

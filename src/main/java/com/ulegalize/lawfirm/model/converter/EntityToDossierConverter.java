@@ -44,7 +44,7 @@ public class EntityToDossierConverter implements SuperTriConverter<TDossiers, En
         }
         EnumDossierType enumDossierType = EnumDossierType.fromdossType(dossier.getDoss_type());
         dossierDTO.setType(enumDossierType);
-        String label = Utils.getLabel(enumLanguage, enumDossierType.getLabelFr(), enumDossierType.getLabelEn(), enumDossierType.getLabelNl());
+        String label = Utils.getLabel(enumLanguage, enumDossierType.getLabelFr(), enumDossierType.getLabelEn(), enumDossierType.getLabelNl(), enumDossierType.getLabelNl());
 
         dossierDTO.setTypeItem(new ItemStringDto(enumDossierType.getDossType(), label));
         dossierDTO.setMemo(dossier.getMemo());
@@ -117,12 +117,16 @@ public class EntityToDossierConverter implements SuperTriConverter<TDossiers, En
         dossierDTO.setMemo(dossier.getMemo());
 //        ,round(ifnull(presta.cout,0) + ifnull(justice.cout,0) + ifnull(debour.cout,0) + ifnull(collabo.cout,0) - ifnull(hono.cout,0),2) as totcout
 
-        if (dossier.getTMatiereRubriques() != null) {
-            String matiereRubriqueDesc = dossier.getTMatiereRubriques().getMatiereRubriqueDesc() != null && !dossier.getTMatiereRubriques().getMatiereRubriqueDesc().isEmpty() ? " - " + dossier.getTMatiereRubriques().getMatiereRubriqueDesc() : "";
-            String matiereLabel = dossier.getTMatiereRubriques().getMatieres().getMatiereDesc() + matiereRubriqueDesc;
-            dossierDTO.setMatiere_rubrique(new ItemLongDto(dossier.getTMatiereRubriques().getIdMatiereRubrique(), matiereLabel));
-            dossierDTO.setId_matiere_rubrique(dossier.getTMatiereRubriques().getIdMatiereRubrique());
+        if (dossier.getEnumMatiereRubrique() != null) {
+            dossierDTO.setId_matiere_rubrique(dossier.getEnumMatiereRubrique().getId());
+            dossierDTO.setMatiere_rubrique(new ItemLongDto(dossier.getEnumMatiereRubrique().getMatiereId(), Utils.getLabel(enumLanguage,
+                    dossier.getEnumMatiereRubrique().getDescriptionFr(),
+                    dossier.getEnumMatiereRubrique().getDescriptionEn(),
+                    dossier.getEnumMatiereRubrique().getDescriptionNl(),
+                    dossier.getEnumMatiereRubrique().getDescriptionDe()
+            )));
         }
+
 
         if (dossier.getOpposingCounsel() != null) {
             dossierDTO.setConseilIdAdverseClient(dossier.getOpposingCounsel().getId_client());

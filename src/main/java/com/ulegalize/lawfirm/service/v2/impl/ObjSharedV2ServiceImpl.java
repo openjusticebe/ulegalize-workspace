@@ -99,7 +99,7 @@ public class ObjSharedV2ServiceImpl implements ObjSharedV2Service {
         emails.forEach(email -> {
             log.debug("Email {} to be sent", email);
             Optional<TUsers> usersOptional = tUsersRepository.findByEmail(email);
-            TUsers users = usersOptional.orElseGet(() -> userV2Service.createUsers(email, clientFrom, EnumLanguage.FR));
+            TUsers users = usersOptional.orElseGet(() -> userV2Service.createUsers(email, clientFrom, EnumLanguage.FR, true));
 
             tObjSharedWithRepository.deleteByObjAndUserTo(finalTObjShared.getId(), users.getId());
             TObjSharedWith tObjSharedWith = new TObjSharedWith();

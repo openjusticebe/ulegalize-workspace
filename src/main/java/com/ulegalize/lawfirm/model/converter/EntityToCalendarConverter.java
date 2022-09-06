@@ -45,6 +45,7 @@ public class EntityToCalendarConverter implements SuperTriConverter<TCalendarEve
                     Utils.getLabel(enumLanguage,
                             entity.getEventType().getLabelFr(),
                             entity.getEventType().getLabelEn(),
+                            entity.getEventType().getLabelNl(),
                             entity.getEventType().getLabelNl()), entity.getEventType().getColor());
             event.setEventTypeItem(itemStringDto);
         }

@@ -19,4 +19,9 @@ public interface VirtualcabClientRepository extends JpaRepository<VirtualcabClie
             " join vcc.lawfirm lawfirm " +
             " where lawfirm.vckey = ?1 and vcc.tClients.id_client = ?2")
     Optional<VirtualcabClient> findByLawfirmAAndTClients(String vcKey, Long clientId);
+
+    @Query(value = "SELECT vcc from  VirtualcabClient vcc " +
+            " join vcc.lawfirm lawfirm " +
+            " where lawfirm.vckey = :vckey and vcc.tClients.id_client = :clientId ")
+    Optional<VirtualcabClient> findByTClientsIdAndVcKey(String vckey, Long clientId);
 }

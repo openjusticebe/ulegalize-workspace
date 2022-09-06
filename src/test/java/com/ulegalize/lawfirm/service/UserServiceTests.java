@@ -46,7 +46,7 @@ public class UserServiceTests extends EntityTest {
         assertNotEquals(user.getLanguage(), EnumLanguage.EN.getShortCode());
         EnumLanguage language = EnumLanguage.fromshortCode(user.getLanguage());
 
-        TUsers users = userV2Service.createUsers("j2@j.com", "workspace", language);
+        TUsers users = userV2Service.createUsers("j2@j.com", "workspace", language, true);
 
         TUsers tUsers = testEntityManager.find(TUsers.class, users.getId());
         assertEquals(tUsers.getEmail(), "j2@j.com");
@@ -63,7 +63,7 @@ public class UserServiceTests extends EntityTest {
         assertNotEquals(user.getLanguage(), EnumLanguage.EN.getShortCode());
         EnumLanguage language = EnumLanguage.fromshortCode(user.getLanguage());
 
-        TUsers users = userV2Service.createUsers("j2@j.com", "workspace", language);
+        TUsers users = userV2Service.createUsers("j2@j.com", "workspace", language, true);
         assertEquals(users.getFullname(), "j2");
 
     }

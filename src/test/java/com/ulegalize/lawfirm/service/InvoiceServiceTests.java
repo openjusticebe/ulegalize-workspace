@@ -1,16 +1,12 @@
 package com.ulegalize.lawfirm.service;
 
 import com.ulegalize.dto.*;
-import com.ulegalize.enumeration.DriveType;
-import com.ulegalize.enumeration.EnumLanguage;
-import com.ulegalize.enumeration.EnumRefCurrency;
-import com.ulegalize.enumeration.EnumVCOwner;
+import com.ulegalize.enumeration.*;
 import com.ulegalize.lawfirm.EntityTest;
 import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.entity.*;
-import com.ulegalize.lawfirm.model.enumeration.EnumFactureType;
-import com.ulegalize.lawfirm.model.enumeration.EnumValid;
 import com.ulegalize.security.EnumRights;
+import com.ulegalize.utils.Utils;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
@@ -81,7 +77,11 @@ public class InvoiceServiceTests extends EntityTest {
         invoice.setTypeId(EnumFactureType.TEMP.getId());
         invoice.setTypeItem(new ItemLongDto(
                 EnumFactureType.TEMP.getId(),
-                EnumFactureType.TEMP.getDescription()
+                Utils.getLabel(EnumLanguage.FR,
+                        EnumFactureType.TEMP.getDescriptionFr(),
+                        EnumFactureType.TEMP.getDescriptionEn(),
+                        EnumFactureType.TEMP.getDescriptionNl(),
+                        EnumFactureType.TEMP.getDescriptionDe())
         ));
 
         RefPoste refPoste1 = createRefPoste(lawfirm);
@@ -148,7 +148,11 @@ public class InvoiceServiceTests extends EntityTest {
         invoice.setTypeId(EnumFactureType.TEMP.getId());
         invoice.setTypeItem(new ItemLongDto(
                 EnumFactureType.TEMP.getId(),
-                EnumFactureType.TEMP.getDescription()
+                Utils.getLabel(EnumLanguage.FR,
+                        EnumFactureType.TEMP.getDescriptionFr(),
+                        EnumFactureType.TEMP.getDescriptionEn(),
+                        EnumFactureType.TEMP.getDescriptionNl(),
+                        EnumFactureType.TEMP.getDescriptionDe())
         ));
 
         RefPoste refPoste1 = createRefPoste(lawfirm);
@@ -245,7 +249,11 @@ public class InvoiceServiceTests extends EntityTest {
         invoiceDTO.setTypeId(EnumFactureType.TEMP.getId());
         invoiceDTO.setTypeItem(new ItemLongDto(
                 EnumFactureType.TEMP.getId(),
-                EnumFactureType.TEMP.getDescription()
+                Utils.getLabel(EnumLanguage.FR,
+                        EnumFactureType.TEMP.getDescriptionFr(),
+                        EnumFactureType.TEMP.getDescriptionEn(),
+                        EnumFactureType.TEMP.getDescriptionNl(),
+                        EnumFactureType.TEMP.getDescriptionDe())
         ));
 
         RefPoste refPoste1 = createRefPoste(lawfirm);

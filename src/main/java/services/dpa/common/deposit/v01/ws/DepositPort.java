@@ -39,7 +39,7 @@ import javax.xml.bind.annotation.XmlSeeAlso;
         services.dpa.common.addressbook.external.consult.lawyer.v01.types.ObjectFactory.class,
         services.dpa.common.addressbook.external.v01.types.ObjectFactory.class,
         services.dpa.common.deposit.base.v01.types.ObjectFactory.class,
-        ObjectFactory.class,
+        services.dpa.common.deposit.consult.v01.messages.ObjectFactory.class,
         services.dpa.common.deposit.consult.v01.types.ObjectFactory.class,
         services.dpa.common.deposit.file.v01.messages.ObjectFactory.class,
         services.dpa.common.deposit.file.v01.types.ObjectFactory.class,

@@ -34,7 +34,12 @@ public class DriveApiImpl implements DriveApi {
     @Value("${spring.profiles.active}")
     private String activeProfile;
 
-    private RestTemplate restTemplate;
+    private final RestTemplate restTemplate;
+
+    @Value("${ulegalize.http.auth-token-header-name}")
+    private String authHeader;
+    @Value("${ulegalize.http.auth-token}")
+    private String authToken;
 
 
     public DriveApiImpl(RestTemplate restTemplate) {
@@ -53,6 +58,7 @@ public class DriveApiImpl implements DriveApi {
             headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.add("Authorization", "Bearer " + lawfirmToken.getToken());
+            headers.add(authHeader, authToken);
 
             JSONObject jsonObject = new JSONObject();
             jsonObject.put("container", containerName);
@@ -76,6 +82,7 @@ public class DriveApiImpl implements DriveApi {
             headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.add("Authorization", "Bearer " + lawfirmToken.getToken());
+            headers.add(authHeader, authToken);
 
             JSONObject jsonObject = new JSONObject();
             jsonObject.put("container", vcKey);
@@ -97,6 +104,7 @@ public class DriveApiImpl implements DriveApi {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
             headers.add("Authorization", "Bearer " + lawfirmToken.getToken());
+            headers.add(authHeader, authToken);
 
             ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(file);
             log.debug("Original Filename {}", originalFilename);
@@ -133,6 +141,7 @@ public class DriveApiImpl implements DriveApi {
             headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.add("Authorization", "Bearer " + lawfirmToken.getToken());
+            headers.add(authHeader, authToken);
 
             LinkedMultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
             body.add("container", lawfirmToken.getVcKey());
@@ -166,6 +175,7 @@ public class DriveApiImpl implements DriveApi {
             headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.add("Authorization", "Bearer " + lawfirmToken.getToken());
+            headers.add(authHeader, authToken);
 
             LinkedMultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
             body.add("userId", lawfirmToken.getUserId());
@@ -197,6 +207,7 @@ public class DriveApiImpl implements DriveApi {
             headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.add("Authorization", "Bearer " + lawfirmToken.getToken());
+            headers.add(authHeader, authToken);
 
             LinkedMultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
             body.add("container", lawfirmToken.getVcKey());
@@ -230,6 +241,7 @@ public class DriveApiImpl implements DriveApi {
             headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.add("Authorization", "Bearer " + lawfirmToken.getToken());
+            headers.add(authHeader, authToken);
 
             LinkedMultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
             body.add("container", URLEncoder.encode(lawfirmToken.getVcKey()));
@@ -260,6 +272,7 @@ public class DriveApiImpl implements DriveApi {
             headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.add("Authorization", "Bearer " + lawfirmToken.getToken());
+            headers.add(authHeader, authToken);
 
             LinkedMultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
             body.add("container", URLEncoder.encode(lawfirmToken.getVcKey()));
@@ -290,6 +303,7 @@ public class DriveApiImpl implements DriveApi {
             headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.add("Authorization", "Bearer " + lawfirmToken.getToken());
+            headers.add(authHeader, authToken);
 
             LinkedMultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
 
@@ -319,6 +333,7 @@ public class DriveApiImpl implements DriveApi {
             headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.add("Authorization", "Bearer " + lawfirmToken.getToken());
+            headers.add(authHeader, authToken);
 
             LinkedMultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
 
@@ -354,6 +369,7 @@ public class DriveApiImpl implements DriveApi {
             headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.add("Authorization", "Bearer " + lawfirmToken.getToken());
+            headers.add(authHeader, authToken);
 
             LinkedMultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
             body.add("container", lawfirmToken.getVcKey());
@@ -387,6 +403,7 @@ public class DriveApiImpl implements DriveApi {
             headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.add("Authorization", "Bearer " + lawfirmToken.getToken());
+            headers.add(authHeader, authToken);
 
             LinkedMultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
             body.add("container", lawfirmToken.getVcKey());

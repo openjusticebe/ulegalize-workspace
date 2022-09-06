@@ -1,13 +1,16 @@
 package com.ulegalize.lawfirm.controller.v2;
 
 import com.ulegalize.dto.*;
+import com.ulegalize.lawfirm.exception.LawfirmBusinessException;
 import com.ulegalize.lawfirm.exception.RestException;
 import com.ulegalize.lawfirm.model.LawfirmToken;
+import com.ulegalize.lawfirm.model.dto.AssociatedWorkspaceDTO;
 import com.ulegalize.lawfirm.service.SecurityGroupService;
 import com.ulegalize.lawfirm.service.v2.*;
 import lombok.extern.slf4j.Slf4j;
 import net.minidev.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -42,6 +45,8 @@ public class AdminV2Controller {
     private SecurityGroupService securityGroupService;
     @Autowired
     private DossierV2Service dossierV2Service;
+    @Autowired
+    private WorkspaceAssociatedService workspaceAssociatedService;
 
     // VirtualCab
     @GetMapping(value = "/lawfirm")
@@ -127,7 +132,7 @@ public class AdminV2Controller {
 
     @PutMapping(value = "/prestation/type/{prestationTypeId}")
     public PrestationTypeDTO updatePrestationsType(@PathVariable Integer prestationTypeId,
-            @RequestBody PrestationTypeDTO prestationTypeDTO) {
+                                                   @RequestBody PrestationTypeDTO prestationTypeDTO) {
         log.debug("updatePrestationsType({})", prestationTypeId);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
@@ -226,7 +231,7 @@ public class AdminV2Controller {
 
     @PutMapping(value = "/accounting/type/{accountingTypeId}")
     public AccountingTypeDTO updateRefPoste(@PathVariable Integer accountingTypeId,
-            @RequestBody AccountingTypeDTO accountingTypeDTO) {
+                                            @RequestBody AccountingTypeDTO accountingTypeDTO) {
         log.debug("updateRefPoste({})", accountingTypeId);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
@@ -275,7 +280,7 @@ public class AdminV2Controller {
 
     @PutMapping(value = "/bankaccount/type/{compteId}")
     public BankAccountDTO updateBankAccount(@PathVariable Integer compteId,
-            @RequestBody BankAccountDTO bankAccountDTO) {
+                                            @RequestBody BankAccountDTO bankAccountDTO) {
         log.debug("updateBankAccount({})", compteId);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
@@ -328,7 +333,7 @@ public class AdminV2Controller {
 
         log.debug("getSecurityGroup() for language {}", lawfirmToken.getLanguage());
 
-        return securityGroupService.getSecurityGroup();
+        return securityGroupService.getSecurityGroup(lawfirmToken.getVcKey());
     }
 
     @GetMapping(path = "/security/securityGroup/exists")
@@ -378,7 +383,7 @@ public class AdminV2Controller {
 
         log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
-        return securityGroupService.createUserSecurity(lawfirmToken.getUserId(), securityGroupUserDTO);
+        return securityGroupService.createUserSecurity(lawfirmToken.getUserId(), lawfirmToken.getVcKey(), securityGroupUserDTO);
     }
 
     @PostMapping(value = "/security/{securityGroupId}/user")
@@ -533,5 +538,46 @@ public class AdminV2Controller {
         log.debug("adminAddShareUser()");
 
         return dossierV2Service.addShareAllFolderUser();
+    }
+
+    @RequestMapping(method = RequestMethod.GET, path = "/security/approveWorkspace")
+    public Boolean approveWorkspace(@RequestParam("id") Long id, @RequestParam("vckey") String vckey, @RequestParam("hashkey") String hashkey, @RequestParam("status") Boolean status) {
+        log.debug("approveWorkspace()");
+
+        return workspaceAssociatedService.validateAssociation(id, vckey, hashkey, status);
+    }
+
+    @PostMapping(value = "/security/createAssociation")
+    public Boolean createAssociation(@RequestBody AssociatedWorkspaceDTO associatedWorkspaceDTO) throws RestException {
+        log.debug("createAssociation()");
+
+        return workspaceAssociatedService.createAssociation(associatedWorkspaceDTO);
+    }
+
+    @GetMapping(value = "/security/associatedWorkspace")
+    public Page<AssociatedWorkspaceDTO> getAssociatedWorkspace(
+            @RequestParam int offset,
+            @RequestParam int limit,
+            @RequestParam(required = false) String vcKey,
+            @RequestParam(required = false) Boolean searchCriteriaType
+    ) throws LawfirmBusinessException {
+        log.debug("getAssociatedWorkspace()");
+        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication()
+                .getPrincipal();
+
+        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+
+        return workspaceAssociatedService.getAllAssociatedWorkspace(limit, offset, lawfirmToken.getVcKey(), lawfirmToken.getUserId(), searchCriteriaType);
+    }
+
+    @RequestMapping(method = RequestMethod.GET, path = "/security/updateAssociation")
+    public Boolean updateAssociation(@RequestParam("vckeyRecipient") String vckeyRecipient, @RequestParam("typeAssociation") Boolean typeAssociation, @RequestParam("status") Boolean status) {
+        log.debug("updateAssociation()");
+        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication()
+                .getPrincipal();
+
+        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+
+        return workspaceAssociatedService.updateAssociation(lawfirmToken.getVcKey(), lawfirmToken.getUserId(), vckeyRecipient, typeAssociation, status);
     }
 }

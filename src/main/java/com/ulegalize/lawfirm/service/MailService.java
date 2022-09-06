@@ -75,47 +75,55 @@ public class MailService {
         String subjectFr = "";
         String subjectEn = "";
         String subjectNl = "";
+        String subjectDe = "";
 
         if (appointmentType != null) {
             subjectFr = appointmentType + " - ";
             subjectEn = appointmentType + " - ";
             subjectNl = appointmentType + " - ";
+            subjectDe = appointmentType + " - ";
         }
 
         subjectFr += type.getSubjectFr();
         subjectEn += type.getSubjectEn();
         subjectNl += type.getSubjectNl();
+        subjectDe += type.getSubjectDe();
 
         String subject;
 
         switch (type) {
             case MAILAPPOINTMENT_ADDED_NOTIFICATION:
 
-                subject = context.get("title") != null && !((String) context.get("title")).isEmpty() ? (String) context.get("title") : Utils.getLabel(enumLanguage, subjectFr, subjectEn, subjectNl);
+                subject = context.get("title") != null && !((String) context.get("title")).isEmpty() ? (String) context.get("title") : Utils.getLabel(enumLanguage, subjectFr, subjectEn, subjectNl, subjectNl);
                 break;
             case MAILAPPOINTMENT_CANCEL_NOTIFICATION:
             case MAILAPPOINTMENTCONFIRMEDTEMPLATE:
             case MAILNEWAPPOINTMENTREQUESTTEMPLATE: {
             }
             case MAILAPPOINTMENTREGISTEREDTEMPLATE: {
-                subject = Utils.getLabel(enumLanguage, subjectFr, subjectEn, subjectNl);
+                subject = Utils.getLabel(enumLanguage, subjectFr, subjectEn, subjectNl, subjectDe);
                 break;
             }
             case MAILSHAREDFOLDERUSERTEMPLATE: {
-                subject = Utils.getLabel(enumLanguage, subjectFr, subjectEn, subjectNl) + (String) context.get("dossier");
+                subject = Utils.getLabel(enumLanguage, subjectFr, subjectEn, subjectNl, subjectDe) + (String) context.get("dossier");
 
                 break;
             }
             case MAILSHAREDUSERSECURITYTEMPLATE: {
-                subject = Utils.getLabel(enumLanguage, subjectFr, subjectEn, subjectNl) + (String) context.get("vckey");
+                subject = Utils.getLabel(enumLanguage, subjectFr, subjectEn, subjectNl, subjectDe) + (String) context.get("vckey");
 
                 break;
             }
             case MAILVERIFYTEMPLATE: {
-                subject = Utils.getLabel(enumLanguage, subjectFr, subjectEn, subjectNl);
+                subject = Utils.getLabel(enumLanguage, subjectFr, subjectEn, subjectNl, subjectDe);
 
                 break;
             }
+            case MAILWORKSPACEASSOCIATION: {
+                subject = Utils.getLabel(enumLanguage, subjectFr, subjectEn, subjectNl, subjectDe);
+                break;
+            }
+
             default:
                 subject = "";
                 break;

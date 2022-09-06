@@ -6,6 +6,7 @@ import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.service.PrestationService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -13,7 +14,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import springfox.documentation.annotations.ApiIgnore;
 
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @RestController
@@ -23,22 +23,27 @@ public class PrestationV2Controller {
     @Autowired
     private PrestationService prestationService;
 
-    @GetMapping
-    public ResponseEntity<List<PrestationSummary>> getPrestations(@RequestParam int offset,
-                                                                  @RequestParam int limit,
-                                                                  @RequestParam(required = false) Long dossierId,
-                                                                  @RequestParam(required = false) String vcKey) throws LawfirmBusinessException {
+    @GetMapping(value = "")
+    public ResponseEntity<Page<PrestationSummary>> getPrestations(
+            @RequestParam int offset,
+            @RequestParam int limit,
+            @RequestParam(required = false) Long dossierId,
+            @RequestParam(required = false) String vcKey,
+            @RequestParam(required = false) String searchCriteriaYear,
+            @RequestParam(required = false) Long searchCriteriaNumber,
+            @RequestParam(required = false) Integer searchCriteriaIdTsType
+    ) throws LawfirmBusinessException {
         log.debug("getPrestations(offset: {} , limit {} and dossier id {}", offset, limit, dossierId);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
-        List<PrestationSummary> prestationSummaryList;
+        Page<PrestationSummary> prestationSummaryList;
 
         if (dossierId != null) {
             prestationSummaryList = prestationService.getAllPrestationsByDossierId(limit, offset, dossierId, lawfirmToken.getUserId(), lawfirmToken.getVcKey());
         } else {
-            prestationSummaryList = prestationService.getAllPrestations(limit, offset, lawfirmToken.getUserId(), lawfirmToken.getVcKey());
+            prestationSummaryList = prestationService.getAllPrestations(limit, offset, lawfirmToken.getUserId(), lawfirmToken.getVcKey(), searchCriteriaYear, searchCriteriaNumber, searchCriteriaIdTsType);
         }
 
         return ResponseEntity.ok().body(prestationSummaryList);

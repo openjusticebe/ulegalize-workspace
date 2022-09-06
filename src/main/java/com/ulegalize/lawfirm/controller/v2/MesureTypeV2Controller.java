@@ -34,6 +34,7 @@ public class MesureTypeV2Controller {
                 .map(enumMesureType -> new ItemDto(enumMesureType.getId(), Utils.getLabel(enumLanguage,
                         enumMesureType.getDescriptionFr(),
                         enumMesureType.getDescriptionEn(),
+                        enumMesureType.getDescriptionNl(),
                         enumMesureType.getDescriptionNl())))
                 .collect(Collectors.toList());
     }

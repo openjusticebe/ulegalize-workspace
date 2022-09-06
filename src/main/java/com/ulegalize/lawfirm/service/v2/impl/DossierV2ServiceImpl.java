@@ -8,7 +8,7 @@ import com.ulegalize.lawfirm.kafka.producer.transparency.ICaseProducer;
 import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.converter.EntityToDossierConverter;
 import com.ulegalize.lawfirm.model.entity.*;
-import com.ulegalize.lawfirm.model.enumeration.EnumValid;
+import com.ulegalize.lawfirm.model.enumeration.EnumMatiereRubrique;
 import com.ulegalize.lawfirm.repository.*;
 import com.ulegalize.lawfirm.rest.DriveFactory;
 import com.ulegalize.lawfirm.service.MailService;
@@ -17,6 +17,7 @@ import com.ulegalize.lawfirm.service.v2.ClientV2Service;
 import com.ulegalize.lawfirm.service.v2.DossierV2Service;
 import com.ulegalize.lawfirm.service.v2.LawfirmV2Service;
 import com.ulegalize.lawfirm.service.v2.ObjSharedV2Service;
+import com.ulegalize.lawfirm.service.validator.DossierValidator;
 import com.ulegalize.lawfirm.utils.DriveUtils;
 import com.ulegalize.lawfirm.utils.EmailUtils;
 import com.ulegalize.mail.transparency.EnumMailTemplate;
@@ -55,7 +56,6 @@ public class DossierV2ServiceImpl implements DossierV2Service {
     private final LawfirmRepository lawfirmRepository;
     private final ClientRepository clientRepository;
     private final VirtualcabClientRepository virtualcabClientRepository;
-    private final TMatiereRubriquesRepository tMatiereRubriquesRepository;
     private final TVirtualcabConfigRepository tVirtualcabConfigRepository;
     private final PrestationService prestationService;
     private final TFraisRepository tFraisRepository;
@@ -69,6 +69,7 @@ public class DossierV2ServiceImpl implements DossierV2Service {
     private final DriveFactory driveFactory;
     private final LawfirmV2Service lawfirmV2Service;
     private final ClientV2Service clientV2Service;
+    private final DossierValidator dossierValidator;
 
     // api
     private final ICaseProducer caseProducer;
@@ -81,14 +82,14 @@ public class DossierV2ServiceImpl implements DossierV2Service {
                                 TDossierRightsRepository tDossierRightsRepository,
                                 LawfirmUserRepository lawfirmUserRepository,
                                 LawfirmRepository lawfirmRepository, ClientRepository clientRepository,
-                                VirtualcabClientRepository virtualcabClientRepository, TMatiereRubriquesRepository tMatiereRubriquesRepository,
+                                VirtualcabClientRepository virtualcabClientRepository,
                                 TVirtualcabConfigRepository tVirtualcabConfigRepository,
                                 PrestationService prestationService,
                                 TFraisRepository tFraisRepository,
                                 TDebourRepository tDebourRepository,
                                 TUsersRepository tUsersRepository, TFacturesRepository tFacturesRepository, ObjSharedV2Service objSharedV2Service, TObjSharedRepository tObjSharedRepository,
                                 TObjSharedWithRepository tObjSharedWithRepository, MailService mailService, DriveFactory driveFactory, LawfirmV2Service lawfirmV2Service,
-                                ClientV2Service clientV2Service, ICaseProducer caseProducer, IAffaireProducer affaireProducer) {
+                                ClientV2Service clientV2Service, ICaseProducer caseProducer, IAffaireProducer affaireProducer, DossierValidator dossierValidator) {
         this.entityToDossierConverter = entityToDossierConverter;
         this.dossierRepository = dossierRepository;
         this.tDossierRightsRepository = tDossierRightsRepository;
@@ -96,7 +97,6 @@ public class DossierV2ServiceImpl implements DossierV2Service {
         this.lawfirmRepository = lawfirmRepository;
         this.clientRepository = clientRepository;
         this.virtualcabClientRepository = virtualcabClientRepository;
-        this.tMatiereRubriquesRepository = tMatiereRubriquesRepository;
         this.tVirtualcabConfigRepository = tVirtualcabConfigRepository;
         this.prestationService = prestationService;
         this.tFraisRepository = tFraisRepository;
@@ -112,6 +112,7 @@ public class DossierV2ServiceImpl implements DossierV2Service {
         this.clientV2Service = clientV2Service;
         this.caseProducer = caseProducer;
         this.affaireProducer = affaireProducer;
+        this.dossierValidator = dossierValidator;
     }
 
     @Override
@@ -209,6 +210,7 @@ public class DossierV2ServiceImpl implements DossierV2Service {
                         Utils.getLabel(enumLanguage,
                                 dossier.getType().getLabelFr(),
                                 dossier.getType().getLabelEn(),
+                                dossier.getType().getLabelNl(),
                                 dossier.getType().getLabelNl())));
 
                 return dossierDTO;
@@ -268,7 +270,7 @@ public class DossierV2ServiceImpl implements DossierV2Service {
 
         TDossiers tDossiers = new TDossiers();
 
-        commonRuleDossier(dossierDTO);
+        dossierValidator.commonRuleDossier(dossierDTO);
 
         Calendar cal = Calendar.getInstance();
         cal.setTime(dossierDTO.getOpenDossier());
@@ -349,14 +351,16 @@ public class DossierV2ServiceImpl implements DossierV2Service {
 
         tDossiers.setDate_open(dossierDTO.getOpenDossier());
         tDossiers.setDate_close(null);
-        Optional<TMatiereRubriques> rubriques = tMatiereRubriquesRepository.findById(dossierDTO.getId_matiere_rubrique());
 
-        if (rubriques.isEmpty()) {
-            log.warn("rubriques {} is not found", dossierDTO.getId_matiere_rubrique());
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "rubrique is not found");
+        if (EnumMatiereRubrique.fromId(dossierDTO.getId_matiere_rubrique()) == null) {
+
+            log.warn("EnumMatiereRubrique {} is not found", dossierDTO.getId_matiere_rubrique());
+
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "EnumMatiereRubrique is not found");
+
         }
 
-        tDossiers.setTMatiereRubriques(rubriques.get());
+        tDossiers.setEnumMatiereRubrique(EnumMatiereRubrique.fromId((dossierDTO.getId_matiere_rubrique())));
         tDossiers.setKeywords(dossierDTO.getKeywords() != null ? dossierDTO.getKeywords() : "");
         tDossiers.setMemo(dossierDTO.getMemo() != null ? dossierDTO.getMemo() : "");
         tDossiers.setCouthoraire(coutHoraire);
@@ -504,7 +508,7 @@ public class DossierV2ServiceImpl implements DossierV2Service {
         dossierDTO.setClientList(new ArrayList<>());
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         EnumLanguage enumLanguage = EnumLanguage.fromshortCode(lawfirmToken.getLanguage());
-        String label = Utils.getLabel(enumLanguage, EnumDossierType.DC.getLabelFr(), EnumDossierType.DC.getLabelEn(), EnumDossierType.DC.getLabelNl());
+        String label = Utils.getLabel(enumLanguage, EnumDossierType.DC.getLabelFr(), EnumDossierType.DC.getLabelEn(), EnumDossierType.DC.getLabelNl(), EnumDossierType.DC.getLabelNl());
 
         dossierDTO.setTypeItem(new ItemStringDto(EnumDossierType.DC.getDossType(), label));
         dossierDTO.setIdUserResponsible(userId);
@@ -518,7 +522,7 @@ public class DossierV2ServiceImpl implements DossierV2Service {
         log.debug("updateAffaire -> userId {}", userId);
         log.debug("updateAffaire -> username {}", username);
 
-        commonRuleDossier(dossierDTO);
+        dossierValidator.commonRuleDossier(dossierDTO);
 
         if (dossierDTO.getId() == null) {
             log.warn("Dossier is not filled in {}", dossierDTO.getId());
@@ -606,14 +610,15 @@ public class DossierV2ServiceImpl implements DossierV2Service {
             tDossiers.setDate_open(dossierDTO.getOpenDossier());
             tDossiers.setDate_close(dossierDTO.getCloseDossier());
 
-            Optional<TMatiereRubriques> rubriques = tMatiereRubriquesRepository.findById(dossierDTO.getId_matiere_rubrique());
+            if (EnumMatiereRubrique.fromId(dossierDTO.getId_matiere_rubrique()) == null) {
 
-            if (rubriques.isEmpty()) {
-                log.warn("rubriques {} is not found", dossierDTO.getId_matiere_rubrique());
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "rubrique is not found");
+                log.warn("EnumMatiereRubrique {} is not found", dossierDTO.getId_matiere_rubrique());
+
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "EnumMatiereRubrique is not found");
+
             }
 
-            tDossiers.setTMatiereRubriques(rubriques.get());
+            tDossiers.setEnumMatiereRubrique(EnumMatiereRubrique.fromId(dossierDTO.getId_matiere_rubrique()));
             tDossiers.setKeywords(dossierDTO.getKeywords() != null ? dossierDTO.getKeywords() : "");
             tDossiers.setMemo(dossierDTO.getMemo() != null ? dossierDTO.getMemo() : "");
             tDossiers.setCouthoraire(dossierDTO.getCouthoraire());
@@ -648,36 +653,6 @@ public class DossierV2ServiceImpl implements DossierV2Service {
             log.warn("Lawfirm user is not present vckey {} and user id {}", vcKey, userId);
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Lawfirm user is not present ");
         }
-    }
-
-    private void commonRuleDossier(DossierDTO dossierDTO) throws ResponseStatusException {
-        if (dossierDTO.getOpenDossier() == null) {
-            log.warn("No open date dossier {}", dossierDTO.getOpenDossier());
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No open date dossier");
-        }
-        if (dossierDTO.getType() == null) {
-            log.warn("Type of dossier {} is not found", dossierDTO.getType());
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Type of dossier is not found");
-        }
-        // cabinet must have a client and adverse
-        if (!dossierDTO.getType().equals(EnumDossierType.MD)) {
-            log.debug("Rule {} adverse client {} ", dossierDTO.getType(), dossierDTO.getIdAdverseClient());
-            if (dossierDTO.getIdAdverseClient() == null) {
-                log.warn("client adv {} is not found", dossierDTO.getIdAdverseClient());
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "client adv is not found");
-            }
-            log.debug("Rule {} client {} ", dossierDTO.getType(), dossierDTO.getIdClient());
-            if (dossierDTO.getIdClient() == null) {
-                log.warn("client {} is not found", dossierDTO.getIdClient());
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "client is not found");
-            }
-        } else if (dossierDTO.getType().equals(EnumDossierType.MD)) {
-            if (CollectionUtils.isEmpty(dossierDTO.getClientList())) {
-                log.warn("client {} is not found", dossierDTO.getIdClient());
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "client list is not found");
-            }
-        }
-
     }
 
     @Override
@@ -755,6 +730,7 @@ public class DossierV2ServiceImpl implements DossierV2Service {
                     Utils.getLabel(enumLanguage,
                             dossier.getType().getLabelFr(),
                             dossier.getType().getLabelEn(),
+                            dossier.getType().getLabelNl(),
                             dossier.getType().getLabelNl())));
 
             return dossierDTO;
@@ -1122,7 +1098,7 @@ public class DossierV2ServiceImpl implements DossierV2Service {
             log.info("Create a temp vc key {}", createVcKey);
 
             if (createVcKey) {
-                lawfirmV2Service.createTempVc(partieDTO.getEmail(), lawfirmToken.getClientFrom());
+                lawfirmV2Service.createTempVc(partieDTO.getEmail(), lawfirmToken.getClientFrom(), lawfirmToken.isVerified());
                 Optional<TUsers> usersOptional = tUsersRepository.findByEmail(partieDTO.getEmail());
 
                 // must be present because it has been created

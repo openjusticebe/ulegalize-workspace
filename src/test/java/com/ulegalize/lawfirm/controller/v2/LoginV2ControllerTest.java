@@ -5,12 +5,12 @@ import com.ulegalize.dto.LawfirmDTO;
 import com.ulegalize.enumeration.DriveType;
 import com.ulegalize.enumeration.EnumLanguage;
 import com.ulegalize.enumeration.EnumRefCurrency;
+import com.ulegalize.enumeration.EnumValid;
 import com.ulegalize.lawfirm.EntityTest;
 import com.ulegalize.lawfirm.model.DefaultLawfirmDTO;
 import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.entity.LawfirmEntity;
 import com.ulegalize.lawfirm.model.entity.TUsers;
-import com.ulegalize.lawfirm.model.enumeration.EnumValid;
 import com.ulegalize.lawfirm.repository.LawfirmRepository;
 import com.ulegalize.lawfirm.service.v2.LawfirmV2Service;
 import com.ulegalize.security.EnumRights;
@@ -18,6 +18,7 @@ import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -28,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
 
 import static org.hamcrest.Matchers.is;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
@@ -46,6 +48,8 @@ public class LoginV2ControllerTest extends EntityTest {
     private LawfirmV2Service lawfirmV2Service;
     @Autowired
     private LawfirmRepository lawfirmRepository;
+    @MockBean
+    ScheduledExecutorService scheduledExecutorService;
 
     private LawfirmEntity lawfirm;
     private UsernamePasswordAuthenticationToken authentication;
@@ -66,7 +70,7 @@ public class LoginV2ControllerTest extends EntityTest {
         createTSequences();
         createVatCountry();
 
-        String tempVc = lawfirmV2Service.createTempVc("myuser@gmail.com", "workspace");
+        String tempVc = lawfirmV2Service.createTempVc("myuser@gmail.com", "workspace", true);
         List<LawfirmEntity> lawfirmEntityList = lawfirmRepository.findAll();
         // get the last created
 
@@ -107,7 +111,7 @@ public class LoginV2ControllerTest extends EntityTest {
         createTSequences();
         createVatCountry();
 
-        String tempVc = lawfirmV2Service.createTempVc("myuser@gmail.com", "workspace");
+        String tempVc = lawfirmV2Service.createTempVc(EMAIL, "workspace", true);
         List<LawfirmEntity> lawfirmEntityList = lawfirmRepository.findAll();
         // get the last created
 
@@ -120,9 +124,11 @@ public class LoginV2ControllerTest extends EntityTest {
         Long userId = user.getId();
         String fullname = user.getFullname();
         String usermail = user.getEmail();
+        String clientFrom = user.getClientFrom();
         boolean verifyUser = user.getIdValid().equals(EnumValid.VERIFIED);
 //        "support@ulegalize.com";
         LawfirmToken lawfirmToken = new LawfirmToken(userId, usermail, usermail, lawfirm.getVckey(), null, true, new ArrayList<>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", verifyUser);
+        lawfirmToken.setClientFrom(clientFrom);
 
         authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
 
@@ -148,7 +154,7 @@ public class LoginV2ControllerTest extends EntityTest {
         createTSequences();
         createVatCountry();
 
-        String tempVc = lawfirmV2Service.createTempVc("myuser@gmail.com", "workspace");
+        String tempVc = lawfirmV2Service.createTempVc("myuser@gmail.com", "workspace", true);
         List<LawfirmEntity> lawfirmEntityList = lawfirmRepository.findAll();
         // get the last created
 
@@ -189,7 +195,7 @@ public class LoginV2ControllerTest extends EntityTest {
         createTSequences();
         createVatCountry();
 
-        String tempVc = lawfirmV2Service.createTempVc("myuser@gmail.com", "workspace");
+        String tempVc = lawfirmV2Service.createTempVc("myuser@gmail.com", "workspace", true);
         List<LawfirmEntity> lawfirmEntityList = lawfirmRepository.findAll();
         // get the last created
 

@@ -27,8 +27,8 @@ change `gradle.properties` version
 commit your change add a new tag and push all
 
 ```
-git tag 2.18.0  
-git push origin 2.18.0
+git tag 2.23.0  
+git push origin 2.23.0
 
 ```
 
@@ -72,19 +72,19 @@ docker-compose up -d
 
 https://stackoverflow.com/questions/31324981/how-to-access-host-port-from-docker-container/61424570#61424570   
 `
-docker run --name ulegalize-lawfirm --network="host" --restart always -p 127.0.0.1:8989:8989 -it finauxa/ulegalize-lawfirm:2.18.0 --spring.profiles.active=test --server.use-forward-headers=true  
+docker run --name ulegalize-lawfirm --network="host" --restart always -p 127.0.0.1:8989:8989 -it finauxa/ulegalize-lawfirm:2.23.0 --spring.profiles.active=test --server.use-forward-headers=true  
 `
 
 ###### dev
 
 `
-docker run --name ulegalize-lawfirm --restart always -p 127.0.0.1:8989:8989 -it finauxa/ulegalize-lawfirm:2.18.0 --spring.profiles.active=devDocker --server.use-forward-headers=true
+docker run --name ulegalize-lawfirm --restart always -p 127.0.0.1:8989:8989 -it finauxa/ulegalize-lawfirm:2.23.0 --spring.profiles.active=devDocker --server.use-forward-headers=true
 `
 
 ###### prod
 
 `
-docker run --name ulegalize-lawfirm --restart always -p 127.0.0.1:8989:8989 -it finauxa/ulegalize-lawfirm:2.18.0 --spring.profiles.active=prod --server.use-forward-headers=true
+docker run --name ulegalize-lawfirm --restart always -p 127.0.0.1:8989:8989 -it finauxa/ulegalize-lawfirm:2.23.0 --spring.profiles.active=prod --server.use-forward-headers=true
 `
 
 ## more info
@@ -96,15 +96,15 @@ https://ulegalize.atlassian.net/l/c/AY0FkzHX
 build the app
 
 ```
-docker build -t finauxa/ulegalize-lawfirm:2.18.0 .  
-docker push finauxa/ulegalize-lawfirm:2.18.0  
+docker build -t finauxa/ulegalize-lawfirm:2.23.0 .  
+docker push finauxa/ulegalize-lawfirm:2.23.0  
 ```
 
 ```
 docker stop ulegalize-lawfirm   
 docker rm ulegalize-lawfirm  
 docker rmi $(docker images finauxa/ulegalize-lawfirm -q)  
-docker pull finauxa/ulegalize-lawfirm:2.18.0  
+docker pull finauxa/ulegalize-lawfirm:2.23.0  
 ```
 
 ## mysql 5.6

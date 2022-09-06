@@ -54,7 +54,7 @@ public class ClientV2ServiceImpl implements ClientV2Service {
         log.debug("getAllCientByVcKey searchCriteria {} vcKey {} user id {}", searchCriteria, lawfirmToken.getVcKey(), lawfirmToken.getUserId());
         List<TClients> lawfirmClientOptional = clientRepository.findByUserIdOrVcKey(Collections.singletonList(lawfirmToken.getVcKey()), lawfirmToken.getUserId());
 
-        List<ContactSummary> contactSummaries = entityToContactSummaryConverter.convertToList(lawfirmClientOptional);
+        List<ContactSummary> contactSummaries = entityToContactSummaryConverter.convertToList(lawfirmClientOptional, lawfirmToken.getLanguage());
         return searchCriteria != null && !searchCriteria.isEmpty() ? contactSummaries.stream().filter(contact -> contact.getFullName().toLowerCase().contains(searchCriteria.toLowerCase())).collect(Collectors.toList()) : contactSummaries;
 
     }
@@ -65,7 +65,7 @@ public class ClientV2ServiceImpl implements ClientV2Service {
         log.debug("getAllCientByVcKey searchCriteria {} vcKey {} user id {}", clientIds, lawfirmToken.getVcKey(), lawfirmToken.getUserId());
         List<TClients> lawfirmClientOptional = clientRepository.findByIds(clientIds, lawfirmToken.getVcKey(), lawfirmToken.getUserId());
 
-        return entityToContactSummaryConverter.convertToList(lawfirmClientOptional);
+        return entityToContactSummaryConverter.convertToList(lawfirmClientOptional, lawfirmToken.getLanguage());
     }
 
     @Override
@@ -80,7 +80,7 @@ public class ClientV2ServiceImpl implements ClientV2Service {
         }
         Optional<TClients> clientsOptional = clientsList.stream().findFirst();
         log.debug("client found {}", clientsOptional.get());
-        return clientsOptional.map(tClients -> entityToContactSummaryConverter.apply(tClients)).orElse(null);
+        return clientsOptional.map(tClients -> entityToContactSummaryConverter.apply(tClients, lawfirmToken.getLanguage())).orElse(null);
 
     }
 
@@ -93,7 +93,7 @@ public class ClientV2ServiceImpl implements ClientV2Service {
         if (clientsOptional.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "client is not found");
         }
-        return entityToContactSummaryConverter.apply(clientsOptional.get());
+        return entityToContactSummaryConverter.apply(clientsOptional.get(), lawfirmToken.getLanguage());
 
     }
 
@@ -155,7 +155,7 @@ public class ClientV2ServiceImpl implements ClientV2Service {
 
             clientRepository.save(clients);
         }
-        return entityToContactSummaryConverter.apply(clients);
+        return entityToContactSummaryConverter.apply(clients, lawfirmToken.getLanguage());
     }
 
     @Override
@@ -181,7 +181,7 @@ public class ClientV2ServiceImpl implements ClientV2Service {
         Pageable pageable = new OffsetBasedPageRequest(limit, offset, Sort.by(Sort.Direction.ASC, "f_nom"));
         List<TClients> lawfirmClientOptional = clientRepository.findByUserIdOrVcKeyWithPagination(lawfirmToken.getVcKey(), lawfirmToken.getUserId(), searchCriteria, pageable);
 
-        return entityToContactSummaryConverter.convertToList(lawfirmClientOptional);
+        return entityToContactSummaryConverter.convertToList(lawfirmClientOptional, lawfirmToken.getLanguage());
     }
 
     @Override

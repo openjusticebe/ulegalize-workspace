@@ -20,6 +20,8 @@ public class EntityToPrestationConverter implements SuperConverter<TTimesheet, P
         prestationSummary.setId(timesheet.getIdTs());
         prestationSummary.setDossierId(timesheet.getIdDoss());
         prestationSummary.setDossier(timesheet.getTDossiers().getYear_doss() + "/" + StringUtils.leftPad(timesheet.getTDossiers().getNum_doss().toString(), 4, "0"));
+        prestationSummary.setNumDossier(timesheet.getTDossiers().getNum_doss());
+        prestationSummary.setYearDossier(timesheet.getTDossiers().getYear_doss());
         prestationSummary.setIdGest(timesheet.getIdGest());
         if (timesheet.getTUsers() != null) {
             prestationSummary.setIdGestItem(new ItemLongDto(timesheet.getIdGest(), timesheet.getTUsers().getEmail()));

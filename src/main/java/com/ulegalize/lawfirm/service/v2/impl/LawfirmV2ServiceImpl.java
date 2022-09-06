@@ -11,7 +11,7 @@ import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.converter.EntityToLawfirmPublicConverter;
 import com.ulegalize.lawfirm.model.entity.*;
 import com.ulegalize.lawfirm.model.enumeration.EnumSequenceType;
-import com.ulegalize.lawfirm.model.enumeration.EnumValid;
+import com.ulegalize.lawfirm.model.enumeration.EnumStatusAssociation;
 import com.ulegalize.lawfirm.repository.*;
 import com.ulegalize.lawfirm.service.MailService;
 import com.ulegalize.lawfirm.service.SearchService;
@@ -65,8 +65,6 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
     private final ILawfirmProducer lawfirmProducer;
     private final EntityToLawfirmPublicConverter entityToLawfirmPublicConverter;
     private final SearchService searchService;
-    @Value("${app.lawfirm.url.verify}")
-    String verifyUrl;
 
     public LawfirmV2ServiceImpl(LawfirmRepository lawfirmRepository,
                                 TUsersRepository tUsersRepository,
@@ -102,7 +100,7 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
 
 
     @Override
-    public String createTempVc(String userEmail, String clientFrom) throws ResponseStatusException {
+    public String createTempVc(String userEmail, String clientFrom, boolean isEmailVerified) throws ResponseStatusException {
         log.info("Entering createTempVc {}", userEmail);
         Optional<TSequences> tSequences = tSequenceRepository.maxSequenceById(EnumSequenceType.TEMP_VC);
 
@@ -118,7 +116,7 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
 
             String tempVc = TEMP_VCKEY + sequenceNumber;
             // create the new vc
-            createSingleVcKey(userEmail, tempVc, clientFrom, false, EnumLanguage.FR, "BE");
+            createSingleVcKey(userEmail, tempVc, clientFrom, false, EnumLanguage.FR, "BE", isEmailVerified);
 
             log.debug("LEAVING createTempVc TEMP vckey {}", tempVc);
             // switch selected vcKey
@@ -326,6 +324,7 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
             }
             newLawfirm.setUserUpd(entityOptional.get().getUserUpd());
             newLawfirm.setStartInvoiceNumber(entityOptional.get().getStartInvoiceNumber());
+            newLawfirm.setCreUser(userProfile.getUsername());
 
             newLawfirm.setLawfirmUsers(new ArrayList<>());
             newLawfirm.setTVirtualcabVatList(entityOptional.get().getTVirtualcabVatList());
@@ -501,8 +500,23 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
 
         log.debug("connected {} and user id {}, searchLawfirmInfoByVcKey vckey {}", lawfirmToken.getVcKey(), lawfirmToken.getUserId(), name);
 
-        return lawfirmRepository.searchLawfirmDTOByVckey(name.toUpperCase());
+        List<LawfirmEntity> lawfirmEntities = lawfirmRepository.searchLawfirmDTOByVckey(name.toUpperCase(), lawfirmToken.getVcKey(), EnumStatusAssociation.ACCEPTED.getCode());
 
+        return entityToLawfirmPublicConverter.convertToList(lawfirmEntities, false);
+    }
+
+    @Override
+    public List<LawfirmDTO> searchLawfirmInfoByVcKeyAndStatusAssociation(String name) {
+
+        log.debug("Entering searchLawfirmInfoByVcKeyAndStatusAssociation {}", name);
+
+        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        log.debug("connected {} and user id {}, searchLawfirmInfoByVcKey vckey {}", lawfirmToken.getVcKey(), lawfirmToken.getUserId(), name);
+
+        List<LawfirmEntity> lawfirmEntities = lawfirmRepository.searchLawfirmDTOByVckeyAndStatusAssociation(name.toUpperCase(), lawfirmToken.getVcKey().toUpperCase());
+
+        return entityToLawfirmPublicConverter.convertToList(lawfirmEntities, false);
     }
 
     @Override
@@ -547,31 +561,38 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
 
     @Override
     public String registerUser(String userEmail, String clientFrom) {
-        log.debug("Entering registerUser userEmail {} and clientFrom {}", userEmail, clientFrom);
-
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        log.debug("Entering registerUser userEmail {} and clientFrom {} and isEmailVerified {}", userEmail, clientFrom, lawfirmToken.isVerified());
 
-        String verifiedEnum = createTempVc(lawfirmToken.getUserEmail(), lawfirmToken.getClientFrom());
+        String verifiedEnum = createTempVc(lawfirmToken.getUserEmail(), lawfirmToken.getClientFrom(), lawfirmToken.isVerified());
 
         String language = lawfirmToken.getLanguage() != null ? lawfirmToken.getLanguage().toLowerCase() : EnumLanguage.FR.getShortCode();
 
         Optional<TUsers> usersOptional = tUsersRepository.findByEmail(userEmail);
         // send email in order verify user
         usersOptional.ifPresent(
-                tUsers -> mailService.sendMailWithoutMeetingAndIcs(EnumMailTemplate.MAILVERIFYTEMPLATE,
-                        EmailUtils.prepareContextVerifyUser(
-                                tUsers.getEmail(),
-                                verifyUrl + "?email=" + tUsers.getEmail() + "&key=" + tUsers.getHashkey() + "&language=" + tUsers.getLanguage(),
-                                lawfirmToken.getClientFrom()),
-                        language
-                ));
+                tUsers -> {
+                    if (!tUsers.getIdValid().equals(EnumValid.VERIFIED)) {
+                        log.debug("User not verified {}", tUsers.getId());
+
+                        mailService.sendMailWithoutMeetingAndIcs(EnumMailTemplate.MAILVERIFYTEMPLATE,
+                                EmailUtils.prepareContextVerifyUser(
+                                        tUsers.getEmail(),
+                                        tUsers.getEmail(),
+                                        tUsers.getHashkey(),
+                                        tUsers.getLanguage(),
+                                        lawfirmToken.getClientFrom()),
+                                language
+                        );
+                    }
+                });
 
         return verifiedEnum;
 
     }
 
     @Override
-    public void createSingleVcKey(String userEmail, String tempVcKey, String clientFrom, boolean fullLawfirm, EnumLanguage enumLanguage, String countryCode) {
+    public void createSingleVcKey(String userEmail, String tempVcKey, String clientFrom, boolean fullLawfirm, EnumLanguage enumLanguage, String countryCode, boolean emailVerified) {
         log.debug("Entering createSingleVcKey email {} and  {}", userEmail, tempVcKey);
         TUsers user;
         // check if the user is known
@@ -579,7 +600,7 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
 
         // NOT EXIST -> new user
         if (usersOptional.isEmpty()) {
-            user = userV2Service.createUsers(userEmail, clientFrom, EnumLanguage.FR);
+            user = userV2Service.createUsers(userEmail, clientFrom, EnumLanguage.FR, emailVerified);
 
             log.debug("user created");
         } else {
@@ -668,6 +689,7 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
         newLawfirm.setCouthoraire(145);
         newLawfirm.setObjetsocial("");
         newLawfirm.setStartInvoiceNumber(1);
+        newLawfirm.setCreUser(userEntity.getIdUser());
 
         newLawfirm.setLawfirmUsers(new ArrayList<>());
 

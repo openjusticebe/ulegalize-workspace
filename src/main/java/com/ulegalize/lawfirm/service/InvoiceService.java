@@ -16,7 +16,7 @@ public interface InvoiceService {
 
     List<ItemLongDto> getInvoicesBySearchCriteria(String vcKey, String searchCriteria);
 
-    InvoiceDTO getDefaultInvoice(Long userId, String vcKey);
+    InvoiceDTO getDefaultInvoice(Long userId, String vcKey, String language);
 
     InvoiceDTO getInvoiceById(Long invoiceId, String vcKey) throws ResponseStatusException;
 

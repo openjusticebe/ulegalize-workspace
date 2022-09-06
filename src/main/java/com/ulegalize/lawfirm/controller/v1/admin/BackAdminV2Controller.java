@@ -81,10 +81,10 @@ public class BackAdminV2Controller {
         return lawfirmService.getLawfirmList();
     }
 
-    @PostMapping(value = "/vc/user")
+    @PostMapping(value = "/vc/{vcKey}/user/{userId}")
     @ApiIgnore
-    public List<LawfirmDTO> addNewUserToVCKey(@RequestParam Long userId,
-                                              @RequestParam String vcKey) throws RestException {
+    public List<LawfirmUserDTO> addNewUserToVCKey(@PathVariable Long userId,
+                                                  @PathVariable String vcKey) throws RestException {
         log.debug("addNewUserToVCKey({} , {})", userId, vcKey);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
@@ -96,14 +96,14 @@ public class BackAdminV2Controller {
 
         securityGroupUserDTO.setEmail(tUsers.getEmail());
         securityGroupUserDTO.setUserId(tUsers.getId());
-        List<SecurityGroupDTO> securityGroupDTOS = securityGroupService.getSecurityGroup();
+        List<SecurityGroupDTO> securityGroupDTOS = securityGroupService.getSecurityGroup(vcKey);
 
         // get the first
-        securityGroupUserDTO.setSecurityGroupId(securityGroupDTOS.get(0).getSecurityGroupId());
+        securityGroupUserDTO.setSecurityGroupId(securityGroupDTOS.get(0).getId());
 
-        securityGroupService.createUserSecurity(lawfirmToken.getUserId(), securityGroupUserDTO);
+        securityGroupService.createUserSecurity(userId, vcKey, securityGroupUserDTO);
 
-        return lawfirmService.getLawfirmList();
+        return userV2Service.geLawfirmUserByVcKey(vcKey);
     }
 
     @GetMapping(value = "/users/vc/{vcKey}")

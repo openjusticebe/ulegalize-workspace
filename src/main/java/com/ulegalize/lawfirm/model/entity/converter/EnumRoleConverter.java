@@ -9,8 +9,8 @@ import javax.persistence.Converter;
 public class EnumRoleConverter implements AttributeConverter<EnumRole, Integer> {
 
     @Override
-    public Integer convertToDatabaseColumn(EnumRole EnumRole) {
-        return EnumRole.getIdRole();
+    public Integer convertToDatabaseColumn(EnumRole enumRole) {
+        return enumRole.getIdRole();
     }
 
     @Override

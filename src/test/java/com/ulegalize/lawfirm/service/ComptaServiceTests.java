@@ -1,11 +1,11 @@
 package com.ulegalize.lawfirm.service;
 
 import com.ulegalize.dto.ComptaDTO;
+import com.ulegalize.enumeration.EnumRefTransaction;
+import com.ulegalize.enumeration.EnumTType;
 import com.ulegalize.enumeration.EnumVCOwner;
 import com.ulegalize.lawfirm.EntityTest;
 import com.ulegalize.lawfirm.model.entity.*;
-import com.ulegalize.lawfirm.model.enumeration.EnumRefTransaction;
-import com.ulegalize.lawfirm.model.enumeration.EnumTType;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;

@@ -115,6 +115,8 @@ public class AuthenticationFilter extends OncePerRequestFilter {
                 try {
                     String email = decodedJWT.getClaim(lawfirmUrl + "email") != null ? decodedJWT.getClaim(lawfirmUrl + "email").asString() : "";
                     String clientFrom = decodedJWT.getClaim(lawfirmUrl + "client") != null ? decodedJWT.getClaim(lawfirmUrl + "client").asString() : "workspace";
+                    boolean emailAuth0Verified = decodedJWT.getClaim(lawfirmUrl + "email_verified") != null
+                            && decodedJWT.getClaim(lawfirmUrl + "email_verified").asBoolean() != null ? decodedJWT.getClaim(lawfirmUrl + "email_verified").asBoolean() : false;
 
                     AppMetadata appMetadata = decodedJWT.getClaim(lawfirmUrl + "app_metadata").as(AppMetadata.class);
                     log.info("new user (signup submitted : {}", appMetadata.getSignedup_submitted());
@@ -124,11 +126,11 @@ public class AuthenticationFilter extends OncePerRequestFilter {
                     // Except for sign up and first time connection
                     if (appMetadata.getSignedup_submitted()) {
                         try {
-                            userProfile = securityGroupService.getSimpleUserProfile(email, decodedJWT.getToken());
+                            userProfile = securityGroupService.getSimpleUserProfile(email, decodedJWT.getToken(), emailAuth0Verified);
                         } catch (ResponseStatusException rse) {
                             userProfile = new LawfirmToken(0L, email, email, "NO", "", true, Collections.singletonList(EnumRights.ADMINISTRATEUR), token, appMetadata.getSignedup_submitted(),
                                     EnumLanguage.FR.getShortCode(),
-                                    EnumRefCurrency.EUR.getSymbol(), email, DriveType.openstack, "", false);
+                                    EnumRefCurrency.EUR.getSymbol(), email, DriveType.openstack, "", emailAuth0Verified);
                         }
                         // unauthorized
                     } else if (request.getRequestURI().equalsIgnoreCase("/v2/lawfirm/users/list")
@@ -137,11 +139,11 @@ public class AuthenticationFilter extends OncePerRequestFilter {
                             || (request.getMethod().equalsIgnoreCase("POST") && request.getRequestURI().equalsIgnoreCase("/v2/lawfirm"))) {
                         log.debug("user connected email : {}, user id {} . Unauthorized path {}", email, authUserId, request.getRequestURI());
                         // except for the lawfirm list
-                        userProfile = securityGroupService.getSimpleUserProfile(email, decodedJWT.getToken());
+                        userProfile = securityGroupService.getSimpleUserProfile(email, decodedJWT.getToken(), emailAuth0Verified);
 
                     } else {
                         log.debug("user connected email : {}, user id {} . Authorized path {}", email, authUserId, request.getRequestURI());
-                        userProfile = securityGroupService.getUserProfile(clientFrom, email, decodedJWT.getToken(), true);
+                        userProfile = securityGroupService.getUserProfile(clientFrom, email, decodedJWT.getToken(), true, emailAuth0Verified);
                     }
 
                     userProfile.setClientFrom(clientFrom);

@@ -1,9 +1,9 @@
 package com.ulegalize.lawfirm.model.entity;
 
+import com.ulegalize.enumeration.EnumRefTransaction;
+import com.ulegalize.enumeration.EnumTType;
 import com.ulegalize.lawfirm.model.entity.converter.RefTransactionTypeConverter;
 import com.ulegalize.lawfirm.model.entity.converter.TTypeConverter;
-import com.ulegalize.lawfirm.model.enumeration.EnumRefTransaction;
-import com.ulegalize.lawfirm.model.enumeration.EnumTType;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.NotFound;
@@ -110,6 +110,11 @@ public class TFrais implements Serializable {
     @Getter
     @Setter
     private LocalDateTime dateUpd;
+
+    @Column(name = "is_deleted", nullable = false)
+    @Getter
+    @Setter
+    private Boolean isDeleted = Boolean.FALSE;
 
     /**
      * deprecated

@@ -113,7 +113,7 @@ public class InvoiceV2Controller {
 
         log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
-        return invoiceService.getDefaultInvoice(lawfirmToken.getUserId(), lawfirmToken.getVcKey());
+        return invoiceService.getDefaultInvoice(lawfirmToken.getUserId(), lawfirmToken.getVcKey(), lawfirmToken.getLanguage());
 
     }
 

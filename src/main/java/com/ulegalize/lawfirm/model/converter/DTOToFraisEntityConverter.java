@@ -1,9 +1,9 @@
 package com.ulegalize.lawfirm.model.converter;
 
 import com.ulegalize.dto.ComptaDTO;
+import com.ulegalize.enumeration.EnumRefTransaction;
+import com.ulegalize.enumeration.EnumTType;
 import com.ulegalize.lawfirm.model.entity.TFrais;
-import com.ulegalize.lawfirm.model.enumeration.EnumRefTransaction;
-import com.ulegalize.lawfirm.model.enumeration.EnumTType;
 import com.ulegalize.lawfirm.utils.SuperTriConverter;
 import org.springframework.stereotype.Component;
 

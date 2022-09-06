@@ -5,23 +5,24 @@ clone:
 
 definitions:
   caches:
-    gradle: ~/.gradle/caches  # Caching SonarCloud artifacts will speed up your build
+    sonar: ~/.sonar/cache  # Caching SonarCloud artifacts will speed up your build
   steps:
-    - step: &test-build
-        name: test unit and build
+    - step: &build-test-sonarcloud
+        name: Build, test and analyze on SonarCloud
         caches:
           - gradle
+          - sonar
         script:
-          - ./gradlew build
+          - ./gradlew build sonarqube
         artifacts:
           - build/libs/**
 
 pipelines:                 # More info here: https://confluence.atlassian.com/bitbucket/configure-bitbucket-pipelines-yml-792298910.html
   branches:
     master:
-      - step: *test-build
+      - step: *build-test-sonarcloud
     test:
-      - step: *test-build
-    pull-requests:
+      - step: *build-test-sonarcloud
+  pull-requests:
     '**':
-      - step: *test-build
+      - step: *build-test-sonarcloud

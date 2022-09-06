@@ -10,7 +10,7 @@ import java.util.List;
 public interface UserV2Service {
     void changeLanguage(Long userId, String language);
 
-    TUsers createUsers(String userEmail, String clientFrom, EnumLanguage language);
+    TUsers createUsers(String userEmail, String clientFrom, EnumLanguage language, boolean emailVerified);
 
     void deleteUser(Long userId);
 

@@ -6,6 +6,7 @@ import com.ulegalize.enumeration.EnumRefCurrency;
 import com.ulegalize.lawfirm.model.entity.converter.RefCurrencyConverter;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import javax.persistence.*;
@@ -168,6 +169,17 @@ public class LawfirmEntity implements Serializable {
     @Setter
     private Integer startInvoiceNumber;
 
+    @Column(name = "cre_user", nullable = false)
+    @Getter
+    @Setter
+    private String creUser;
+
+    @Column(name = "cre_date")
+    @Getter
+    @Setter
+    @CreationTimestamp
+    private LocalDateTime creDate;
+
     @OneToMany(mappedBy = "lawfirm", cascade = {CascadeType.PERSIST, CascadeType.MERGE}, orphanRemoval = true)
     @JsonIgnore
     @Getter
@@ -186,6 +198,24 @@ public class LawfirmEntity implements Serializable {
     @Getter
     @Setter
     private List<TVirtualcabVat> tVirtualcabVatList;
+
+    @OneToMany(mappedBy = "lawfirm")
+    @JsonIgnore
+    @Getter
+    @Setter
+    private List<EmailsEntity> emailsEntityList;
+
+    @OneToMany(mappedBy = "lawfirmSender", cascade = {CascadeType.PERSIST, CascadeType.MERGE}, orphanRemoval = true)
+    @JsonIgnore
+    @Getter
+    @Setter
+    private List<TWorkspaceAssociated> workspaceAssociatedSenderList;
+
+    @OneToMany(mappedBy = "lawfirmRecipient", cascade = {CascadeType.PERSIST, CascadeType.MERGE}, orphanRemoval = true)
+    @JsonIgnore
+    @Getter
+    @Setter
+    private List<TWorkspaceAssociated> workspaceAssociatedRecipientList;
 
     @Override
     public boolean equals(Object o) {
