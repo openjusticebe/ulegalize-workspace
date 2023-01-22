@@ -108,6 +108,11 @@ public class TClients {
     @Setter
     private String id_country_alpha3 = "BEL";
 
+    @Column(columnDefinition = "VARCHAR", name = "job")
+    @Getter
+    @Setter
+    private String job;
+
     @OneToMany(mappedBy = "tClients")
     @Getter
     @Setter

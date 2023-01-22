@@ -8,6 +8,7 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.auth0.jwt.interfaces.RSAKeyProvider;
 import com.ulegalize.dto.AppMetadata;
+import com.ulegalize.dto.ProfileDTO;
 import com.ulegalize.enumeration.DriveType;
 import com.ulegalize.enumeration.EnumLanguage;
 import com.ulegalize.enumeration.EnumRefCurrency;
@@ -17,6 +18,7 @@ import com.ulegalize.security.EnumRights;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.provider.token.store.jwk.JwkException;
@@ -32,6 +34,7 @@ import java.io.IOException;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Collections;
+import java.util.List;
 
 @Slf4j
 public class AuthenticationFilter extends OncePerRequestFilter {
@@ -68,10 +71,11 @@ public class AuthenticationFilter extends OncePerRequestFilter {
 
         final String authBearerHeader = request.getHeader(this.AUTHORIZATION_HEADER);
 
-        log.debug(" {} Authorization token and url request {}", authBearerHeader, request.getRequestURI());
-        if (authBearerHeader != null && !authBearerHeader.isEmpty()) {
+        if (!request.getRequestURI().contains("/actuator")) {
+            log.debug("url request {} and Authorization token {}", request.getRequestURI(), authBearerHeader);
+        }
+        if (authBearerHeader != null && authBearerHeader.contains(BEARER)) {
             String token = authBearerHeader.replace(BEARER, "");
-
 
             GuavaCachedJwkProvider provider = new GuavaCachedJwkProvider(new UrlJwkProvider(AUTH0_DOMAIN));
             RSAKeyProvider keyProvider = new RSAKeyProvider() {
@@ -119,19 +123,18 @@ public class AuthenticationFilter extends OncePerRequestFilter {
                             && decodedJWT.getClaim(lawfirmUrl + "email_verified").asBoolean() != null ? decodedJWT.getClaim(lawfirmUrl + "email_verified").asBoolean() : false;
 
                     AppMetadata appMetadata = decodedJWT.getClaim(lawfirmUrl + "app_metadata").as(AppMetadata.class);
-                    log.info("new user (signup submitted : {}", appMetadata.getSignedup_submitted());
 
-                    LawfirmToken userProfile;
+                    ProfileDTO userProfile = null;
+                    LawfirmToken lawfirmToken = new LawfirmToken(0L, email, email, "NO", "", true, Collections.singletonList(EnumRights.ADMINISTRATEUR), token, appMetadata.getSignedup_submitted(),
+                            EnumLanguage.FR.getShortCode(),
+                            EnumRefCurrency.EUR.getSymbol(), email, DriveType.openstack, "", "", emailAuth0Verified);
 
                     // Except for sign up and first time connection
-                    if (appMetadata.getSignedup_submitted()) {
-                        try {
-                            userProfile = securityGroupService.getSimpleUserProfile(email, decodedJWT.getToken(), emailAuth0Verified);
-                        } catch (ResponseStatusException rse) {
-                            userProfile = new LawfirmToken(0L, email, email, "NO", "", true, Collections.singletonList(EnumRights.ADMINISTRATEUR), token, appMetadata.getSignedup_submitted(),
-                                    EnumLanguage.FR.getShortCode(),
-                                    EnumRefCurrency.EUR.getSymbol(), email, DriveType.openstack, "", emailAuth0Verified);
-                        }
+                    if (appMetadata.getSignedup_submitted() || (request.getRequestURI().equalsIgnoreCase("/v2/login/user") && request.getMethod().equalsIgnoreCase("POST"))) {
+                        log.info("new user (signup submitted : {}", appMetadata.getSignedup_submitted());
+                        lawfirmToken = new LawfirmToken(0L, email, email, "NOTYET", "", true, Collections.singletonList(EnumRights.ADMINISTRATEUR), token, appMetadata.getSignedup_submitted(),
+                                EnumLanguage.FR.getShortCode(),
+                                EnumRefCurrency.EUR.getSymbol(), email, DriveType.openstack, "", "", emailAuth0Verified);
                         // unauthorized
                     } else if (request.getRequestURI().equalsIgnoreCase("/v2/lawfirm/users/list")
                             || request.getRequestURI().equalsIgnoreCase("/v2/lawfirm/switch")
@@ -139,16 +142,32 @@ public class AuthenticationFilter extends OncePerRequestFilter {
                             || (request.getMethod().equalsIgnoreCase("POST") && request.getRequestURI().equalsIgnoreCase("/v2/lawfirm"))) {
                         log.debug("user connected email : {}, user id {} . Unauthorized path {}", email, authUserId, request.getRequestURI());
                         // except for the lawfirm list
-                        userProfile = securityGroupService.getSimpleUserProfile(email, decodedJWT.getToken(), emailAuth0Verified);
+                        userProfile = securityGroupService.getSimpleUserProfile(email, emailAuth0Verified);
 
                     } else {
                         log.debug("user connected email : {}, user id {} . Authorized path {}", email, authUserId, request.getRequestURI());
-                        userProfile = securityGroupService.getUserProfile(clientFrom, email, decodedJWT.getToken(), true, emailAuth0Verified);
+                        userProfile = securityGroupService.getUserProfile(clientFrom, email, true, emailAuth0Verified);
+
+                        if (appMetadata.getVcKey() != null && !appMetadata.getVcKey().equalsIgnoreCase(userProfile.getVcKeySelected())) {
+                            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "vc key from appmetadata " + appMetadata.getVcKey() + " is not the same from db " + userProfile.getVcKeySelected());
+                        }
                     }
+                    if (userProfile != null) {
+                        List<EnumRights> enumRights = userProfile.getEnumRights().stream().map(EnumRights::fromId).toList();
 
-                    userProfile.setClientFrom(clientFrom);
+                        lawfirmToken = new LawfirmToken(userProfile.getId(), userProfile.getUserLoginId(),
+                                userProfile.getEmail(), appMetadata.getVcKey(), "", true, enumRights, token,
+                                userProfile.isTemporaryVc(),
+                                userProfile.getLanguage(),
+                                userProfile.getSymbolCurrency(),
+                                userProfile.getFullName(),
+                                userProfile.getDriveType(), userProfile.getDropboxToken(), userProfile.getOnedriveToken(), userProfile.isVerified());
 
-                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userProfile, null, userProfile.getAuthorities());
+                    }
+                    lawfirmToken.setClientFrom(clientFrom);
+                    lawfirmToken.setAuth0UserId(authUserId);
+
+                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 } catch (Exception e) {

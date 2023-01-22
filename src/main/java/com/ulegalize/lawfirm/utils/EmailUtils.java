@@ -12,8 +12,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.text.SimpleDateFormat;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 @Component
@@ -32,12 +36,12 @@ public class EmailUtils {
         model.put("lawfirm_email", lawyer.getLawfirm().getEmail());
         model.put("lawfirm_phone", lawyer.getLawfirm().getPhoneNumber());
 
-        model.put("appointment_date", formatDateToString(appointment.getStart()));
+        model.put("appointment_date", formatDateToString(appointment.getStart(), enumLanguage));
         model.put("appointment_time", formatTimeToString(appointment.getStart()));
         model.put("appointment_note", appointment.getNote());
         model.put("appointment_email", appointment.getEmail());
         model.put("appointment_phone", appointment.getPhone());
-        model.put("appointment_type", Utils.getLabel(enumLanguage, eventType.getLabelFr(), eventType.getLabelEn(), eventType.getLabelNl(), eventType.getLabelNl()));
+        model.put("appointment_type", Utils.getLabel(enumLanguage, eventType.name(), null));
         return model;
     }
 
@@ -85,7 +89,9 @@ public class EmailUtils {
         return model;
     }
 
-    public static Map<String, Object> prepareContextWelcomeEmail(String emailTo, String clientFrom) {
+    public static Map<String, Object> prepareContextWelcomeEmail(String emailTo, String clientFrom, String appointementUl) {
+        Map<String, Object> model = communPrepareContext(clientFrom, "", emailTo);
+        model.put("appointementUrl", appointementUl);
         return communPrepareContext(clientFrom, "", emailTo);
     }
 
@@ -110,12 +116,12 @@ public class EmailUtils {
         model.put("lawyer_fullname", lawyer.getUser().getFullname());
         model.put("lawyer_email", lawyer.getUser().getEmail());
 
-        model.put("appointment_date", formatDateToString(appointment.getStart()));
+        model.put("appointment_date", formatDateToString(appointment.getStart(), enumLanguage));
         model.put("appointment_time", formatTimeToString(appointment.getStart()));
         model.put("appointment_note", appointment.getNote());
         model.put("appointment_email", appointment.getEmail());
         model.put("appointment_phone", appointment.getPhone());
-        model.put("appointment_type", Utils.getLabel(enumLanguage, eventType.getLabelFr(), eventType.getLabelEn(), eventType.getLabelNl(), eventType.getLabelNl()));
+        model.put("appointment_type", Utils.getLabel(enumLanguage, eventType.name(), null));
 
         return model;
     }
@@ -133,30 +139,28 @@ public class EmailUtils {
         model.put("lawfirm_email", lawyer.getLawfirm().getEmail());
         model.put("lawfirm_phone", lawyer.getLawfirm().getPhoneNumber());
 
-        model.put("appointment_date", formatDateToString(appointment.getStart()));
+        model.put("appointment_date", formatDateToString(appointment.getStart(), enumLanguage));
         model.put("appointment_time", formatTimeToString(appointment.getStart()));
         model.put("appointment_time_end", formatTimeToString(appointment.getEnd()));
         model.put("appointment_note", appointment.getNote());
-        model.put("appointment_type", Utils.getLabel(enumLanguage, appointment.getEventType().getLabelFr(), appointment.getEventType().getLabelEn(), appointment.getEventType().getLabelNl(), appointment.getEventType().getLabelNl()));
+        model.put("appointment_type", Utils.getLabel(enumLanguage, appointment.getEventType().name(), null));
 
         return model;
     }
 
-    public static Map<String, Object> prepareContextNotificationEmail(String language, TCalendarEvent appointment, Date startDate, Date endDate, String emailContact, String phoneContact, String portalUrl, String emailTo, String clientFrom) {
+    public static Map<String, Object> prepareContextNotificationEmail(String language, TCalendarEvent appointment, Date startDate, Date endDate, String lawfirmEmail, String phoneContact, String portalUrl, String emailTo, String clientFrom, String note) {
 
         Map<String, Object> model = communPrepareContext(clientFrom, portalUrl, emailTo);
 
-        String dossierReference = appointment.getDossier() != null ? DossiersUtils.getDossierLabelItem(appointment.getDossier().getYear_doss(), appointment.getDossier().getNum_doss()) : null;
+        String dossierReference = appointment.getDossier() != null ? DossiersUtils.getDossierLabelItem(appointment.getDossier().getNomenclature()) : null;
         String location = appointment.getLocation() != null ? appointment.getLocation() : null;
-        String note = appointment.getNote() != null ? appointment.getNote() : null;
 
-        model.put("lawfirm_email", emailContact);
+        model.put("lawfirm_email", lawfirmEmail);
         model.put("lawfirm_phone", phoneContact);
-        model.put("lawyer_email", emailContact);
         EnumLanguage enumLanguage = EnumLanguage.fromshortCode(language);
 
-        model.put("appointment_type", Utils.getLabel(enumLanguage, appointment.getEventType().getLabelFr(), appointment.getEventType().getLabelEn(), appointment.getEventType().getLabelNl(), appointment.getEventType().getLabelNl()));
-        model.put("appointment_date", formatDateToString(startDate));
+        model.put("appointment_type", Utils.getLabel(enumLanguage, appointment.getEventType().name(), null));
+        model.put("appointment_date", formatDateToString(startDate, enumLanguage));
         model.put("appointment_time", formatTimeToString(startDate));
         model.put("appointment_time_end", endDate != null ? formatTimeToString(endDate) : null);
 
@@ -184,9 +188,11 @@ public class EmailUtils {
         return model;
     }
 
-    private static String formatDateToString(Date date) {
-        SimpleDateFormat formatter = new SimpleDateFormat("dd MMMM yyyy");
-        return formatter.format(date);
+    private static String formatDateToString(Date date, EnumLanguage enumLanguage) {
+        Locale loc = Locale.forLanguageTag(enumLanguage.getShortCode());
+        ZonedDateTime zonedDateTime = CalendarEventsUtil.convertToZoneDateTimeViaInstant(date);
+
+        return zonedDateTime.format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM).withLocale(loc));
     }
 
     private static String formatTimeToString(Date date) {

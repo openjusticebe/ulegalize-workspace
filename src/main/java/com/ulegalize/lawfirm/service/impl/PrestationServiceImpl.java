@@ -7,7 +7,9 @@ import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.converter.DTOToTimesheetEntityConverter;
 import com.ulegalize.lawfirm.model.converter.EntityToPrestationConverter;
 import com.ulegalize.lawfirm.model.entity.LawfirmUsers;
+import com.ulegalize.lawfirm.model.entity.TDossiers;
 import com.ulegalize.lawfirm.model.entity.TTimesheet;
+import com.ulegalize.lawfirm.repository.DossierRepository;
 import com.ulegalize.lawfirm.repository.LawfirmUserRepository;
 import com.ulegalize.lawfirm.repository.OffsetBasedPageRequest;
 import com.ulegalize.lawfirm.repository.TTimesheetRepository;
@@ -36,32 +38,33 @@ import java.util.Optional;
 public class PrestationServiceImpl implements PrestationService {
     private final TTimesheetRepository timesheetRepository;
     private final LawfirmUserRepository lawfirmUserRepository;
+    private final DossierRepository dossierRepository;
     private final EntityToPrestationConverter entityToPrestationConverter;
     private final DTOToTimesheetEntityConverter dtoToTimesheetEntityConverter;
     private final ComptaService comptaService;
 
     public PrestationServiceImpl(TTimesheetRepository timesheetRepository,
                                  LawfirmUserRepository lawfirmUserRepository,
-                                 EntityToPrestationConverter entityToPrestationConverter, DTOToTimesheetEntityConverter dtoToTimesheetEntityConverter, ComptaService comptaService) {
+                                 DossierRepository dossierRepository, EntityToPrestationConverter entityToPrestationConverter, DTOToTimesheetEntityConverter dtoToTimesheetEntityConverter, ComptaService comptaService) {
         this.timesheetRepository = timesheetRepository;
         this.lawfirmUserRepository = lawfirmUserRepository;
+        this.dossierRepository = dossierRepository;
         this.entityToPrestationConverter = entityToPrestationConverter;
         this.dtoToTimesheetEntityConverter = dtoToTimesheetEntityConverter;
         this.comptaService = comptaService;
     }
 
-    public Page<PrestationSummary> getAllPrestations(int limit, int offset, Long userId, String vcKey, String searchCriteriaYear, Long searchCriteriaNumber, Integer searchCriteriaIdTsType) {
+    public Page<PrestationSummary> getAllPrestations(int limit, int offset, Long userId, String vcKey, String searchCriteriaNomenclature, Integer searchCriteriaIdTsType) {
         log.debug("Get all presations with user {} limit {} and offset {}", userId, limit, offset);
         Optional<LawfirmUsers> lawfirmUsers = lawfirmUserRepository.findLawfirmUsersByVcKeyAndUserId(vcKey, userId);
 
         if (lawfirmUsers.isPresent()) {
             log.debug("Law firm list {} user id {}", lawfirmUsers.get().getId(), userId);
 
-            Long numberDossier = searchCriteriaNumber != null && searchCriteriaNumber == 0 ? null : searchCriteriaNumber;
             Integer idTsType = searchCriteriaIdTsType != null && searchCriteriaIdTsType == 0 ? null : searchCriteriaIdTsType;
 
             Pageable pageable = new OffsetBasedPageRequest(limit, offset, Sort.by(Sort.Direction.DESC, "idTs"));
-            Page<TTimesheet> allPrestations = timesheetRepository.findAllWithPagination(lawfirmUsers.get().getId(), searchCriteriaYear, numberDossier, idTsType, pageable);
+            Page<TTimesheet> allPrestations = timesheetRepository.findAllWithPagination(lawfirmUsers.get().getId(), searchCriteriaNomenclature, idTsType, pageable);
 
             List<PrestationSummary> prestationSummaryList = entityToPrestationConverter.convertToList(allPrestations.getContent());
             return new PageImpl<>(prestationSummaryList, Pageable.unpaged(), allPrestations.getTotalElements());
@@ -122,7 +125,7 @@ public class PrestationServiceImpl implements PrestationService {
     }
 
     @Override
-    public PrestationSummary getDefaultPrestations(Long userId, String vcKey) {
+    public PrestationSummary getDefaultPrestations(Long dossierId, Long userId, String vcKey) {
         log.debug("getDefaultPrestations with vcKey {}", vcKey);
         Optional<LawfirmUsers> lawfirmUsers = lawfirmUserRepository.findLawfirmUsersByVcKeyAndUserId(vcKey, userId);
 
@@ -133,7 +136,14 @@ public class PrestationServiceImpl implements PrestationService {
 
             prestationSummary.setIdGest(userId);
             prestationSummary.setDateAction(ZonedDateTime.now());
-            prestationSummary.setCouthoraire(lawfirmUsers.get().getLawfirm().getCouthoraire());
+            if (dossierId != null) {
+                Optional<TDossiers> tDossiersOptional = dossierRepository.findById(dossierId);
+                tDossiersOptional.ifPresentOrElse(
+                        dossier -> prestationSummary.setCouthoraire(dossier.getCouthoraire()),
+                        () -> prestationSummary.setCouthoraire(lawfirmUsers.get().getLawfirm().getCouthoraire()));
+            } else {
+                prestationSummary.setCouthoraire(lawfirmUsers.get().getLawfirm().getCouthoraire());
+            }
             prestationSummary.setIdGestItem(new ItemLongDto(userId, lawfirmUsers.get().getUser().getEmail()));
             prestationSummary.setForfait(false);
 

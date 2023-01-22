@@ -10,17 +10,17 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 
 public interface ComptaService {
-    public ComptaDTO getComptaById(Long fraisId, String vcKey) throws ResponseStatusException;
+    ComptaDTO getComptaById(Long fraisId, String vcKey, String language) throws ResponseStatusException;
 
     List<ItemDto> getGridList();
 
-    Page<ComptaDTO> getAllComptaByDossierId(int limit, int offset, Long dossierId, String vcKey, Boolean isDebours, Boolean isFraiCollaboration, Boolean honoraire, Boolean tiers);
+    Page<ComptaDTO> getAllComptaByDossierId(int limit, int offset, Long dossierId, String vcKey, Boolean isDebours, Boolean isFraiCollaboration, Boolean honoraire, Boolean tiers, String language);
 
-    Page<ComptaDTO> getAllCompta(int limit, int offset, String vcKey, String searchCriteriaClient, String searchCriteriaYear, Long searchCriteriaNumber, String searchCriteriaPoste, Integer typeId, Integer searchCriteriaCompte);
+    Page<ComptaDTO> getAllCompta(int limit, int offset, String vcKey, String searchCriteriaClient, String searchCriteriaNomenclature, String searchCriteriaPoste, Integer typeId, Integer searchCriteriaCompte, String language);
 
     ComptaDTO updateCompta(ComptaDTO comptaDTO, String vcKey);
 
-    ComptaDTO getDefaultCompta(Long userId, String vcKey);
+    ComptaDTO getDefaultCompta(Long userId, String vcKey, String language);
 
     Long createCompta(ComptaDTO comptaDTO, String vcKey);
 

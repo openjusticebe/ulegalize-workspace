@@ -26,10 +26,12 @@ public class LawfirmServiceImpl implements LawfirmService {
     }
 
     @Override
-    public List<LawfirmDTO> getLawfirmList() {
+    public List<LawfirmDTO> getLawfirmList(String searchCriteria) {
         log.debug("Entering getLawfirmList");
 
-        List<LawfirmEntity> lawfirmEntities = lawfirmRepository.findAllByLicenseIdAndTemporaryVc();
+        String search = searchCriteria != null && !searchCriteria.isEmpty() ? searchCriteria : "%";
+
+        List<LawfirmEntity> lawfirmEntities = lawfirmRepository.findAllByLicenseIdAndTemporaryVc(search);
 
         return entityToLawfirmPrivateConverter.convertToList(lawfirmEntities);
     }

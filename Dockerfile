@@ -1,4 +1,4 @@
-FROM openjdk:12-jdk-alpine as build
+FROM openjdk:17-jdk-alpine as build
 #FROM adoptopenjdk/openjdk12-openj9:latest as build
 WORKDIR /workspace/app
 
@@ -18,7 +18,7 @@ RUN mkdir ./libs
 RUN mkdir -p build/dependency && (cd build/dependency; jar -xf ../libs/*.jar)
 
 #FROM adoptopenjdk/openjdk12-openj9:latest
-FROM openjdk:12-jdk-alpine
+FROM openjdk:17-jdk-alpine
 RUN apk add --no-cache tzdata
 ENV TZ Europe/Brussels
 VOLUME /tmp

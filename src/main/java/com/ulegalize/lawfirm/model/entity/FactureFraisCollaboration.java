@@ -15,13 +15,13 @@ public class FactureFraisCollaboration implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @Id
-    @Column(name = "ID", nullable = false)
+    @Column(columnDefinition = "BIGINT", name = "ID", nullable = false)
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Getter
     @Setter
     private Long ID;
 
-    @Column(name = "FRAIS_ID", nullable = false)
+    @Column(columnDefinition = "BIGINT", name = "FRAIS_ID", nullable = false)
     @Getter
     @Setter
     private Long fraisId;

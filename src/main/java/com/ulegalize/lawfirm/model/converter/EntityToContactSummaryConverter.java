@@ -10,6 +10,7 @@ import com.ulegalize.lawfirm.utils.SuperTriConverter;
 import com.ulegalize.utils.ClientsUtils;
 import com.ulegalize.utils.Utils;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 @Component
 public class EntityToContactSummaryConverter implements SuperTriConverter<TClients, String, ContactSummary> {
@@ -28,7 +29,7 @@ public class EntityToContactSummaryConverter implements SuperTriConverter<TClien
         EnumTitle enumTitle = EnumTitle.fromId(entity.getId_title());
         if (enumTitle != null) {
             contactSummary.setTitle(enumTitle);
-            contactSummary.setTitleItem(new ItemStringDto(entity.getId_title(), Utils.getLabel(EnumLanguage.fromshortCode(language), enumTitle.getLabelFr(), enumTitle.getLabelEn(), enumTitle.getLabelDe(), enumTitle.getLabelNl())));
+            contactSummary.setTitleItem(new ItemStringDto(entity.getId_title(), Utils.getLabel(EnumLanguage.fromshortCode(language), enumTitle.name(), null)));
         }
         contactSummary.setLanguage(entity.getId_lg());
         contactSummary.setAddress(entity.getF_rue());
@@ -42,15 +43,16 @@ public class EntityToContactSummaryConverter implements SuperTriConverter<TClien
         contactSummary.setTva(entity.getF_tva());
         contactSummary.setBirthdate(entity.getBirthdate());
         contactSummary.setCountry(entity.getId_country_alpha3());
-        if (entity.getVirtualcabClientList() != null) {
+        if (!CollectionUtils.isEmpty(entity.getVirtualcabClientList())) {
             contactSummary.setVcKey(entity.getVirtualcabClientList().get(0).getLawfirm().getVckey());
         }
         contactSummary.setUserId(entity.getUser_id());
         contactSummary.setIban(entity.getIban());
         contactSummary.setBic(entity.getBic());
+        contactSummary.setJob(entity.getJob());
         //natural person
         if (entity.getClient_type() != null && entity.getClient_type().equals(EnumClientType.NATURAL_PERSON)) {
-            String fullname = ClientsUtils.getFullname(entity.getF_nom(), entity.getF_prenom(), entity.getF_company());
+            String fullname = ClientsUtils.getEmailFullname(entity.getF_email(), entity.getF_nom(), entity.getF_prenom(), entity.getF_company());
 
             contactSummary.setFullName(fullname);
         } else {

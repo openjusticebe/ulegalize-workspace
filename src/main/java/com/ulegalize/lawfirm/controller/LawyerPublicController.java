@@ -10,12 +10,10 @@ import com.ulegalize.lawfirm.service.v2.CalendarV2Service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import springfox.documentation.annotations.ApiIgnore;
 
 import java.util.List;
 
 @RestController
-@ApiIgnore
 @RequestMapping("/public/lawyers")
 @Slf4j
 public class LawyerPublicController {

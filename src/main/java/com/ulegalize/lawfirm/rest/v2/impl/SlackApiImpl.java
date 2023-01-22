@@ -36,7 +36,7 @@ public class SlackApiImpl implements SlackApi {
     @Value("${spring.profiles.active}")
     private String activeProfile;
 
-    private RestTemplate restTemplate;
+    private final RestTemplate restTemplate;
 
     public SlackApiImpl(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;

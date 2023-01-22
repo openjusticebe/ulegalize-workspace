@@ -1,28 +1,40 @@
-image: openjdk:12
+image: openjdk:17
 
 clone:
   depth: full              # SonarCloud scanner needs the full history to assign issues properly
 
 definitions:
   caches:
-    sonar: ~/.sonar/cache  # Caching SonarCloud artifacts will speed up your build
+    gradle: ~/.gradle/caches  # Caching SonarCloud artifacts will speed up your build
   steps:
-    - step: &build-test-sonarcloud
-        name: Build, test and analyze on SonarCloud
+    - step: &test-build
+        name: test unit and build
         caches:
           - gradle
-          - sonar
         script:
-          - ./gradlew build sonarqube
+          - ./gradlew build
         artifacts:
           - build/libs/**
 
 pipelines:                 # More info here: https://confluence.atlassian.com/bitbucket/configure-bitbucket-pipelines-yml-792298910.html
   branches:
     master:
-      - step: *build-test-sonarcloud
+      - step: *test-build
     test:
-      - step: *build-test-sonarcloud
-  pull-requests:
+      - step: *test-build
+    pull-requests:
     '**':
-      - step: *build-test-sonarcloud
+      - step: *test-build
+  default:
+    # The following deployment steps will be executed for each pipeline run. To configure your steps and conditionally deploy see https://support.atlassian.com/bitbucket-cloud/docs/configure-bitbucket-pipelinesyml/
+    - step:
+        name: 'Deployment to TEST'
+        deployment: test
+        script:
+          - echo "Your deployment to test script goes here..."
+    - step:
+        name: 'Deployment to Production'
+        deployment: production
+        trigger: 'manual'
+        script:
+          - echo "Your deployment to production script goes here..."

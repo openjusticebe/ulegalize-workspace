@@ -16,7 +16,7 @@ public class FileUpload1Fault
     /**
      * Java type that goes as soapenv:Fault detail element.
      */
-    private services.dpa.common.deposit.file.v01.messages.FileUpload1Fault faultInfo;
+    private final services.dpa.common.deposit.file.v01.messages.FileUpload1Fault faultInfo;
 
     /**
      * @param faultInfo

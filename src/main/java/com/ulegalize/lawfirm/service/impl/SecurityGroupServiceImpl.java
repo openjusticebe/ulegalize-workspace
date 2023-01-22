@@ -12,6 +12,8 @@ import com.ulegalize.lawfirm.service.SecurityGroupService;
 import com.ulegalize.lawfirm.service.v2.ClientV2Service;
 import com.ulegalize.lawfirm.service.v2.DossierV2Service;
 import com.ulegalize.lawfirm.service.v2.UserV2Service;
+import com.ulegalize.lawfirm.service.v2.cache.CacheService;
+import com.ulegalize.lawfirm.service.v2.cache.CacheUtils;
 import com.ulegalize.lawfirm.utils.EmailUtils;
 import com.ulegalize.mail.transparency.EnumMailTemplate;
 import com.ulegalize.security.EnumRights;
@@ -19,6 +21,7 @@ import com.ulegalize.utils.Utils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -28,6 +31,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -51,7 +55,7 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
     private final DossierV2Service dossierV2Service;
     private final MailService mailService;
     private final ClientV2Service clientV2Service;
-    private final ClientRepository clientRepository;
+    private final CacheService cacheService;
 
     @Autowired
     public SecurityGroupServiceImpl(TUsersRepository tUsersRepository,
@@ -61,7 +65,7 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
                                     TSecurityGroupRightsRepository tSecurityGroupRightsRepository, TSecurityGroupsRepository tSecurityGroupsRepository,
                                     TStripeSubscribersRepository tStripeSubscribersRepository,
                                     TFirstTimeRepository tFirstTimeRepository, EntityToUserConverter entityToUserConverter,
-                                    EntityToSecurityGroupConverter entityToSecurityGroupConverter, UserV2Service userV2Service, DossierV2Service dossierV2Service, MailService mailService, ClientV2Service clientV2Service, ClientRepository clientRepository) {
+                                    EntityToSecurityGroupConverter entityToSecurityGroupConverter, UserV2Service userV2Service, DossierV2Service dossierV2Service, MailService mailService, ClientV2Service clientV2Service, CacheService cacheService) {
         this.tUsersRepository = tUsersRepository;
         this.lawfirmUserRepository = lawfirmUserRepository;
         this.lawfirmRepository = lawfirmRepository;
@@ -78,23 +82,31 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
         this.dossierV2Service = dossierV2Service;
         this.mailService = mailService;
         this.clientV2Service = clientV2Service;
-        this.clientRepository = clientRepository;
+        this.cacheService = cacheService;
     }
 
     @Override
-    public LawfirmToken getUserProfile(String clientFrom, String userEmail, String token, boolean withSecurity, boolean emailVerified) {
+    @Cacheable(value = "userProfile", key = "#userEmail")
+    public ProfileDTO getUserProfile(String clientFrom, String userEmail, boolean withSecurity, boolean emailVerified) {
         log.debug("Entering getUserProfile email {}", userEmail);
-        return profile(clientFrom, userEmail, token, withSecurity, emailVerified);
+        return profile(clientFrom, userEmail, withSecurity, emailVerified);
 
     }
 
     @Override
-    public LawfirmToken getSimpleUserProfile(String email, String token, boolean emailVerified) {
+    public ProfileDTO getSimpleUserProfile(String email, boolean emailVerified) {
         log.debug("Entering getSimpleUserProfile email {}", email);
-        return profile(null, email, token, false, emailVerified);
+        return profile(null, email, false, emailVerified);
     }
 
-    private LawfirmToken profile(String clientFrom, String email, String token, boolean fullProfile, boolean emailVerified) {
+    @Override
+    public ProfileDTO getProfileForRegistry(String email, boolean emailVerified) {
+        log.debug("Entering getProfileForRegistry email {} and emailVerified {}", email, emailVerified);
+        // fullProfile true, but for signup if the user does not exists -> throw exception
+        return profile(null, email, true, emailVerified);
+    }
+
+    private ProfileDTO profile(String clientFrom, String email, boolean fullProfile, boolean emailVerified) {
 
         Optional<LawyerDTO> lawyerDTOOptional = tUsersRepository.findDTOByEmail(email);
 
@@ -103,6 +115,9 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
         }
         String vcKey = "";
         String dropboxToken = "";
+        String onedriveToken = "";
+        ZonedDateTime onedriveExpToken = null;
+        String onedriveRefreshToken = "";
         Boolean temporaryVc = false;
 
         // if NOT verified check auth0
@@ -135,18 +150,21 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
 //            }
 
             dropboxToken = lawfirmEntity.getDropboxToken();
+            onedriveToken = lawfirmEntity.getOnedriveToken();
+            onedriveExpToken = lawfirmEntity.getExpireToken();
+            onedriveRefreshToken = lawfirmEntity.getRefreshToken();
             temporaryVc = lawfirmEntity.getTemporaryVc();
             currency = lawfirmEntity.getCurrency().getSymbol();
             driveType = lawfirmEntity.getDriveType();
 
-            List<TSecurityGroupRights> securityGroupRights = tSecurityGroupUsersRepository.findByIdUserAndVckey(lawyerDTOOptional.get().getId(), lawfirmEntity.getVckey(), List.of(EnumSecurityAppGroups.ADMIN, EnumSecurityAppGroups.OTHER, EnumSecurityAppGroups.USER));
+            roleIdList = tSecurityGroupUsersRepository.findByIdUserAndVckey(lawyerDTOOptional.get().getId(), lawfirmEntity.getVckey(), List.of(EnumSecurityAppGroups.ADMIN, EnumSecurityAppGroups.OTHER, EnumSecurityAppGroups.USER));
 
-            if (securityGroupRights == null || securityGroupRights.isEmpty()) {
+            if (roleIdList == null || roleIdList.isEmpty()) {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User does not have the rights");
             }
 
-            roleIdList = securityGroupRights.stream()
-                    .map(TSecurityGroupRights::getIdRight).collect(Collectors.toList());
+//            roleIdList = securityGroupRights.stream()
+//                    .map(TSecurityGroupRights::getIdRight).collect(Collectors.toList());
         }
 
         // only go inside with admin interface
@@ -155,13 +173,20 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
             roleIdList.add(EnumRights.SUPER_ADMIN);
         }
 
-        return new LawfirmToken(lawyerDTOOptional.get().getId(), lawyerDTOOptional.get().getIdUser(),
-                lawyerDTOOptional.get().getEmail(), vcKey, "", true, roleIdList, token,
+        return new ProfileDTO(lawyerDTOOptional.get().getId(), lawyerDTOOptional.get().getFullName(), lawyerDTOOptional.get().getEmail(), null, vcKey,
                 temporaryVc,
                 lawyerDTOOptional.get().getLanguage(),
                 currency,
-                lawyerDTOOptional.get().getFullName(),
-                driveType, dropboxToken, verified);
+                lawyerDTOOptional.get().getId(),
+                lawyerDTOOptional.get().getIdUser(),
+                roleIdList.stream().map(EnumRights::getId).collect(Collectors.toList()),
+                driveType, dropboxToken,
+                onedriveToken,
+                onedriveRefreshToken,
+                onedriveExpToken,
+                verified,
+                lawyerDTOOptional.get().getClientFrom());
+
     }
 
     @Override
@@ -177,10 +202,7 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
             lawyerDTO.setFunctionId(lawfirmUsers.getIdRole().getIdRole());
             lawyerDTO.setFunctionIdItem(new ItemDto(lawfirmUsers.getIdRole().getIdRole(),
                     Utils.getLabel(enumLanguage,
-                            lawfirmUsers.getIdRole().getLabelFr(),
-                            lawfirmUsers.getIdRole().getLabelEn(),
-                            lawfirmUsers.getIdRole().getLabelNl(),
-                            lawfirmUsers.getIdRole().getLabelNl()
+                            lawfirmUsers.getIdRole().name(), null
                     )));
             lawyerDTO.setActive(lawfirmUsers.isActive());
             List<TSecurityGroupUsers> securityGroupUsersList = tSecurityGroupUsersRepository.findByIdAndVckey(lawfirmUsers.getUser().getId(), vcKey);
@@ -333,7 +355,7 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
         contactSummary.setVcKey(vcKey);
         contactSummary.setFullName(user.getFullname());
         contactSummary.setLastname(user.getFullname());
-        contactSummary.setFirstname("");
+        contactSummary.setFirstname(user.getFullname());
         contactSummary.setEmail(user.getEmail());
         contactSummary.setLanguage(user.getLanguage());
         contactSummary.setUserId(user.getId());
@@ -353,11 +375,14 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
                 shareAffaireDTO.setUserId(lawfirmUsers.getUser().getId());
                 shareAffaireDTO.setAffaireId(dossiers.getIdDoss());
                 shareAffaireDTO.setVcKey(lawfirmUsers.getLawfirm().getVckey());
+                shareAffaireDTO.setNomenclature(dossiers.getNomenclature());
                 dossierV2Service.addShareFolderUser(shareAffaireDTO, false);
             });
 
         }
         String language = lawfirmUsers.getUser().getLanguage() != null ? lawfirmUsers.getUser().getLanguage().toLowerCase() : EnumLanguage.FR.getShortCode();
+
+        cacheService.evictCaches(CacheUtils.CACHE_USER_PROFILE);
 
         mailService.sendMailWithoutMeetingAndIcs(EnumMailTemplate.MAILSHAREDUSERSECURITYTEMPLATE,
                 EmailUtils.prepareContextForSharedUserSecurity(
@@ -399,8 +424,6 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
         log.info("dossier right start deleting {}", userId);
 
 
-        List<TDossierRights> tDossierRightsList = dossierRightsRepository.findAllByVcUserId(lawfirmUsersOptional.get().getId());
-
         dossierRightsRepository.deleteAllByVcUserId(lawfirmUsersOptional.get().getId());
 
 
@@ -408,6 +431,7 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
         log.info("lawfirm User start deleting {}", userId);
 
         lawfirmUserRepository.deleteByLawfirmUsersId(lawfirmUsersOptional.get().getId());
+        cacheService.evictCaches(CacheUtils.CACHE_USER_PROFILE);
 
         log.info("Bye bye delete {}", userId);
 
@@ -427,11 +451,7 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
         log.debug("Security group Vc key {}", lawfirmToken.getVcKey());
         List<TSecurityGroups> tSecurityGroupsList = tSecurityGroupsRepository.findAllByVcKeyAndDescription(lawfirmToken.getVcKey(), securityGroupName.trim());
 
-        if (tSecurityGroupsList != null && !tSecurityGroupsList.isEmpty()) {
-            return true;
-        }
-
-        return false;
+        return tSecurityGroupsList != null && !tSecurityGroupsList.isEmpty();
     }
 
     @Override
@@ -458,7 +478,7 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
         log.debug("Entering deleteSecurityGroup securityGroup id {}", securityGroupId);
         Optional<TSecurityGroups> securityGroupsOptional = tSecurityGroupsRepository.findById(securityGroupId);
 
-        if (!securityGroupsOptional.isPresent()) {
+        if (securityGroupsOptional.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Security group not found");
         }
 
@@ -522,13 +542,13 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Optional<LawfirmUsers> lawfirmUsersOptional = lawfirmUserRepository.findLawfirmUsersByVcKeyAndUserId(lawfirmToken.getVcKey(), userId);
 
-        if (!lawfirmUsersOptional.isPresent()) {
+        if (lawfirmUsersOptional.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "BIG ISSUE MOTHERF...");
         }
         // add security group
         Optional<TSecurityGroups> securityGroupsOptional = tSecurityGroupsRepository.findById(securityGroupId);
 
-        if (!securityGroupsOptional.isPresent()) {
+        if (securityGroupsOptional.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Security group not found");
         }
         if (securityGroupsOptional.get().getTSecurityGroupUsersList() != null && !securityGroupsOptional.get().getTSecurityGroupUsersList().isEmpty()) {
@@ -544,6 +564,7 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
 
         tSecurityGroupUsersRepository.save(tSecurityGroupUsers);
 
+        cacheService.evictCaches(CacheUtils.CACHE_USER_PROFILE);
 
         return tSecurityGroupUsers.getId();
     }
@@ -566,6 +587,8 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
         }
 
         tSecurityGroupUsersRepository.delete(securityGroupUsersOptional.get());
+        cacheService.evictCaches(CacheUtils.CACHE_USER_PROFILE);
+
         return securityGroupUserId;
     }
 
@@ -576,7 +599,7 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
 
         List<TSecurityGroupRights> securityGroupRights = tSecurityGroupRightsRepository.findByTSecurityGroups_Id(securityGroupId);
         return securityGroupRights.stream()
-                .map(securityGroupRight -> new ItemLongDto(securityGroupRight.getId(), Utils.getLabel(EnumLanguage.fromshortCode(lawfirmToken.getLanguage()), securityGroupRight.getIdRight().getDescriptionFr(), securityGroupRight.getIdRight().getDescriptionNl(), securityGroupRight.getIdRight().getDescriptionEn(), securityGroupRight.getIdRight().getDescriptionDe())))
+                .map(securityGroupRight -> new ItemLongDto(securityGroupRight.getId(), Utils.getLabel(EnumLanguage.fromshortCode(lawfirmToken.getLanguage()), securityGroupRight.getIdRight().name(), null)))
                 .collect(Collectors.toList());
     }
 
@@ -597,8 +620,9 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
                 }
             }
             if (!exist) {
-                log.debug("This right {} does not exist in the security group", Utils.getLabel(EnumLanguage.fromshortCode(lawfirmToken.getLanguage()), enumRights.getDescriptionFr(), enumRights.getDescriptionDe(), enumRights.getDescriptionEn(), enumRights.getDescriptionNl()));
-                rightOut.add(new ItemDto(enumRights.getId(), Utils.getLabel(EnumLanguage.fromshortCode(lawfirmToken.getLanguage()), enumRights.getDescriptionFr(), enumRights.getDescriptionNl(), enumRights.getDescriptionEn(), enumRights.getDescriptionDe())));
+                String label = Utils.getLabel(EnumLanguage.fromshortCode(lawfirmToken.getLanguage()), enumRights.name(), null);
+                log.debug("This right {} does not exist in the security group", label);
+                rightOut.add(new ItemDto(enumRights.getId(), label));
             }
         });
         return rightOut;
@@ -637,6 +661,7 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
 
         tSecurityGroupRightsRepository.save(tSecurityGroupRights);
 
+        cacheService.evictCaches(CacheUtils.CACHE_USER_PROFILE);
 
         return tSecurityGroupRights.getId();
     }
@@ -646,11 +671,13 @@ public class SecurityGroupServiceImpl implements SecurityGroupService {
         log.info("Entering deleteSecurityGroupRightById securityGroupRightId {}", securityGroupRightId);
         Optional<TSecurityGroupRights> groupRightsOptional = tSecurityGroupRightsRepository.findById(securityGroupRightId);
 
-        if (!groupRightsOptional.isPresent()) {
+        if (groupRightsOptional.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Security right group not found");
         }
 
         tSecurityGroupRightsRepository.deleteById(groupRightsOptional.get().getId());
+        cacheService.evictCaches("userProfile");
+
         return securityGroupRightId;
     }
 }

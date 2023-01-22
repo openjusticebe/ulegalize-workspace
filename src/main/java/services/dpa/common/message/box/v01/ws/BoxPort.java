@@ -39,9 +39,9 @@ public interface BoxPort {
      */
     @WebMethod(action = "getBoxes")
     @WebResult(name = "getBoxesResponse", targetNamespace = "http://common.dpa.services/message/box/v01/messages", partName = "part1")
-    public GetBoxesResponse getBoxes(
+    GetBoxesResponse getBoxes(
             @WebParam(name = "getBoxesRequest", targetNamespace = "http://common.dpa.services/message/box/v01/messages", partName = "part1")
-                    GetBoxesRequest part1);
+            GetBoxesRequest part1);
 
     /**
      * @param part1
@@ -49,9 +49,9 @@ public interface BoxPort {
      */
     @WebMethod(action = "getMessageSummaries")
     @WebResult(name = "getMessageSummariesResponse", targetNamespace = "http://common.dpa.services/message/box/v01/messages", partName = "part1")
-    public GetMessageSummariesResponse getMessageSummaries(
+    GetMessageSummariesResponse getMessageSummaries(
             @WebParam(name = "getMessageSummariesRequest", targetNamespace = "http://common.dpa.services/message/box/v01/messages", partName = "part1")
-                    GetMessageSummariesRequest part1);
+            GetMessageSummariesRequest part1);
 
     /**
      * @param part1
@@ -59,9 +59,9 @@ public interface BoxPort {
      */
     @WebMethod(action = "getMessageById")
     @WebResult(name = "getMessageByIdResponse", targetNamespace = "http://common.dpa.services/message/box/v01/messages", partName = "part1")
-    public GetMessageByIdResponse getMessageById(
+    GetMessageByIdResponse getMessageById(
             @WebParam(name = "getMessageByIdRequest", targetNamespace = "http://common.dpa.services/message/box/v01/messages", partName = "part1")
-                    GetMessageByIdRequest part1);
+            GetMessageByIdRequest part1);
 
     /**
      * @param part1
@@ -69,9 +69,9 @@ public interface BoxPort {
      */
     @WebMethod(action = "getDocument")
     @WebResult(name = "getDocumentResponse", targetNamespace = "http://common.dpa.services/message/box/v01/messages", partName = "part1")
-    public GetDocumentResponse getDocument(
+    GetDocumentResponse getDocument(
             @WebParam(name = "getDocumentRequest", targetNamespace = "http://common.dpa.services/message/box/v01/messages", partName = "part1")
-                    GetDocumentRequest part1);
+            GetDocumentRequest part1);
 
     /**
      * @param part1
@@ -79,9 +79,9 @@ public interface BoxPort {
      */
     @WebMethod(action = "getCases")
     @WebResult(name = "getCasesResponse", targetNamespace = "http://common.dpa.services/message/box/v01/messages", partName = "part1")
-    public GetCasesResponse getCases(
+    GetCasesResponse getCases(
             @WebParam(name = "getCasesRequest", targetNamespace = "http://common.dpa.services/message/box/v01/messages", partName = "part1")
-                    GetCasesRequest part1);
+            GetCasesRequest part1);
 
     /**
      * @param part1
@@ -89,9 +89,9 @@ public interface BoxPort {
      */
     @WebMethod(action = "getCaseDocuments")
     @WebResult(name = "getCaseDocumentsResponse", targetNamespace = "http://common.dpa.services/message/box/v01/messages", partName = "part1")
-    public GetCaseDocumentsResponse getCaseDocuments(
+    GetCaseDocumentsResponse getCaseDocuments(
             @WebParam(name = "getCaseDocumentsRequest", targetNamespace = "http://common.dpa.services/message/box/v01/messages", partName = "part1")
-                    GetCaseDocumentsRequest part1);
+            GetCaseDocumentsRequest part1);
 
     /**
      * @param part1
@@ -100,9 +100,9 @@ public interface BoxPort {
      */
     @WebMethod(action = "ping")
     @WebResult(name = "Pong", targetNamespace = "http://common.dpa.services/global/v01/messages", partName = "part1")
-    public Pong ping(
+    Pong ping(
             @WebParam(name = "Ping", targetNamespace = "http://common.dpa.services/global/v01/messages", partName = "part1")
-                    Ping part1)
+            Ping part1)
             throws PingFault
     ;
 

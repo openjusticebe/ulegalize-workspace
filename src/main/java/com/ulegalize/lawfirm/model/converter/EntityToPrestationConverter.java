@@ -7,7 +7,6 @@ import com.ulegalize.dto.PrestationSummary;
 import com.ulegalize.lawfirm.model.entity.TTimesheet;
 import com.ulegalize.lawfirm.utils.SuperConverter;
 import com.ulegalize.utils.PrestationUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -19,7 +18,7 @@ public class EntityToPrestationConverter implements SuperConverter<TTimesheet, P
         PrestationSummary prestationSummary = new PrestationSummary();
         prestationSummary.setId(timesheet.getIdTs());
         prestationSummary.setDossierId(timesheet.getIdDoss());
-        prestationSummary.setDossier(timesheet.getTDossiers().getYear_doss() + "/" + StringUtils.leftPad(timesheet.getTDossiers().getNum_doss().toString(), 4, "0"));
+        prestationSummary.setDossier(timesheet.getTDossiers().getNomenclature());
         prestationSummary.setNumDossier(timesheet.getTDossiers().getNum_doss());
         prestationSummary.setYearDossier(timesheet.getTDossiers().getYear_doss());
         prestationSummary.setIdGest(timesheet.getIdGest());

@@ -2,6 +2,7 @@ package com.ulegalize.lawfirm.kafka.producer.payment.impl;
 
 import com.ulegalize.KafkaObject;
 import com.ulegalize.dto.LawfirmDTO;
+import com.ulegalize.dto.LawfirmDriveDTO;
 import com.ulegalize.lawfirm.kafka.producer.payment.ILawfirmProducer;
 import com.ulegalize.lawfirm.model.LawfirmToken;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +23,8 @@ public class LawfirmProducerImpl implements ILawfirmProducer {
     private String activeProfile;
     @Value("${tpd.updateLawfirm-topic-name}")
     private String topicName;
+    @Value("${tpd.updateLawfirmDrive-topic-name}")
+    private String updateLawfirmDrive;
     @Value("${tpd.updateLawfirmNotification-topic-name}")
     private String updateNotificationTopicName;
     @Value("${tpd.switchLawfirm-topic-name}")
@@ -59,15 +62,45 @@ public class LawfirmProducerImpl implements ILawfirmProducer {
             }
         }
     }
+
     @Override
-    public void updateNotificationLawfirm(LawfirmDTO message, LawfirmToken LawfirmToken){
+    public void updateLawfirmDrive(LawfirmDriveDTO message, LawfirmToken lawfirmToken) {
+        log.debug("Entering producer updateLawfirmDrive lawfirm drive dto {}", message);
+        if (!activeProfile.equalsIgnoreCase("integrationtest")
+                && !activeProfile.equalsIgnoreCase("devDocker")) {
+            try {
+                KafkaObject<LawfirmDriveDTO> messageKafka = new KafkaObject<>(lawfirmToken, message);
+                ListenableFuture<SendResult<String, Object>> future = kafkaTemplate.send(updateLawfirmDrive, messageKafka);
+
+                future.addCallback(new ListenableFutureCallback<SendResult<String, Object>>() {
+
+                    @Override
+                    public void onFailure(Throwable ex) {
+                        log.error("failure");
+                    }
+
+                    @Override
+                    public void onSuccess(SendResult<String, Object> sendResult) {
+                        log.info("Kafka sent message with success='{}', sendResult='{}'", message, sendResult);
+                    }
+
+                });
+                log.info("All messages updateLawfirmDrive received");
+            } catch (Exception e) {
+                log.error("Error while updateLawfirm ", e);
+            }
+        }
+    }
+
+    @Override
+    public void updateNotificationLawfirm(LawfirmDTO message, LawfirmToken LawfirmToken) {
         log.debug("Entering producer updateNotificationLawfirm lawfirm dto {}", message);
         if (!activeProfile.equalsIgnoreCase("integrationtest")
                 && !activeProfile.equalsIgnoreCase("devDocker")) {
             try {
                 KafkaObject<LawfirmDTO> messageKafka = new KafkaObject<>(LawfirmToken, message);
 
-                ListenableFuture<SendResult<String, Object>> future = kafkaTemplate.send(updateNotificationTopicName,  messageKafka);
+                ListenableFuture<SendResult<String, Object>> future = kafkaTemplate.send(updateNotificationTopicName, messageKafka);
 
                 future.addCallback(new ListenableFutureCallback<SendResult<String, Object>>() {
 
@@ -93,7 +126,7 @@ public class LawfirmProducerImpl implements ILawfirmProducer {
     public void switchLawfirm(LawfirmDTO message, LawfirmToken lawfirmToken) {
         log.debug("Entering producer switchLawfirm lawfirm dto {}", message);
         if (!activeProfile.equalsIgnoreCase("integrationtest")
-                && !activeProfile.equalsIgnoreCase("dev")
+                /*&& !activeProfile.equalsIgnoreCase("dev")*/
                 && !activeProfile.equalsIgnoreCase("devDocker")) {
             try {
                 KafkaObject<LawfirmDTO> messageKafka = new KafkaObject<>(lawfirmToken, message);

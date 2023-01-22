@@ -24,11 +24,15 @@ public class LawfirmToken extends UlegalizeToken implements UserDetails {
     @Setter
     private boolean verified;
 
+    @Getter
+    @Setter
+    private String auth0UserId;
+
     public LawfirmToken(Long userId, String username, String userEmail,
                         String vcKey, String password, Boolean enabled,
                         List<EnumRights> enumRights, String token, Boolean temporary,
                         String language, String symbolCurrency, String fullname,
-                        DriveType driveType, String dropboxToken, boolean verified) {
+                        DriveType driveType, String dropboxToken, String onedriveToken, boolean verified) {
         this.userId = userId;
         this.username = username;
         this.userEmail = userEmail;
@@ -43,6 +47,7 @@ public class LawfirmToken extends UlegalizeToken implements UserDetails {
         this.fullname = fullname;
         this.driveType = driveType;
         this.dropboxToken = dropboxToken;
+        this.onedriveToken = onedriveToken;
         this.verified = verified;
     }
 

@@ -1,16 +1,17 @@
 package com.ulegalize.lawfirm.service;
 
 import com.ulegalize.dto.*;
-import com.ulegalize.lawfirm.model.LawfirmToken;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
 public interface SecurityGroupService {
 
-    LawfirmToken getUserProfile(String clientFrom, String email, String token, boolean withSecurity, boolean emailVerified);
+    ProfileDTO getUserProfile(String clientFrom, String email, boolean withSecurity, boolean emailVerified);
 
-    LawfirmToken getSimpleUserProfile(String email, String token, boolean emailVerified);
+    ProfileDTO getSimpleUserProfile(String email, boolean emailVerified);
+
+    ProfileDTO getProfileForRegistry(String email, boolean emailVerified);
 
     List<LawyerDTO> getFullUserResponsableList(String vcKey);
 

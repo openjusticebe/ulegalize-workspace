@@ -10,14 +10,12 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import springfox.documentation.annotations.ApiIgnore;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@ApiIgnore
 @RequestMapping("/v2/mesureType")
 @Slf4j
 public class MesureTypeV2Controller {
@@ -32,10 +30,7 @@ public class MesureTypeV2Controller {
 
         return Arrays.stream(EnumMesureType.values())
                 .map(enumMesureType -> new ItemDto(enumMesureType.getId(), Utils.getLabel(enumLanguage,
-                        enumMesureType.getDescriptionFr(),
-                        enumMesureType.getDescriptionEn(),
-                        enumMesureType.getDescriptionNl(),
-                        enumMesureType.getDescriptionNl())))
+                        enumMesureType.name(), com.ulegalize.lawfirm.utils.Utils.PACKAGENAME)))
                 .collect(Collectors.toList());
     }
 }

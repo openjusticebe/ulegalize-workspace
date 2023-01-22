@@ -8,23 +8,21 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.Arrays;
 import java.util.Base64;
+import java.util.List;
 
 @Service
 @Slf4j
-@Transactional
 public class ReportApiImpl implements ReportApi {
     @Value("${app.lawfirm-report.url}")
     String REPORT_URL;
     @Value("${spring.profiles.active}")
     private String activeProfile;
 
-    private RestTemplate restTemplate;
+    private final RestTemplate restTemplate;
 
     public ReportApiImpl(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
@@ -37,7 +35,7 @@ public class ReportApiImpl implements ReportApi {
         log.info("Entering getInvoice FOR VCKEY : {} and invoice id {}", lawfirmToken.getVcKey(), invoiceId);
         if (!activeProfile.equalsIgnoreCase("integrationtest")) {
             HttpHeaders headers = new HttpHeaders();
-            headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.add("Authorization", "Bearer " + lawfirmToken.getToken());
 

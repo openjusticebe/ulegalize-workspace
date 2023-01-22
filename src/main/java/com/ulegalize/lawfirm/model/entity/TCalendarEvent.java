@@ -67,12 +67,12 @@ public class TCalendarEvent extends BaseEntity {
     @Setter
     private boolean approved;
 
-    @Column(name = "start")
+    @Column(name = "`start`")
     @Getter
     @Setter
     private Date start;
 
-    @Column(name = "end")
+    @Column(name = "`end`")
     @Getter
     @Setter
     private Date end;

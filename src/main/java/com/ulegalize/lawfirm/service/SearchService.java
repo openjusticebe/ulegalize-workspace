@@ -41,7 +41,7 @@ public interface SearchService {
 
     List<ItemLongDto> getUsers(String searchValue);
 
-    public List<ItemStringDto> getCientByVcKey(String searchCriteria);
+    List<ItemStringDto> getCientByVcKey(String searchCriteria);
 
     List<ItemStringDto> getTemplateModel();
 
@@ -49,5 +49,11 @@ public interface SearchService {
 
     List<ItemStringDto> getDossierType();
 
+    List<ItemDto> getEnumDossierContactType(String typeDossierValue);
+
     List<ItemEventDto> getCalendarEventType(EnumLanguage enumLanguage);
+
+    List<ItemStringDto> getTitleClient();
+
+    List<ItemDto> getRefTransaction(String language);
 }

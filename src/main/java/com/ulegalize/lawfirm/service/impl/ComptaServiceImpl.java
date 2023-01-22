@@ -4,6 +4,7 @@ import com.ulegalize.dto.ComptaDTO;
 import com.ulegalize.dto.InvoiceDTO;
 import com.ulegalize.dto.ItemBigDecimalDto;
 import com.ulegalize.dto.ItemDto;
+import com.ulegalize.enumeration.EnumLanguage;
 import com.ulegalize.enumeration.EnumRefTransaction;
 import com.ulegalize.enumeration.EnumTType;
 import com.ulegalize.lawfirm.model.LawfirmToken;
@@ -12,6 +13,8 @@ import com.ulegalize.lawfirm.model.converter.EntityToComptaDTOConverter;
 import com.ulegalize.lawfirm.model.entity.*;
 import com.ulegalize.lawfirm.repository.*;
 import com.ulegalize.lawfirm.service.ComptaService;
+import com.ulegalize.lawfirm.service.SearchService;
+import com.ulegalize.utils.Utils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -42,7 +45,9 @@ public class ComptaServiceImpl implements ComptaService {
     private final EntityToComptaDTOConverter entityToComptaDTOConverter;
     private final DTOToFraisEntityConverter dtoToFraisEntityConverter;
 
-    public ComptaServiceImpl(TFraisRepository tFraisRepository, TGridRepository tGridRepository, RefCompteRepository refCompteRepository, DossierRepository dossierRepository, TFacturesRepository tFacturesRepository, ClientRepository clientRepository, RefPosteRepository refPosteRepository, TVirtualcabVatRepository tVirtualcabVatRepository, EntityToComptaDTOConverter entityToComptaDTOConverter, DTOToFraisEntityConverter dtoToFraisEntityConverter) {
+    private final SearchService searchService;
+
+    public ComptaServiceImpl(TFraisRepository tFraisRepository, TGridRepository tGridRepository, RefCompteRepository refCompteRepository, DossierRepository dossierRepository, TFacturesRepository tFacturesRepository, ClientRepository clientRepository, RefPosteRepository refPosteRepository, TVirtualcabVatRepository tVirtualcabVatRepository, EntityToComptaDTOConverter entityToComptaDTOConverter, DTOToFraisEntityConverter dtoToFraisEntityConverter, SearchService searchService) {
         this.tFraisRepository = tFraisRepository;
         this.tGridRepository = tGridRepository;
         this.refCompteRepository = refCompteRepository;
@@ -53,16 +58,16 @@ public class ComptaServiceImpl implements ComptaService {
         this.tVirtualcabVatRepository = tVirtualcabVatRepository;
         this.entityToComptaDTOConverter = entityToComptaDTOConverter;
         this.dtoToFraisEntityConverter = dtoToFraisEntityConverter;
+        this.searchService = searchService;
     }
 
     @Override
-    public ComptaDTO getComptaById(Long fraisId, String vcKey) {
+    public ComptaDTO getComptaById(Long fraisId, String vcKey, String language) {
         Optional<TFrais> fraisOptional = tFraisRepository.findByIdFraisAndVcKey(fraisId, vcKey);
 
         if (fraisOptional.isPresent()) {
             // todo convertor
-
-            return entityToComptaDTOConverter.apply(fraisOptional.get());
+            return entityToComptaDTOConverter.apply(fraisOptional.get(), EnumLanguage.fromshortCode(language));
         }
         return null;
     }
@@ -74,7 +79,7 @@ public class ComptaServiceImpl implements ComptaService {
 
     @Override
     public Page<ComptaDTO> getAllComptaByDossierId(int limit, int offset, Long dossierId, String vcKey,
-                                                   Boolean isDebours, Boolean isFraiCollaboration, Boolean honoraire, Boolean tiers) {
+                                                   Boolean isDebours, Boolean isFraiCollaboration, Boolean honoraire, Boolean tiers, String language) {
         log.debug("Get all Compta with user {} limit {} and offset {} and dossierId {}", vcKey, limit, offset, dossierId);
 
         Sort.Order order = new Sort.Order(Sort.Direction.ASC, "idPoste");
@@ -98,27 +103,27 @@ public class ComptaServiceImpl implements ComptaService {
             allCompta = tFraisRepository.findByDossierIdWithPagination(dossierId, vcKey, pageable);
         }
 
-        List<ComptaDTO> comptaDTOList = entityToComptaDTOConverter.convertToList(allCompta.getContent());
+        List<ComptaDTO> comptaDTOList = entityToComptaDTOConverter.convertToList(allCompta.getContent(), EnumLanguage.fromshortCode(language));
 
         return new PageImpl<>(comptaDTOList, Pageable.unpaged(), allCompta.getTotalElements());
     }
 
     @Override
-    public Page<ComptaDTO> getAllCompta(int limit, int offset, String vcKey, String searchCriteriaClient, String searchCriteriaYear, Long searchCriteriaNumber, String searchCriteriaPoste, Integer typeId, Integer searchCriteriaCompte) {
+    public Page<ComptaDTO> getAllCompta(int limit, int offset, String vcKey, String searchCriteriaClient, String searchCriteriaNomenclature, String searchCriteriaPoste, Integer typeId, Integer searchCriteriaCompte, String language) {
         log.debug("Get all Compta with user {} limit {} and offset {}", vcKey, limit, offset);
 
         Sort.Order order = new Sort.Order(Sort.Direction.DESC, "id_frais");
         Sort.Order order2 = new Sort.Order(Sort.Direction.ASC, "id_poste");
         Pageable pageable = new OffsetBasedPageRequest(limit, offset, Sort.by(order, order2));
-        String year = searchCriteriaYear != null ? searchCriteriaYear : "";
         String client = searchCriteriaClient != null && !searchCriteriaClient.isEmpty() ? searchCriteriaClient : "";
+        String nomenclature = searchCriteriaNomenclature != null && !searchCriteriaNomenclature.isEmpty() ? searchCriteriaNomenclature : "";
         String poste = searchCriteriaPoste != null && !searchCriteriaPoste.isEmpty() ? searchCriteriaPoste : "%";
         String typeCompta = typeId != null ? String.valueOf(typeId) : "%";
         String compte = searchCriteriaCompte != null ? String.valueOf(searchCriteriaCompte) : "%";
 
-        Page<TFrais> allCompta = tFraisRepository.findAllWithPagination(vcKey, client, year, searchCriteriaNumber, poste, typeCompta, compte, pageable);
+        Page<TFrais> allCompta = tFraisRepository.findAllWithPagination(vcKey, client, nomenclature, poste, typeCompta, compte, pageable);
 
-        List<ComptaDTO> comptaDTOList = entityToComptaDTOConverter.convertToList(allCompta.getContent());
+        List<ComptaDTO> comptaDTOList = entityToComptaDTOConverter.convertToList(allCompta.getContent(), EnumLanguage.fromshortCode(language));
 
         return new PageImpl<>(comptaDTOList, Pageable.unpaged(), allCompta.getTotalElements());
     }
@@ -261,7 +266,7 @@ public class ComptaServiceImpl implements ComptaService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Post is not found");
         }
 
-        Optional<EnumRefTransaction> enumRefTransaction = Optional.ofNullable(EnumRefTransaction.fromId(comptaDTO.getIdTransaction()));
+        Optional<EnumRefTransaction> enumRefTransaction = Optional.ofNullable(EnumRefTransaction.fromId(comptaDTO.getTransactionTypeItem().value));
         if (enumRefTransaction.isEmpty()) {
             log.warn("Transaction is not found {} ", comptaDTO.getIdTransaction());
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Transaction is not found");
@@ -276,7 +281,7 @@ public class ComptaServiceImpl implements ComptaService {
     }
 
     @Override
-    public ComptaDTO getDefaultCompta(Long userId, String vcKey) {
+    public ComptaDTO getDefaultCompta(Long userId, String vcKey, String language) {
 
         ComptaDTO compta = new ComptaDTO();
         compta.setVcKey(vcKey);
@@ -295,6 +300,10 @@ public class ComptaServiceImpl implements ComptaService {
             compta.setIdPost(poste.getIdPoste());
             compta.setPoste(new ItemDto(poste.getIdPoste(), poste.getRefPoste()));
         });
+        compta.setLanguage(language);
+
+        compta.setTransactionTypeItem(new ItemDto(EnumRefTransaction.VIREMENT.getId(), Utils.getLabel(EnumLanguage.fromshortCode(compta.getLanguage()), EnumRefTransaction.VIREMENT.name(), null)));
+
         compta.setIdTransaction(EnumRefTransaction.VIREMENT.getId());
         compta.setIdType(EnumTType.ENTREE.getIdType());
         compta.setMontantHt(BigDecimal.ZERO);

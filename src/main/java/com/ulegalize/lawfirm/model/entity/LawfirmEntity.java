@@ -7,11 +7,14 @@ import com.ulegalize.lawfirm.model.entity.converter.RefCurrencyConverter;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import javax.persistence.*;
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -138,7 +141,7 @@ public class LawfirmEntity implements Serializable {
     @Column(name = "expire_token")
     @Getter
     @Setter
-    private LocalDateTime expireToken;
+    private ZonedDateTime expireToken;
     @Column(name = "refresh_token")
     @Getter
     @Setter
@@ -167,7 +170,11 @@ public class LawfirmEntity implements Serializable {
     @Column(name = "start_invoice_number")
     @Getter
     @Setter
-    private Integer startInvoiceNumber;
+    private Integer startInvoiceNumber = 1;
+    @Column(name = "start_dossier_number")
+    @Getter
+    @Setter
+    private long startDossierNumber = 1;
 
     @Column(name = "cre_user", nullable = false)
     @Getter
@@ -180,6 +187,11 @@ public class LawfirmEntity implements Serializable {
     @CreationTimestamp
     private LocalDateTime creDate;
 
+    @Column(name = "client_from")
+    @Getter
+    @Setter
+    private String clientFrom;
+
     @OneToMany(mappedBy = "lawfirm", cascade = {CascadeType.PERSIST, CascadeType.MERGE}, orphanRemoval = true)
     @JsonIgnore
     @Getter
@@ -188,6 +200,7 @@ public class LawfirmEntity implements Serializable {
 
     @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "`key`", referencedColumnName = "VC_KEY")
+    @Fetch(FetchMode.JOIN)
     @JsonIgnore
     @Getter
     @Setter
@@ -216,6 +229,18 @@ public class LawfirmEntity implements Serializable {
     @Getter
     @Setter
     private List<TWorkspaceAssociated> workspaceAssociatedRecipientList;
+
+    @OneToMany(mappedBy = "lawfirmEntity", cascade = {CascadeType.ALL}, orphanRemoval = true)
+    @JsonIgnore
+    @Getter
+    @Setter
+    private List<TVirtualcabNomenclature> virtualcabNomenclatureList;
+
+    @OneToMany(mappedBy = "lawfirmEntity", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    @Getter
+    @Setter
+    private List<TVirtualCabTags> tVirtualCabTags;
 
     @Override
     public boolean equals(Object o) {

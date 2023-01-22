@@ -13,4 +13,8 @@ public interface FactureFraisAdminRepository extends JpaRepository<FactureFraisA
             " where t.deboursId = :deboursId" +
             " and t.ID <> ifnull( :id, 0)")
     List<FactureFraisAdmin> findByFraisIdAndNotId(Long id, Long deboursId);
+
+    @Query("select f from FactureFraisAdmin f " +
+            " where f.tFactures.idFacture = :idFacture")
+    List<FactureFraisAdmin> findAllByTFactures(Long idFacture);
 }

@@ -23,7 +23,7 @@ public class DTOToFraisEntityConverter implements SuperTriConverter<ComptaDTO, T
         tFrais.setMontant(dto.getMontant());
         tFrais.setMemo(dto.getMemo() != null ? dto.getMemo() : "");
         tFrais.setIdPoste(dto.getIdPost());
-        tFrais.setIdTransaction(EnumRefTransaction.fromId(dto.getIdTransaction()));
+        tFrais.setIdTransaction(EnumRefTransaction.fromId(dto.getTransactionTypeItem().value));
         tFrais.setIdType(EnumTType.fromId(dto.getIdType()));
         tFrais.setMontantht(dto.getMontantHt());
         tFrais.setRatio(dto.getRatio());

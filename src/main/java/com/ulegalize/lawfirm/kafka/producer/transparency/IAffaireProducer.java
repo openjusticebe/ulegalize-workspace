@@ -5,5 +5,7 @@ import com.ulegalize.lawfirm.model.LawfirmToken;
 
 public interface IAffaireProducer {
 
-    public void attachAffaire(CaseCreationDTO message, LawfirmToken lawfirmToken);
+    void attachAffaire(CaseCreationDTO message, LawfirmToken lawfirmToken);
+
+    void updateAffaire(CaseCreationDTO message, LawfirmToken lawfirmToken);
 }

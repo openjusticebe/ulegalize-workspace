@@ -2,10 +2,11 @@ package com.ulegalize.lawfirm.model.entity;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 
 import javax.persistence.*;
 import java.io.Serializable;
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.Objects;
 
 
@@ -29,17 +30,18 @@ public class TMessageUser implements Serializable {
     @Column(name = "DATE_TO", nullable = false)
     @Getter
     @Setter
-    private LocalDateTime dateTo;
+    private ZonedDateTime dateTo;
 
     @Column(name = "CRE_USER", nullable = false)
     @Getter
     @Setter
     private String creUser;
 
-    @Column(name = "CRE_DATE")
+    @Column(name = "CRE_DATE", updatable = false)
+    @CreationTimestamp
     @Getter
     @Setter
-    private LocalDateTime creDate;
+    private ZonedDateTime creDate;
 
     @ManyToOne
     @JoinColumn(name = "message_id")

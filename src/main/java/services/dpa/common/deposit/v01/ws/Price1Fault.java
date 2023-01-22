@@ -16,7 +16,7 @@ public class Price1Fault
     /**
      * Java type that goes as soapenv:Fault detail element.
      */
-    private services.dpa.common.deposit.price.v01.messages.Price1Fault faultInfo;
+    private final services.dpa.common.deposit.price.v01.messages.Price1Fault faultInfo;
 
     /**
      * @param faultInfo

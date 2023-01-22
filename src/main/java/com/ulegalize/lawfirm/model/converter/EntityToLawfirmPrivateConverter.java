@@ -43,6 +43,8 @@ public class EntityToLawfirmPrivateConverter implements SuperConverter<LawfirmEn
 
         lawfirmDTO.setLawyers(new ArrayList<LawyerDTO>());
 
+        lawfirmDTO.setClientFrom(entity.getClientFrom());
+
         entity.getLawfirmUsers().stream().forEach(user -> {
             LawyerDTO l = entityToUserConverter.apply(user.getUser(), false);
 

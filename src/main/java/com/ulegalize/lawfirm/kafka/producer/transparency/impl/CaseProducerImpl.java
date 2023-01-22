@@ -64,6 +64,7 @@ public class CaseProducerImpl implements ICaseProducer {
                 profileDTO.setVcKeySelected(newVcKey);
                 profileDTO.setLanguage(language);
                 profileDTO.setUserId(userId);
+                profileDTO.setClientFrom(lawfirmToken.getClientFrom());
                 log.debug("Payload : {}", profileDTO);
 
                 KafkaObject<ProfileDTO> messageKafka = new KafkaObject<>(lawfirmToken, profileDTO);
@@ -85,7 +86,6 @@ public class CaseProducerImpl implements ICaseProducer {
             try {
                 KafkaObject<UpdateShareRequestDTO> messageKafka = new KafkaObject<>(lawfirmToken, message);
                 kafkaTemplate.send(topicCreateShareCase, messageKafka);
-
                 log.info("All messages received createShareCases");
             } catch (Exception e) {
                 log.error("Error while createShareCases ", e);

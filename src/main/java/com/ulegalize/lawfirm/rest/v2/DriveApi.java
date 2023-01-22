@@ -9,9 +9,9 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 
 public interface DriveApi {
-    public void createContainer(LawfirmToken lawfirmToken, String containerName, List<String> paths) throws ResponseStatusException;
+    void createContainer(LawfirmToken lawfirmToken, String containerName, List<String> paths) throws ResponseStatusException;
 
-    void createFolders(LawfirmToken lawfirmToken, String vcKey, List<String> paths);
+    void createFolders(LawfirmToken lawfirmToken, String vcKey, List<String> paths, String parentId);
 
     void uploadFile(LawfirmToken lawfirmToken, byte[] file, String originalFilename, String path);
 
@@ -23,7 +23,14 @@ public interface DriveApi {
 
     String moveFile(LawfirmToken lawfirmToken, String filename, String fromPath, String pathTo);
 
-    String moveFolders(LawfirmToken lawfirmToken, String fromPath, String pathTo);
+    /**
+     * @param token
+     * @param vcKey
+     * @param fromPath start with "" and finish with "/"
+     * @param pathTo   start with "" and finish with "/"
+     * @return
+     */
+    String moveFolders(String token, String vcKey, String fromPath, String pathTo);
 
     String deletingFile(LawfirmToken lawfirmToken, String path);
 
@@ -34,4 +41,6 @@ public interface DriveApi {
     String getShareLink(LawfirmToken lawfirmToken, String path);
 
     Boolean shareObject(LawfirmToken lawfirmToken, ShareFileDTO shareFileDTO);
+
+    Integer getSizeContainer(LawfirmToken lawfirmToken, String vcKey);
 }

@@ -5,7 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.Optional;
 
 public interface TMessageUserRepository extends JpaRepository<TMessageUser, String>, JpaSpecificationExecutor<TMessageUser> {
@@ -14,5 +14,5 @@ public interface TMessageUserRepository extends JpaRepository<TMessageUser, Stri
             "from TMessageUser t " +
             "join TMessage tm on t.tMessage.id = tm.id " +
             "where t.userId = :userId and t.valid = true and t.dateTo >= :expiryDate")
-    Optional<TMessageUser> findByUserId(Long userId, LocalDateTime expiryDate);
+    Optional<TMessageUser> findByUserId(Long userId, ZonedDateTime expiryDate);
 }

@@ -7,12 +7,15 @@ import com.ulegalize.enumeration.EnumCalendarEventType;
 import com.ulegalize.lawfirm.model.entity.TCalendarEvent;
 import com.ulegalize.lawfirm.model.entity.TUsers;
 import com.ulegalize.lawfirm.repository.CalendarEventRepository;
+import com.ulegalize.lawfirm.utils.CalendarEventsUtil;
 import com.ulegalize.lawfirm.utils.SuperTriConverter;
 import org.apache.commons.text.StringEscapeUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 @Component
@@ -42,7 +45,8 @@ public class EntityToUserConverter implements SuperTriConverter<TUsers, Boolean,
         lawyer.setLanguage(entity.getLanguage());
 
         if (wihtCalendarEvents) {
-            List<TCalendarEvent> events = calendarEventRepository.findCalendarEventsByUserId(entity.getId());
+            Date start = CalendarEventsUtil.convertToDateViaInstant(LocalDateTime.now().minusDays(1));
+            List<TCalendarEvent> events = calendarEventRepository.findCalendarEventsByUserId(entity.getId(), EnumCalendarEventType.PERM, start);
 
             lawyer.setDuties(new ArrayList<>());
             events.stream().forEach(event -> {

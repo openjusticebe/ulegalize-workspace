@@ -68,9 +68,16 @@ public class LawyerV2ServiceImpl implements LawyerV2Service {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         log.info("Entering updateLawyerLogo {}", lawfirmToken.getUserId());
         Optional<TUsers> userOptional = userRepository.findById(lawfirmToken.getUserId());
-        if (!userOptional.isPresent()) {
+        if (userOptional.isEmpty()) {
             log.error("Unknown user {} ", lawfirmToken.getUserId());
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Unknown user " + lawfirmToken.getUserId());
+        }
+
+        int imgSize = bytes.length;
+
+        // max size image > 1Mb
+        if (imgSize > 1000000) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Image size to heavy > 1Mb " + lawfirmToken.getVcKey());
         }
 
         userOptional.get().setAvatar(bytes);

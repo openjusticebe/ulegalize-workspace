@@ -5,4 +5,6 @@ import com.ulegalize.lawfirm.model.LawfirmToken;
 
 public interface IPaymentProducer {
     void sendPayment(LawfirmToken lawfirmToken, LawfirmCalendarEventDTO calendarEvent);
+
+    void sendReportTopic(Long totalWorkspace, long totalUser, Long newTotalUserWeek);
 }

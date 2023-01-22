@@ -1,5 +1,7 @@
 package com.ulegalize.lawfirm.repository;
 
+import com.ulegalize.dto.template.ItemDebours;
+import com.ulegalize.dto.template.ItemFraisColla;
 import com.ulegalize.lawfirm.model.entity.TFrais;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -12,7 +14,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface TFraisRepository extends JpaRepository<TFrais, Long>, JpaSpecificationExecutor<TFrais> {
-    public Optional<TFrais> findByIdFraisAndVcKey(Long fraisId, String vcKey);
+    Optional<TFrais> findByIdFraisAndVcKey(Long fraisId, String vcKey);
 
     @Query(value = "SELECT COALESCE(sum( CASE WHEN (d.idType =2) THEN -d.montantht ELSE (d.montantht) END), 0) from TFrais d " +
             "join d.refPoste poste " +
@@ -75,23 +77,21 @@ public interface TFraisRepository extends JpaRepository<TFrais, Long>, JpaSpecif
             " left join t_clients client on client.id_client = d.id_client " +
             "     and (client.f_nom like concat('%', ?2, '%')" +
             "        or client.f_prenom like concat('%', ?2, '%') )" +
-            " left join t_dossiers dossier on dossier.id_doss = d.id_doss " +
+            " left join t_dossiers dossier on dossier.id_doss = d.id_doss and dossier.nomenclature like COALESCE(concat('%', ?3, '%'), '%')" +
             " where d.vc_key = ?1 and d.is_deleted = false " +
-            " and d.id_poste like coalesce(?5, '%')" +
-            " and d.id_type like concat('%', ?6, '%')" +
-            " and d.id_compte like concat(?7, '%')" +
-            " and (COALESCE(dossier.year_doss, '') like COALESCE(CONCAT('%', ?3, '%'), '%') and COALESCE(dossier.num_doss, '') like COALESCE(CONCAT(?4, '%'), '%'))",
+            " and d.id_poste like coalesce(?4, '%')" +
+            " and d.id_type like concat('%', ?5, '%')" +
+            " and d.id_compte like concat(?6, '%')",
             countQuery = "SELECT count(d.id_frais) from t_frais d" +
                     " left join t_clients client on client.id_client = d.id_client" +
                     "     and (client.f_nom like concat('%', ?2, '%')" +
                     "        or client.f_prenom like concat('%', ?2, '%') )" +
-                    " left join t_dossiers dossier on dossier.id_doss = d.id_doss " +
+                    " left join t_dossiers dossier on dossier.id_doss = d.id_doss  and dossier.nomenclature like COALESCE(concat('%', ?3, '%'), '%')" +
                     " where d.vc_key = ?1 and d.is_deleted = false " +
-                    " and d.id_poste like coalesce(?5, '%')" +
-                    " and d.id_type like concat('%', ?6, '%')" +
-                    " and d.id_compte like concat(?7, '%')" +
-                    " and (COALESCE(dossier.year_doss, '') like COALESCE(CONCAT('%', ?3, '%'), '%') and COALESCE(dossier.num_doss, '') like COALESCE(CONCAT(?4, '%'), '%'))")
-    Page<TFrais> findAllWithPagination(String vcKey, String searchCriteriaClient, String searchCriteriaYear, Long searchCriteriaNumber, String searchCriteriaPoste, String typeId, String searchCriteriaCompte, Pageable pageable);
+                    " and d.id_poste like coalesce(?4, '%')" +
+                    " and d.id_type like concat('%', ?5, '%')" +
+                    " and d.id_compte like concat(?6, '%')")
+    Page<TFrais> findAllWithPagination(String vcKey, String searchCriteriaClient, String searchCriteriaNomenclature, String searchCriteriaPoste, String typeId, String searchCriteriaCompte, Pageable pageable);
 
     @Query(value = "SELECT d from TFrais d where d.idDoss = ?1 and d.vcKey = ?2 and d.isDeleted = false ",
             countQuery = "SELECT count(d) from TFrais d where d.idDoss = ?1 and d.vcKey = ?2 and d.isDeleted = false ")
@@ -183,7 +183,7 @@ public interface TFraisRepository extends JpaRepository<TFrais, Long>, JpaSpecif
             " frais.montant as montant, frais.montantht as montantHt,  concat(client.f_nom, ' ', client.f_prenom) as tiersFullname, " +
             " factureFraisDebour.ID as factureExtFraisId, factureFraisDebour.ID as factureLinkedFraisId," +
             " ifNull(factureFraisDebour.ID, 0) as invoiceChecked, ifNull(facture.id_facture, 0) as alreadyInvoiced," +
-            " facture.facture_ref as factExtRef, facture.id_facture as factExtId" +
+            " facture.facture_ref as factExtRef, facture.id_facture as factExtId, frais.id_transaction as id_transaction" +
             " from t_frais frais" +
             "         left join t_dossiers dossier on frais.id_doss = dossier.id_doss" +
             "         left join t_dossier_rights dr on dr.DOSSIER_ID = dossier.id_doss" +
@@ -208,7 +208,7 @@ public interface TFraisRepository extends JpaRepository<TFrais, Long>, JpaSpecif
             " frais.montant as montant, frais.montantht as montantHt,  concat(client.f_nom, ' ', client.f_prenom) as tiersFullname, " +
             " factureFraisCollaboration.ID as factureExtFraisId, factureFraisCollaboration.ID as factureLinkedFraisId," +
             " ifNull(factureFraisCollaboration.ID, 0) as invoiceChecked, ifNull(facture.id_facture, 0) as alreadyInvoiced," +
-            " facture.facture_ref as factExtRef, facture.id_facture as factExtId" +
+            " facture.facture_ref as factExtRef, facture.id_facture as factExtId, frais.id_transaction as id_transaction" +
             " from t_frais frais" +
             "         left join t_dossiers dossier on frais.id_doss = dossier.id_doss" +
             "         left join t_dossier_rights dr on dr.DOSSIER_ID = dossier.id_doss" +
@@ -227,4 +227,30 @@ public interface TFraisRepository extends JpaRepository<TFrais, Long>, JpaSpecif
             " and case when :filterAlreadyInvoiced = 0 then facture.id_facture is null" +
             "    when :filterAlreadyInvoiced = 1 then facture.id_facture is not null else 1=1 end")
     List<Object[]> findAllCollabByInvoiceIdDossierId(Long invoiceId, Long dossierId, Long vcUserId, Boolean filterAlreadyInvoiced);
+
+    @Query(value = "select new com.ulegalize.dto.template.ItemDebours(poste.refPoste," +
+            "                   concat(client.f_nom, ' ', client.f_prenom)," +
+            "                   sheet.montantht," +
+            "                   sheet.tva," +
+            "                   sheet.montant)" +
+            "             from TFrais sheet" +
+            "                     inner join RefPoste poste on poste.idPoste = sheet.idPoste" +
+            "                     left join TClients client on client.id_client = sheet.idClient" +
+            "                     INNER JOIN FactureFraisDebours ft ON ft.fraisId = sheet.idFrais" +
+            "             where  ft.tFactures.idFacture = ?1" +
+            "             and poste.fraisProcedure = true")
+    List<ItemDebours> findAllDeboursByIdPosteAndFactureId(Long idFacture);
+
+    @Query(value = "select new com.ulegalize.dto.template.ItemFraisColla(poste.refPoste," +
+            "                   concat(client.f_nom, ' ', client.f_prenom)," +
+            "                   sheet.montantht," +
+            "                   sheet.tva," +
+            "                   sheet.montant)" +
+            "             from TFrais sheet" +
+            "                     inner join RefPoste poste on poste.idPoste = sheet.idPoste" +
+            "                     left join TClients client on client.id_client = sheet.idClient" +
+            "                     INNER JOIN FactureFraisCollaboration ft ON ft.fraisId = sheet.idFrais" +
+            "             where  ft.tFactures.idFacture = ?1" +
+            "             and poste.fraisCollaboration = true")
+    List<ItemFraisColla> findAllCollaByIdPosteAndFactureId(Long idFacture);
 }

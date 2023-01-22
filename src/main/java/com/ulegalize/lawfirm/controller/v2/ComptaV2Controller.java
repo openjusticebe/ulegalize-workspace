@@ -14,12 +14,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import springfox.documentation.annotations.ApiIgnore;
 
 import java.util.List;
 
 @RestController
-@ApiIgnore
 @RequestMapping("/v2/compta")
 @Slf4j
 public class ComptaV2Controller {
@@ -34,7 +32,7 @@ public class ComptaV2Controller {
 
         log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
-        return comptaService.getComptaById(fraisId, lawfirmToken.getVcKey());
+        return comptaService.getComptaById(fraisId, lawfirmToken.getVcKey(), lawfirmToken.getLanguage());
     }
 
     @GetMapping("/default")
@@ -44,7 +42,7 @@ public class ComptaV2Controller {
 
         log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
-        return comptaService.getDefaultCompta(lawfirmToken.getUserId(), lawfirmToken.getVcKey());
+        return comptaService.getDefaultCompta(lawfirmToken.getUserId(), lawfirmToken.getVcKey(), lawfirmToken.getLanguage());
     }
 
     @GetMapping("/tva/default")
@@ -77,8 +75,7 @@ public class ComptaV2Controller {
                                      @RequestParam(required = false) Boolean honoraire,
                                      @RequestParam(required = false) Boolean tiers,
                                      @RequestParam(required = false) String searchCriteriaClient,
-                                     @RequestParam(required = false) String searchCriteriaYear,
-                                     @RequestParam(required = false) Long searchCriteriaNumber,
+                                     @RequestParam(required = false) String searchCriteriaNomenclature,
                                      @RequestParam(required = false) String searchCriteriaPoste,
                                      @RequestParam(required = false) Integer typeId,
                                      @RequestParam(required = false) Integer searchCriteriaCompte
@@ -90,9 +87,9 @@ public class ComptaV2Controller {
         Page<ComptaDTO> allCompta;
 
         if (dossierId != null && (isFraiCollaboration != null || isDebours != null || honoraire != null || tiers != null)) {
-            allCompta = comptaService.getAllComptaByDossierId(limit, offset, dossierId, lawfirmToken.getVcKey(), isDebours, isFraiCollaboration, honoraire, tiers);
+            allCompta = comptaService.getAllComptaByDossierId(limit, offset, dossierId, lawfirmToken.getVcKey(), isDebours, isFraiCollaboration, honoraire, tiers, lawfirmToken.getLanguage());
         } else {
-            allCompta = comptaService.getAllCompta(limit, offset, lawfirmToken.getVcKey(), searchCriteriaClient, searchCriteriaYear, searchCriteriaNumber, searchCriteriaPoste, typeId, searchCriteriaCompte);
+            allCompta = comptaService.getAllCompta(limit, offset, lawfirmToken.getVcKey(), searchCriteriaClient, searchCriteriaNomenclature, searchCriteriaPoste, typeId, searchCriteriaCompte, lawfirmToken.getLanguage());
         }
 
         return allCompta;
@@ -120,7 +117,7 @@ public class ComptaV2Controller {
         log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
         Long comptaId = comptaService.createCompta(comptaDTO, lawfirmToken.getVcKey());
-        return comptaService.getComptaById(comptaId, lawfirmToken.getVcKey());
+        return comptaService.getComptaById(comptaId, lawfirmToken.getVcKey(), lawfirmToken.getLanguage());
     }
 
 

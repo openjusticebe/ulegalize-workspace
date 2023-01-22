@@ -5,7 +5,7 @@ import com.ulegalize.dto.AccountingTypeDTO;
 import java.util.List;
 
 public interface RefPosteService {
-    public List<AccountingTypeDTO> getAllRefPoste(String vcKey, Long userId);
+    List<AccountingTypeDTO> getAllRefPoste(String vcKey, Long userId);
 
     AccountingTypeDTO updateRefPoste(String vcKey, Long userId, Integer refPosteId, AccountingTypeDTO accountingTypeDTO);
 

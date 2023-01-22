@@ -16,7 +16,7 @@ public class Deposit1Fault
     /**
      * Java type that goes as soapenv:Fault detail element.
      */
-    private services.dpa.common.deposit.v01.messages.Deposit1Fault faultInfo;
+    private final services.dpa.common.deposit.v01.messages.Deposit1Fault faultInfo;
 
     /**
      * @param faultInfo

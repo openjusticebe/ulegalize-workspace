@@ -58,7 +58,7 @@ public class LawfirmVatV2ServiceImpl implements LawfirmVatV2Service {
 
     @Override
     public Long deleteVat(BigDecimal vat) {
-        log.info("Entering deleteVat {}", vat);
+        log.info("Entering deleteVat with vat {}", vat);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         // chek if it's used in t_factures
@@ -71,8 +71,12 @@ public class LawfirmVatV2ServiceImpl implements LawfirmVatV2Service {
         // change all to default false
         Optional<TVirtualcabVat> virtualcabVatOptional = tVirtualcabVatRepository.findAllByVcKeyAndVAT(lawfirmToken.getVcKey(), vat);
 
-        if (!virtualcabVatOptional.isPresent()) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "virtual vat founded");
+        if (virtualcabVatOptional.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "virtual vat not founded ");
+        }
+
+        if (virtualcabVatOptional.get().getIsDefault()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "This VAT cannot be removed as it is selected by default.");
         }
 
         Long nbVat = countVirtualCabVatByVcKey();
@@ -83,6 +87,7 @@ public class LawfirmVatV2ServiceImpl implements LawfirmVatV2Service {
 
         tVirtualcabVatRepository.delete(virtualcabVatOptional.get());
 
+        log.info("Leaving deleteVat()");
         return virtualcabVatOptional.get().getID();
     }
 

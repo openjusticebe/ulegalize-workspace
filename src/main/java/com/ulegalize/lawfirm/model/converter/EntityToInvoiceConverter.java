@@ -28,15 +28,13 @@ public class EntityToInvoiceConverter implements SuperTriConverter<TFactures, Bo
         invoiceDTO.setDossierId(factures.getIdDoss());
         if (factures.getTDossiers() != null) {
             invoiceDTO.setDossier(DossiersUtils.getDossierLabelItem(
-                    factures.getTDossiers().getYear_doss(),
-                    factures.getTDossiers().getNum_doss()
+                    factures.getTDossiers().getNomenclature()
             ));
             invoiceDTO.setDossierItem(new ItemLongDto(
                     factures.getIdDoss(),
                     DossiersUtils.getDossierLabelItem(
-                            factures.getTDossiers().getYear_doss(),
-                            factures.getTDossiers().getNum_doss())
-            ));
+                            factures.getTDossiers().getNomenclature()
+                    )));
             invoiceDTO.setDossierYear(factures.getTDossiers().getYear_doss());
             invoiceDTO.setDossierNumber(DossiersUtils.getDossierNum(factures.getTDossiers().getNum_doss()));
         }
@@ -67,16 +65,14 @@ public class EntityToInvoiceConverter implements SuperTriConverter<TFactures, Bo
             invoiceDTO.setTypeItem(new ItemLongDto(
                     factures.getIdFactureType().getId(),
                     Utils.getLabel(enumLanguage,
-                            factures.getIdFactureType().getDescriptionFr(),
-                            factures.getIdFactureType().getDescriptionEn(),
-                            factures.getIdFactureType().getDescriptionNl(),
-                            factures.getIdFactureType().getDescriptionDe())
+                            factures.getIdFactureType().name(), null)
             ));
         }
         invoiceDTO.setMontant(factures.getMontant());
         invoiceDTO.setValid(factures.getValid());
         invoiceDTO.setDateValue(factures.getDateValue());
         invoiceDTO.setDateEcheance(factures.getDateEcheance());
+        invoiceDTO.setCommunication(factures.getCommunicationStruct());
         if (factures.getTFactureEcheance() != null) {
             invoiceDTO.setEcheanceId(factures.getIdEcheance());
             invoiceDTO.setEcheanceItem(new ItemDto(

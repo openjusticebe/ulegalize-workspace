@@ -5,12 +5,16 @@ import com.ulegalize.enumeration.EnumRole;
 import com.ulegalize.enumeration.EnumSecurityAppGroups;
 import com.ulegalize.lawfirm.kafka.producer.payment.ILawfirmProducer;
 import com.ulegalize.lawfirm.model.LawfirmToken;
+import com.ulegalize.lawfirm.model.converter.EntityToLawfirmPrivateConverter;
 import com.ulegalize.lawfirm.model.converter.EntityToLawfirmUserDTOConverter;
 import com.ulegalize.lawfirm.model.entity.*;
 import com.ulegalize.lawfirm.repository.LawfirmRepository;
 import com.ulegalize.lawfirm.repository.LawfirmUserRepository;
 import com.ulegalize.lawfirm.repository.TSecurityGroupUsersRepository;
+import com.ulegalize.lawfirm.rest.AuthApi;
 import com.ulegalize.lawfirm.service.LawfirmUserService;
+import com.ulegalize.lawfirm.service.v2.cache.CacheService;
+import com.ulegalize.lawfirm.service.v2.cache.CacheUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -33,14 +37,20 @@ public class LawfirmUserServiceImpl implements LawfirmUserService {
     private final LawfirmRepository lawfirmRepository;
     private final ILawfirmProducer lawfirmProducer;
     private final EntityToLawfirmUserDTOConverter entityToLawfirmUserDTOConverter;
+    private final EntityToLawfirmPrivateConverter entityToLawfirmPrivateConverter;
+    private final CacheService cacheService;
+    private final AuthApi authApi;
 
     public LawfirmUserServiceImpl(TSecurityGroupUsersRepository tSecurityGroupUsersRepository, LawfirmUserRepository lawfirmUserRepository, LawfirmRepository lawfirmRepository, ILawfirmProducer lawfirmProducer,
-                                  EntityToLawfirmUserDTOConverter entityToLawfirmUserDTOConverter) {
+                                  EntityToLawfirmUserDTOConverter entityToLawfirmUserDTOConverter, EntityToLawfirmPrivateConverter entityToLawfirmPrivateConverter, CacheService cacheService, AuthApi authApi) {
         this.tSecurityGroupUsersRepository = tSecurityGroupUsersRepository;
         this.lawfirmUserRepository = lawfirmUserRepository;
         this.lawfirmRepository = lawfirmRepository;
         this.lawfirmProducer = lawfirmProducer;
         this.entityToLawfirmUserDTOConverter = entityToLawfirmUserDTOConverter;
+        this.entityToLawfirmPrivateConverter = entityToLawfirmPrivateConverter;
+        this.cacheService = cacheService;
+        this.authApi = authApi;
     }
 
     @Override
@@ -113,16 +123,20 @@ public class LawfirmUserServiceImpl implements LawfirmUserService {
                 if (lawfirmUsers.getLawfirm().getVckey().equalsIgnoreCase(newVcKeySelected)) {
                     lawfirmUsers.setSelected(true);
                     refUser.lawyerEmail = lawfirmUsers.getUser().getEmail();
+                    authApi.updateAppMetaData(lawfirmToken.getAuth0UserId(), newVcKeySelected);
                 }
             });
 
             lawfirmUserRepository.saveAll(lawfirmUsersList);
 
-            LawfirmDTO lawfirmDTO = new LawfirmDTO();
+            LawfirmDTO lawfirmDTO = entityToLawfirmPrivateConverter.apply(optionalLawfirm.get());
+
             lawfirmDTO.setEmail(refUser.lawyerEmail);
             lawfirmDTO.setVckey(newVcKeySelected);
             lawfirmProducer.switchLawfirm(lawfirmDTO, lawfirmToken);
         }
+        cacheService.evictCaches(CacheUtils.CACHE_USER_PROFILE);
+
         return newVcKeySelected;
 
     }
@@ -194,6 +208,7 @@ public class LawfirmUserServiceImpl implements LawfirmUserService {
             }
 
             lawfirmUserRepository.save(lawfirmUsersOptional.get());
+            cacheService.evictCaches(CacheUtils.CACHE_USER_PROFILE);
             return lawyerDTO;
         } else {
             log.warn("LawfirmUser does not exist {}", lawyerDTO.getId());

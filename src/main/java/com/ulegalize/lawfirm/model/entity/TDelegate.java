@@ -20,7 +20,7 @@ public class TDelegate implements Serializable {
     @Column(name = "vc_key", nullable = false)
     private String vcKey = "";
 
-    @Column(name = "order", nullable = false)
+    @Column(name = "`order`", nullable = false)
     private Integer order = 0;
 
 

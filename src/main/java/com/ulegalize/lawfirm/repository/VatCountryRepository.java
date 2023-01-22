@@ -7,5 +7,5 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import java.util.List;
 
 public interface VatCountryRepository extends JpaRepository<VatCountry, Long>, JpaSpecificationExecutor<VatCountry> {
-    public List<VatCountry> findByIdCountryAlpha2(String idCountryAlpha2);
+    List<VatCountry> findByIdCountryAlpha2(String idCountryAlpha2);
 }

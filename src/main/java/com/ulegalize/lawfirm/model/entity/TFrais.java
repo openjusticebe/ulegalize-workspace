@@ -24,7 +24,7 @@ public class TFrais implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(insertable = false, name = "id_frais", nullable = false)
+    @Column(columnDefinition = "BIGINT", insertable = false, name = "id_frais", nullable = false)
     @Getter
     @Setter
     private Long idFrais;
@@ -34,22 +34,22 @@ public class TFrais implements Serializable {
     @Setter
     private String vcKey;
 
-    @Column(name = "id_client")
+    @Column(columnDefinition = "BIGINT", name = "id_client")
     @Getter
     @Setter
     private Long idClient;
 
-    @Column(name = "id_compte", nullable = false)
+    @Column(columnDefinition = "SMALLINT", name = "id_compte", nullable = false)
     @Getter
     @Setter
     private Integer idCompte;
 
-    @Column(name = "id_doss")
+    @Column(columnDefinition = "BIGINT", name = "id_doss")
     @Getter
     @Setter
     private Long idDoss;
 
-    @Column(name = "id_facture")
+    @Column(columnDefinition = "BIGINT", name = "id_facture")
     @Getter
     @Setter
     private Long idFacture;

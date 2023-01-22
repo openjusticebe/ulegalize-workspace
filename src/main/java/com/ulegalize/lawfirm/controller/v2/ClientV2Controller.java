@@ -10,7 +10,6 @@ import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import springfox.documentation.annotations.ApiIgnore;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -25,17 +24,17 @@ public class ClientV2Controller {
 
 
     @RequestMapping(method = RequestMethod.GET, path = "")
-    @ApiIgnore
-    public ResponseEntity<List<ContactSummary>> getAllContacts(@RequestParam(required = false) String searchCriteria) throws LawfirmBusinessException {
+    public ResponseEntity<List<ContactSummary>> getAllContacts(@RequestParam(required = false) String searchCriteria,
+                                                               @RequestParam(required = false) Long dossierId,
+                                                               @RequestParam(required = false, defaultValue = "false") Boolean withEmail) throws LawfirmBusinessException {
         log.debug("Entering getAllContacts()");
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         log.debug("getAllContacts(vckey: {}, user id: {})", lawfirmToken.getVcKey(), lawfirmToken.getUserId());
 
-        return ResponseEntity.ok().body(clientService.getAllCientByVcKey(searchCriteria));
+        return ResponseEntity.ok().body(clientService.getAllCientByVcKey(searchCriteria, dossierId, withEmail));
     }
 
     @RequestMapping(method = RequestMethod.GET, path = "/ids")
-    @ApiIgnore
     public ResponseEntity<List<ContactSummary>> getAllContactsByIds(@RequestParam(value = "clientIds") List<Long> clientIds) throws LawfirmBusinessException {
         log.debug("Entering getAllContactsByIds({})", clientIds);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -45,7 +44,6 @@ public class ClientV2Controller {
     }
 
     @RequestMapping(method = RequestMethod.GET, path = "/email/{email}")
-    @ApiIgnore
     public ResponseEntity<ContactSummary> getAllCientByVcKeyAndEmail(@PathVariable String email) throws LawfirmBusinessException {
         log.debug("Entering getAllCientByVcKeyAndEmail({})", email);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -58,7 +56,6 @@ public class ClientV2Controller {
     }
 
     @RequestMapping(method = RequestMethod.GET, path = "/list")
-    @ApiIgnore
     public ResponseEntity<List<ContactSummary>> getAllContactsPagination(@RequestParam int offset,
                                                                          @RequestParam int limit,
                                                                          @RequestParam(required = false) String searchCriteria) throws LawfirmBusinessException {
@@ -71,7 +68,6 @@ public class ClientV2Controller {
     }
 
     @GetMapping(path = "/count")
-    @ApiIgnore
     public ResponseEntity<Long> countContactsList(@RequestParam String vcKey) {
         log.debug("Entering countContactsList()");
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -99,8 +95,19 @@ public class ClientV2Controller {
                 .body(clientService.getCientById(clientId));
     }
 
+    @GetMapping(value = "/dossier/{dossierId}")
+    public ResponseEntity<List<ContactSummary>> getContactByDossierId(@PathVariable Long dossierId) throws LawfirmBusinessException {
+        log.debug("Entering getContactByDossierId({})", dossierId);
+        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        log.debug("getContactByDossierId(vckey: {}, user id: {})", lawfirmToken.getVcKey(), lawfirmToken.getUserId());
+
+        return ResponseEntity
+                .ok()
+                .cacheControl(CacheControl.maxAge(5, TimeUnit.SECONDS))
+                .body(clientService.getContactByDossierId(dossierId));
+    }
+
     @PutMapping
-    @ApiIgnore
     public ContactSummary updateContactById(@RequestBody ContactSummary contactSummary) throws LawfirmBusinessException {
         log.debug("Entering updateContactById({})", contactSummary);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -110,7 +117,6 @@ public class ClientV2Controller {
     }
 
     @PostMapping
-    @ApiIgnore
     public ContactSummary createContact(@RequestBody ContactSummary contactSummary) throws LawfirmBusinessException {
         log.debug("Entering createContact({})", contactSummary);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -120,7 +126,6 @@ public class ClientV2Controller {
     }
 
     @GetMapping("/clients/count")
-    @ApiIgnore
     public Long countClientsByName(@RequestParam(required = false) String searchCriteria) throws LawfirmBusinessException {
 
         log.debug("Entering countClientsByName( search criteria {})", searchCriteria);
@@ -132,7 +137,6 @@ public class ClientV2Controller {
     }
 
     @DeleteMapping("/{clientId}")
-    @ApiIgnore
     public Long deleteClient(@PathVariable Long clientId) {
 
         log.debug("Entering deleteClient( clientId {})", clientId);
@@ -140,6 +144,17 @@ public class ClientV2Controller {
         log.debug("deleteClient(vckey: {}, user id: {})", lawfirmToken.getVcKey(), lawfirmToken.getUserId());
 
         return clientService.deleteClient(clientId);
+    }
 
+    @GetMapping(value = "/dossier/all")
+    public ResponseEntity<List<ContactSummary>> getClientsByDossierId(@RequestParam Long dossierId, @RequestParam String dossierType) {
+        log.debug("Entering getClientsByDossierId({})", dossierId);
+        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        log.debug("getClientsByDossierId(vckey: {}, user id: {})", lawfirmToken.getVcKey(), lawfirmToken.getUserId());
+
+        return ResponseEntity
+                .ok()
+                .cacheControl(CacheControl.maxAge(5, TimeUnit.SECONDS))
+                .body(clientService.findTClientsByIdDoss(dossierId, dossierType));
     }
 }

@@ -10,7 +10,6 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.Arrays;
 import java.util.List;
 
 @Component(value = "driveProducerDropBox")
@@ -23,7 +22,7 @@ public class DriveProducerDropBoxImpl implements IDriveProducer {
     @Value("${spring.profiles.active}")
     private String activeProfile;
 
-    private RestTemplate restTemplate;
+    private final RestTemplate restTemplate;
 
     public DriveProducerDropBoxImpl(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
@@ -39,7 +38,7 @@ public class DriveProducerDropBoxImpl implements IDriveProducer {
                 && !activeProfile.equalsIgnoreCase("devDocker")) {
 
             HttpHeaders headers = new HttpHeaders();
-            headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.add("Authorization", "Bearer " + ulegalizeToken.getToken());
 

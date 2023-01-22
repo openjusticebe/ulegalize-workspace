@@ -9,7 +9,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 
 public interface LawfirmUserService {
-    public List<LawfirmDTO> getLawfirmsByUserId(Long userId) throws ResponseStatusException;
+    List<LawfirmDTO> getLawfirmsByUserId(Long userId) throws ResponseStatusException;
 
     List<LawfirmUserDTO> getLawfirmUsers(String vcKey);
 

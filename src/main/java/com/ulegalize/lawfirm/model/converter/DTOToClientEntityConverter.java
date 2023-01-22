@@ -13,7 +13,9 @@ public class DTOToClientEntityConverter implements SuperTriConverter<ContactSumm
     @Override
     public TClients apply(ContactSummary dto, TClients entity) {
         TClients clients = entity;
-        clients.setId_client(dto.getId());
+        if (dto.getId() != null) {
+            clients.setId_client(dto.getId());
+        }
         clients.setF_email(dto.getEmail() != null ? dto.getEmail() : "");
         clients.setF_prenom(dto.getFirstname());
         clients.setF_nom(dto.getLastname());
@@ -39,6 +41,7 @@ public class DTOToClientEntityConverter implements SuperTriConverter<ContactSumm
         clients.setId_country_alpha3(dto.getCountry());
         clients.setIban(dto.getIban());
         clients.setBic(dto.getBic());
+        clients.setJob(dto.getJob());
 //        if (!StringUtils.isEmpty(dto.getVcKey())) {
 //            clients.setVc_key(dto.getVcKey());
 //        }

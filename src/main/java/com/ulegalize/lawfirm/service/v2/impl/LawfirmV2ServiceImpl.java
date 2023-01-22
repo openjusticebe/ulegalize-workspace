@@ -1,14 +1,12 @@
 package com.ulegalize.lawfirm.service.v2.impl;
 
-import com.ulegalize.dto.ItemVatDTO;
-import com.ulegalize.dto.LawfirmDTO;
-import com.ulegalize.dto.LawfirmDriveDTO;
-import com.ulegalize.dto.ProfileDTO;
+import com.ulegalize.dto.*;
 import com.ulegalize.enumeration.*;
 import com.ulegalize.lawfirm.kafka.producer.payment.ILawfirmProducer;
 import com.ulegalize.lawfirm.model.DefaultLawfirmDTO;
 import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.converter.EntityToLawfirmPublicConverter;
+import com.ulegalize.lawfirm.model.converter.EntityToUserConverter;
 import com.ulegalize.lawfirm.model.entity.*;
 import com.ulegalize.lawfirm.model.enumeration.EnumSequenceType;
 import com.ulegalize.lawfirm.model.enumeration.EnumStatusAssociation;
@@ -17,9 +15,12 @@ import com.ulegalize.lawfirm.service.MailService;
 import com.ulegalize.lawfirm.service.SearchService;
 import com.ulegalize.lawfirm.service.v2.LawfirmV2Service;
 import com.ulegalize.lawfirm.service.v2.UserV2Service;
+import com.ulegalize.lawfirm.service.v2.cache.CacheService;
+import com.ulegalize.lawfirm.service.v2.cache.CacheUtils;
 import com.ulegalize.lawfirm.utils.DefaultLawfirm;
 import com.ulegalize.lawfirm.utils.EmailUtils;
 import com.ulegalize.lawfirm.utils.Utils;
+import com.ulegalize.lawfirm.utils.VirtualcabNomenclatureUtils;
 import com.ulegalize.mail.transparency.EnumMailTemplate;
 import com.ulegalize.security.EnumRights;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +35,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -41,7 +43,6 @@ import java.util.Optional;
 
 @Service
 @Slf4j
-@Transactional
 public class LawfirmV2ServiceImpl implements LawfirmV2Service {
 
     @Value("${name-temporary-vckey}")
@@ -64,7 +65,10 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
     private final UserV2Service userV2Service;
     private final ILawfirmProducer lawfirmProducer;
     private final EntityToLawfirmPublicConverter entityToLawfirmPublicConverter;
+
+    private final EntityToUserConverter entityToUserConverter;
     private final SearchService searchService;
+    private final CacheService cacheService;
 
     public LawfirmV2ServiceImpl(LawfirmRepository lawfirmRepository,
                                 TUsersRepository tUsersRepository,
@@ -78,7 +82,8 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
                                 TSecurityGroupsRepository tSecurityGroupsRepository,
                                 TDossierRightsRepository tDossierRightsRepository, LawfirmUserRepository lawfirmUserRepository,
                                 UserV2Service userV2Service, ILawfirmProducer lawfirmProducer,
-                                EntityToLawfirmPublicConverter entityToLawfirmPublicConverter, SearchService searchService, MailService mailService) {
+                                EntityToLawfirmPublicConverter entityToLawfirmPublicConverter, SearchService searchService, MailService mailService,
+                                EntityToUserConverter entityToUserConverter, CacheService cacheService) {
         this.lawfirmRepository = lawfirmRepository;
         this.tUsersRepository = tUsersRepository;
         this.tSequenceRepository = tSequenceRepository;
@@ -96,10 +101,13 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
         this.entityToLawfirmPublicConverter = entityToLawfirmPublicConverter;
         this.searchService = searchService;
         this.mailService = mailService;
+        this.entityToUserConverter = entityToUserConverter;
+        this.cacheService = cacheService;
     }
 
 
     @Override
+    @Transactional
     public String createTempVc(String userEmail, String clientFrom, boolean isEmailVerified) throws ResponseStatusException {
         log.info("Entering createTempVc {}", userEmail);
         Optional<TSequences> tSequences = tSequenceRepository.maxSequenceById(EnumSequenceType.TEMP_VC);
@@ -120,7 +128,7 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
 
             log.debug("LEAVING createTempVc TEMP vckey {}", tempVc);
             // switch selected vcKey
-            return EnumValid.UNVERIFIED.name();
+            return tempVc;
 
         }
         log.debug("No sequence found");
@@ -129,6 +137,7 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
     }
 
     @Override
+    @Transactional
     public Boolean deleteTempVcKey(String vcKey) {
         log.info("Entering deleteTempVcKey vcKey: {} ", vcKey);
 
@@ -146,20 +155,15 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
     }
 
     @Override
+    @Transactional
     public ProfileDTO validateVc(String newVcKey, Long userId, String userEmail) {
         log.debug("Entering validateVc vcKey {} and user id {}", newVcKey, userId);
 
         // verify the user
         Optional<TUsers> usersOptional = tUsersRepository.findByEmail(userEmail);
 
-
         if (usersOptional.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User is unknown");
-        }
-
-        TUsers users = usersOptional.get();
-        if (!users.getIdValid().equals(EnumValid.VERIFIED)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not verified");
         }
 
         Optional<LawfirmEntity> lawfirmEntityOptional = lawfirmRepository.findLawfirmByVckey(newVcKey);
@@ -167,6 +171,7 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
         if (lawfirmEntityOptional.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "lawfirm is unknown");
         }
+
         lawfirmEntityOptional.get().setTemporaryVc(false);
 
         lawfirmRepository.save(lawfirmEntityOptional.get());
@@ -179,9 +184,15 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
 
             lawfirmUserRepository.save(lawfirmUsers.get());
         }
+
+        cacheService.evictCaches(CacheUtils.CACHE_USER_PROFILE);
+
         // send to payment module the info for invoice
         LawfirmDTO lawfirmDTO = entityToLawfirmPublicConverter.apply(lawfirmEntityOptional.get(), false);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        // the vckey here is not yet configured in AUTH0
+        // so update the vcKey into the token
+        lawfirmToken.setVcKey(newVcKey);
 
         lawfirmProducer.updateLawfirm(lawfirmDTO, lawfirmToken);
 
@@ -191,26 +202,33 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
                 usersOptional.get().getLanguage(),
                 lawfirmEntityOptional.get().getCurrency().getSymbol(),
                 usersOptional.get().getId(),
+                usersOptional.get().getIdUser(),
                 null,
-                lawfirmEntityOptional.get().getDriveType(), lawfirmEntityOptional.get().getDropboxToken(), usersOptional.get().getIdValid().equals(EnumValid.VERIFIED));
+                lawfirmEntityOptional.get().getDriveType(),
+                lawfirmEntityOptional.get().getDropboxToken(),
+                lawfirmEntityOptional.get().getOnedriveToken(),
+                lawfirmEntityOptional.get().getRefreshToken(),
+                lawfirmEntityOptional.get().getExpireToken(),
+                usersOptional.get().getIdValid().equals(EnumValid.VERIFIED),
+                lawfirmEntityOptional.get().getClientFrom());
     }
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED, noRollbackFor = NumberFormatException.class)
-    public ProfileDTO updateTempVcKey(LawfirmToken userProfile, DefaultLawfirmDTO defaultLawfirmDTO) {
+    public ProfileDTO updateTempVcKey(ProfileDTO userProfile, DefaultLawfirmDTO defaultLawfirmDTO) {
         log.debug("Entering updateTempVcKey old vckey {} , new vckey {}", userProfile, defaultLawfirmDTO);
 
         EnumLanguage enumLanguage = EnumLanguage.fromshortCode(defaultLawfirmDTO.getLanguage());
 
         if (enumLanguage == null) {
-            log.warn("Language is empty for this vckey (not found) {}", userProfile.getVcKey());
+            log.warn("Language is empty for this vckey (not found) {}", userProfile.getVcKeySelected());
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Language is empty for this vckey");
         }
 
-        Optional<LawfirmEntity> entityOptional = lawfirmRepository.findById(userProfile.getVcKey());
+        Optional<LawfirmEntity> entityOptional = lawfirmRepository.findById(userProfile.getVcKeySelected());
 
         if (entityOptional.isEmpty()) {
-            log.warn("Something wrong with this vckey (not found) {}", userProfile.getVcKey());
+            log.warn("Something wrong with this vckey (not found) {}", userProfile.getVcKeySelected());
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Something wrong with this vckey ");
         }
 
@@ -234,7 +252,7 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
         }
         // check if it exists and if it's null getdefault
         if (defaultLawfirmDTO.getItemVatDTOList() == null || defaultLawfirmDTO.getItemVatDTOList().size() == 0) {
-            log.warn("Vat list must be greather than 0 with this vckey {}", userProfile.getVcKey());
+            log.warn("Vat list must be greather than 0 with this vckey {}", userProfile.getVcKeySelected());
 
             itemVatDTOList = searchService.getDefaultVatsByCountryCode(countryCode);
         } else {
@@ -248,14 +266,14 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
         boolean anyMatch = itemVatDTOList.stream().anyMatch(ItemVatDTO::getIsDefault);
 
         if (!anyMatch) {
-            log.warn("Vat list must be have at least one default  with this vckey {}", userProfile.getVcKey());
+            log.warn("Vat list must be have at least one default  with this vckey {}", userProfile.getVcKeySelected());
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Vat list must be have at least one default ");
         }
-        log.info("Old vc key {} update with thenew one {}", userProfile.getVcKey(), defaultLawfirmDTO.getVcKey());
-        if (!defaultLawfirmDTO.getVcKey().equalsIgnoreCase((userProfile.getVcKey()))) {
+        log.info("Old vc key {} update with thenew one {}", userProfile.getVcKeySelected(), defaultLawfirmDTO.getVcKey());
+        if (!defaultLawfirmDTO.getVcKey().equalsIgnoreCase((userProfile.getVcKeySelected()))) {
 
             // 1. create a new one
-            Optional<TUsers> tUsersOptional = tUsersRepository.findByEmail(userProfile.getUserEmail());
+            Optional<TUsers> tUsersOptional = tUsersRepository.findByEmail(userProfile.getEmail());
 
             if (tUsersOptional.isEmpty()) {
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Something wrong with this user");
@@ -273,7 +291,7 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
             if (defaultLawfirmDTO.getVcKey().contains(TEMP_VCKEY)) {
                 // check the number after ULEGAL
                 String restvalue = defaultLawfirmDTO.getVcKey().replace(TEMP_VCKEY, "");
-                String restOriginalVcKey = userProfile.getVcKey().replace(TEMP_VCKEY, "");
+                String restOriginalVcKey = userProfile.getVcKeySelected().replace(TEMP_VCKEY, "");
 
                 try {
                     int numberRestValue = Integer.parseInt(restvalue);
@@ -313,6 +331,7 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
             newLawfirm.setDriveType(entityOptional.get().getDriveType());
             newLawfirm.setDropboxToken(entityOptional.get().getDropboxToken());
             newLawfirm.setTemporaryVc(entityOptional.get().getTemporaryVc());
+            newLawfirm.setClientFrom(entityOptional.get().getClientFrom());
             if (defaultLawfirmDTO.getLawfirmDTO().getAbbreviation() != null) {
                 newLawfirm.setAbbreviation(defaultLawfirmDTO.getLawfirmDTO().getAbbreviation());
             }
@@ -324,7 +343,7 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
             }
             newLawfirm.setUserUpd(entityOptional.get().getUserUpd());
             newLawfirm.setStartInvoiceNumber(entityOptional.get().getStartInvoiceNumber());
-            newLawfirm.setCreUser(userProfile.getUsername());
+            newLawfirm.setCreUser(userProfile.getUserLoginId());
 
             newLawfirm.setLawfirmUsers(new ArrayList<>());
             newLawfirm.setTVirtualcabVatList(entityOptional.get().getTVirtualcabVatList());
@@ -344,24 +363,13 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
             lawfirmWebsiteEntity.setUpdUser(entityOptional.get().getLawfirmWebsite().getUpdUser());
             newLawfirm.setLawfirmWebsite(lawfirmWebsiteEntity);
 
-            List<TVirtualcabVat> virtualcabVats = new ArrayList<>();
-            for (ItemVatDTO itemVatDTO : itemVatDTOList) {
-                TVirtualcabVat tVirtualcabVat = new TVirtualcabVat();
-                tVirtualcabVat.setVcKey(defaultLawfirmDTO.getVcKey());
-                tVirtualcabVat.setVAT(itemVatDTO.getValue());
-                tVirtualcabVat.setCreUser("ulegalize");
-                tVirtualcabVat.setIsDefault(itemVatDTO.getIsDefault());
-                virtualcabVats.add(tVirtualcabVat);
-            }
-            newLawfirm.setTVirtualcabVatList(virtualcabVats);
-
-            lawfirmRepository.save(newLawfirm);
+            procedureDefinitiveEntitiesForCreation(newLawfirm, enumLanguage, itemVatDTOList);
 
             log.debug("Leaving copyTempVcKey old vckey {} , new vckey {}", userProfile, defaultLawfirmDTO);
 
             // 2. update all entities
 
-            List<TSecurityGroups> securityGroups = tSecurityGroupsRepository.findAllByVcKey(userProfile.getVcKey());
+            List<TSecurityGroups> securityGroups = tSecurityGroupsRepository.findAllByVcKey(userProfile.getVcKeySelected());
             securityGroups.forEach(groupment -> groupment.setVcKey(defaultLawfirmDTO.getVcKey()));
             tSecurityGroupsRepository.saveAll(securityGroups);
 //
@@ -383,7 +391,7 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
             }
 
             // 3. delete the old one
-            deleteTempVcKey(userProfile.getVcKey());
+            deleteTempVcKey(userProfile.getVcKeySelected());
         } else {
             if (defaultLawfirmDTO.getLawfirmDTO().getAbbreviation() != null) {
                 entityOptional.get().setAbbreviation(defaultLawfirmDTO.getLawfirmDTO().getAbbreviation());
@@ -403,24 +411,16 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
                 entityOptional.get().setTVirtualcabVatList(new ArrayList<>());
 
             }
-            for (ItemVatDTO itemVatDTO : itemVatDTOList) {
-                TVirtualcabVat tVirtualcabVat = new TVirtualcabVat();
-                tVirtualcabVat.setVcKey(defaultLawfirmDTO.getVcKey());
-                tVirtualcabVat.setVAT(itemVatDTO.getValue());
-                tVirtualcabVat.setCreUser("ulegalize");
-                tVirtualcabVat.setIsDefault(itemVatDTO.getIsDefault());
-                entityOptional.get().getTVirtualcabVatList().add(tVirtualcabVat);
-            }
 
-            lawfirmRepository.save(entityOptional.get());
+            procedureDefinitiveEntitiesForCreation(entityOptional.get(), enumLanguage, itemVatDTOList);
 
         }
-        procedureExtraForCreation(defaultLawfirmDTO.getVcKey(), enumLanguage);
 
-        return validateVc(defaultLawfirmDTO.getVcKey(), userProfile.getUserId(), userProfile.getUserEmail());
+        return validateVc(defaultLawfirmDTO.getVcKey(), userProfile.getUserId(), userProfile.getEmail());
     }
 
     @Override
+    @Transactional
     public LawfirmDTO getLawfirmInfoByVcKey(String vckey) {
         log.debug("Entering getLawfirmInfoByVcKey");
 
@@ -438,6 +438,7 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
     }
 
     @Override
+    @Transactional
     public LawfirmDTO updateLawfirmInfoByVcKey(LawfirmDTO lawfirmDTO) {
         log.debug("Entering updateLawfirmInfoByVcKey");
 
@@ -468,9 +469,21 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
         //ExtraTab
         oldLawfirmInfo.setCouthoraire(lawfirmDTO.getCouthoraire());
         oldLawfirmInfo.setLogo(lawfirmDTO.getLogo());
-        oldLawfirmInfo.setDriveType(lawfirmDTO.getDriveType());
 
-        if (lawfirmDTO != null && lawfirmDTO.getIsNotification() != null && oldLawfirmInfo.getNotification() != null && !(lawfirmDTO.getIsNotification().equals(oldLawfirmInfo.getNotification()))) {
+
+        if (lawfirmDTO.getStartInvoiceNumber() != null && lawfirmDTO.getStartInvoiceNumber() >= oldLawfirmInfo.getStartInvoiceNumber()) {
+            oldLawfirmInfo.setStartInvoiceNumber(lawfirmDTO.getStartInvoiceNumber());
+        } else {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Invoice number cannot be lower than the one previously entered");
+        }
+
+        if (lawfirmDTO.getStartDossierNumber() != null && lawfirmDTO.getStartDossierNumber() >= oldLawfirmInfo.getStartDossierNumber()) {
+            oldLawfirmInfo.setStartDossierNumber(lawfirmDTO.getStartDossierNumber());
+        } else {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Dossier number cannot be lower than the one previously entered");
+        }
+
+        if (lawfirmDTO.getIsNotification() != null && oldLawfirmInfo.getNotification() != null && !lawfirmDTO.getIsNotification().equals(oldLawfirmInfo.getNotification())) {
             oldLawfirmInfo.setNotification(lawfirmDTO.getIsNotification());
             log.debug("notification updated {}", oldLawfirmInfo.getNotification());
 
@@ -486,13 +499,55 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
 
         log.debug("updateLawfirmInfoByVcKey vckey {}", lawfirmToken.getVcKey());
 
+        lawfirmDTO.setLawyers(new ArrayList<LawyerDTO>());
+
+        oldLawfirmInfo.getLawfirmUsers().stream().forEach(user -> {
+            LawyerDTO l = entityToUserConverter.apply(user.getUser(), false);
+            l.setSelected(user.isSelected());
+
+            lawfirmDTO.getLawyers().add(l);
+        });
         lawfirmProducer.updateLawfirm(lawfirmDTO, lawfirmToken);
+
         log.debug("producer updateLawfirm sent vckey {}", lawfirmToken.getVcKey());
 
         return getLawfirmInfoByVcKey(lawfirmToken.getVcKey());
     }
 
     @Override
+    public LawfirmDTO updateLawfirmDriveInfo(LawfirmDTO lawfirmDTO) {
+        log.debug("Entering updateLawfirmDriveInfo");
+
+        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Optional<LawfirmEntity> lawfirmEntityOptional = lawfirmRepository.findLawfirmByVckey(lawfirmToken.getVcKey());
+
+        if (lawfirmEntityOptional.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "lawfirm is not found");
+        }
+        LawfirmEntity oldLawfirmInfo = lawfirmEntityOptional.get();
+        // if it's different remove cache
+        if (lawfirmDTO.getDriveType() != null && !lawfirmDTO.getDriveType().equals(oldLawfirmInfo.getDriveType())) {
+            oldLawfirmInfo.setDriveType(lawfirmDTO.getDriveType());
+
+            cacheService.evictCaches(CacheUtils.CACHE_USER_PROFILE);
+        }
+        lawfirmRepository.save(oldLawfirmInfo);
+
+        LawfirmDriveDTO lawfirmDriveDTO = new LawfirmDriveDTO();
+        lawfirmDriveDTO.setDriveType(oldLawfirmInfo.getDriveType());
+        lawfirmDriveDTO.setDropboxToken(oldLawfirmInfo.getDropboxToken());
+        lawfirmDriveDTO.setOnedriveToken(oldLawfirmInfo.getOnedriveToken());
+        lawfirmDriveDTO.setRefreshToken(oldLawfirmInfo.getRefreshToken());
+        lawfirmDriveDTO.setExpireToken(oldLawfirmInfo.getExpireToken());
+
+        lawfirmProducer.updateLawfirmDrive(lawfirmDriveDTO, lawfirmToken);
+        log.debug("producer updateLawfirmDrive sent vckey {}", lawfirmToken.getVcKey());
+
+        return getLawfirmInfoByVcKey(lawfirmToken.getVcKey());
+    }
+
+    @Override
+    @Transactional
     public List<LawfirmDTO> searchLawfirmInfoByVcKey(String name) {
         log.debug("Entering searchLawfirmInfoByVcKey {}", name);
 
@@ -500,12 +555,13 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
 
         log.debug("connected {} and user id {}, searchLawfirmInfoByVcKey vckey {}", lawfirmToken.getVcKey(), lawfirmToken.getUserId(), name);
 
-        List<LawfirmEntity> lawfirmEntities = lawfirmRepository.searchLawfirmDTOByVckey(name.toUpperCase(), lawfirmToken.getVcKey(), EnumStatusAssociation.ACCEPTED.getCode());
+        List<LawfirmEntity> lawfirmEntities = lawfirmRepository.searchLawfirmDTOByVckey(name.toUpperCase(), lawfirmToken.getVcKey(), EnumStatusAssociation.ACCEPTED);
 
         return entityToLawfirmPublicConverter.convertToList(lawfirmEntities, false);
     }
 
     @Override
+    @Transactional
     public List<LawfirmDTO> searchLawfirmInfoByVcKeyAndStatusAssociation(String name) {
 
         log.debug("Entering searchLawfirmInfoByVcKeyAndStatusAssociation {}", name);
@@ -514,21 +570,27 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
 
         log.debug("connected {} and user id {}, searchLawfirmInfoByVcKey vckey {}", lawfirmToken.getVcKey(), lawfirmToken.getUserId(), name);
 
-        List<LawfirmEntity> lawfirmEntities = lawfirmRepository.searchLawfirmDTOByVckeyAndStatusAssociation(name.toUpperCase(), lawfirmToken.getVcKey().toUpperCase());
+        List<LawfirmEntity> lawfirmEntities = lawfirmRepository.searchLawfirmDTOByVckeyAndStatusAssociation(name.toUpperCase(), lawfirmToken.getVcKey().toUpperCase(), List.of(EnumStatusAssociation.ACCEPTED, EnumStatusAssociation.PENDING));
 
         return entityToLawfirmPublicConverter.convertToList(lawfirmEntities, false);
     }
 
     @Override
+    @Transactional
     public String uploadImageVirtualcab(byte[] bytes) {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         log.info("Entering uploadImageVirtualcab {}", lawfirmToken.getVcKey());
         Optional<LawfirmEntity> optionalLawfirmEntity = lawfirmRepository.findLawfirmByVckey(lawfirmToken.getVcKey());
-        if (!optionalLawfirmEntity.isPresent()) {
+        if (optionalLawfirmEntity.isEmpty()) {
             log.error("Unknown lawfirm {} ", lawfirmToken.getVcKey());
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Unknown lawfirm " + lawfirmToken.getVcKey());
         }
+        int imgSize = bytes.length;
 
+        // max size image > 1Mb
+        if (imgSize > 1000000) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Image size to heavy > 1Mb " + lawfirmToken.getVcKey());
+        }
         optionalLawfirmEntity.get().setLogo(bytes);
 
         lawfirmRepository.save(optionalLawfirmEntity.get());
@@ -538,6 +600,7 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
     }
 
     @Override
+    @Transactional
     public LawfirmDriveDTO updateToken(LawfirmDriveDTO lawfirmDriveDTO) {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
@@ -546,25 +609,45 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
         if (lawfirmDriveDTO.getDriveType() == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "drive type not found");
         }
-        if (lawfirmDriveDTO.getDropboxToken() == null || lawfirmDriveDTO.getDropboxToken().isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "dropbox tken not found");
+        if (lawfirmDriveDTO.getDriveType().equals(DriveType.dropbox)
+                && (lawfirmDriveDTO.getDropboxToken() == null || lawfirmDriveDTO.getDropboxToken().isEmpty())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "dropbox token not found");
+        }
+        if (lawfirmDriveDTO.getDriveType().equals(DriveType.onedrive)
+                && (lawfirmDriveDTO.getOnedriveToken() == null || lawfirmDriveDTO.getOnedriveToken().isEmpty())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Onedrive token not found");
         }
 
         Optional<LawfirmEntity> lawfirmEntityOptional = lawfirmRepository.findLawfirmByVckey(lawfirmToken.getVcKey());
 
         lawfirmEntityOptional.ifPresent(lawfirm -> {
             lawfirm.setDriveType(lawfirmDriveDTO.getDriveType());
-            lawfirm.setDropboxToken(lawfirmDriveDTO.getDropboxToken());
+            if (lawfirmDriveDTO.getDriveType().equals(DriveType.dropbox)) {
+                lawfirm.setDropboxToken(lawfirmDriveDTO.getDropboxToken());
+            } else if (lawfirmDriveDTO.getDriveType().equals(DriveType.onedrive)) {
+                lawfirm.setOnedriveToken(lawfirmDriveDTO.getOnedriveToken());
+                lawfirm.setRefreshToken(lawfirmDriveDTO.getRefreshToken());
+                if (lawfirmDriveDTO.getExpireToken() != null) {
+                    lawfirm.setExpireToken(lawfirmDriveDTO.getExpireToken());
+                } else {
+                    // 3600 seconds is the default . To have security I fill in 3500
+                    lawfirm.setExpireToken(ZonedDateTime.now());
+                }
+            }
+            cacheService.evictCaches("userProfile");
+
+            lawfirmProducer.updateLawfirmDrive(lawfirmDriveDTO, lawfirmToken);
         });
         return lawfirmDriveDTO;
     }
 
     @Override
-    public String registerUser(String userEmail, String clientFrom) {
+    @Transactional
+    public String registerUser(String userEmail, String clientFrom, boolean isVerified) {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        log.debug("Entering registerUser userEmail {} and clientFrom {} and isEmailVerified {}", userEmail, clientFrom, lawfirmToken.isVerified());
+        log.debug("Entering registerUser userEmail {} and clientFrom {} and isEmailVerified {}", userEmail, clientFrom, isVerified);
 
-        String verifiedEnum = createTempVc(lawfirmToken.getUserEmail(), lawfirmToken.getClientFrom(), lawfirmToken.isVerified());
+        String tempVc = createTempVc(userEmail, lawfirmToken.getClientFrom(), isVerified);
 
         String language = lawfirmToken.getLanguage() != null ? lawfirmToken.getLanguage().toLowerCase() : EnumLanguage.FR.getShortCode();
 
@@ -587,8 +670,15 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
                     }
                 });
 
-        return verifiedEnum;
+        return tempVc;
 
+    }
+
+    @Override
+    public Long getTotalWorkspace() {
+        log.debug("Entering getTotalWorkspace");
+
+        return lawfirmRepository.count();
     }
 
     @Override
@@ -611,15 +701,11 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
 
     }
 
+
     private void createVcKey(String vcKey, Long userId, String countryCode, TUsers userEntity, boolean fullLawfirm, EnumLanguage enumLanguage) {
         log.debug("Entering createVcKey vcKey {} and user id {}", vcKey, userId);
 
-        procedureCreation(vcKey, userEntity, countryCode, fullLawfirm);
-
-        if (fullLawfirm) {
-            procedureExtraForCreation(vcKey, enumLanguage);
-        }
-
+        procedureCreation(vcKey, userEntity, countryCode, fullLawfirm, enumLanguage);
 
         log.debug("Temp vc key {} created", vcKey);
 
@@ -655,24 +741,53 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
         log.debug("stripe subscribe {} created", userId);
     }
 
-    private void procedureExtraForCreation(String vcKey, EnumLanguage enumLanguage) {
-        List<TTimesheetType> timesheetTypeList = DefaultLawfirm.getTimesheetType(vcKey, enumLanguage);
+    private void procedureDefinitiveEntitiesForCreation(LawfirmEntity lawfirmEntity, EnumLanguage enumLanguage, List<ItemVatDTO> itemVatDTOS) {
+        log.debug("Entering procedureDefinitiveEntitiesForCreation for vckey {}", lawfirmEntity.getVckey());
+
+        if (lawfirmEntity.getTVirtualcabVatList() == null) {
+            lawfirmEntity.setTVirtualcabVatList(new ArrayList<>());
+        } else {
+            lawfirmEntity.getTVirtualcabVatList().clear();
+        }
+
+        for (ItemVatDTO itemVatDTO : itemVatDTOS) {
+            TVirtualcabVat tVirtualcabVat = new TVirtualcabVat();
+            tVirtualcabVat.setVcKey(lawfirmEntity.getVckey());
+            tVirtualcabVat.setVAT(itemVatDTO.getValue());
+            tVirtualcabVat.setCreUser("ulegalize");
+            tVirtualcabVat.setIsDefault(itemVatDTO.getIsDefault());
+            lawfirmEntity.getTVirtualcabVatList().add(tVirtualcabVat);
+        }
+
+        log.debug("vat added for vckey {}", lawfirmEntity.getVckey());
+
+        createDefaultVirtualcabNomenclature(lawfirmEntity);
+        log.info("nomenclature added for vckey {}", lawfirmEntity.getVckey());
+
+        // save
+        lawfirmRepository.save(lawfirmEntity);
+
+        log.info("Vckey saved {}", lawfirmEntity.getVckey());
+
+        List<TTimesheetType> timesheetTypeList = DefaultLawfirm.getTimesheetType(lawfirmEntity.getVckey(), enumLanguage);
         timesheetTypeRepository.saveAll(timesheetTypeList);
 
-        List<TDebourType> debourTypeList = DefaultLawfirm.getDebourType(vcKey, enumLanguage);
+        List<TDebourType> debourTypeList = DefaultLawfirm.getDebourType(lawfirmEntity.getVckey(), enumLanguage);
         tDebourTypeRepository.saveAll(debourTypeList);
 
-        List<RefPoste> refPosteList1 = DefaultLawfirm.getRefPostes(vcKey, enumLanguage);
+        List<RefPoste> refPosteList1 = DefaultLawfirm.getRefPostes(lawfirmEntity.getVckey(), enumLanguage);
         refPosteRepository.saveAll(refPosteList1);
 
-        List<TTemplates> tTemplates = DefaultLawfirm.getTemplates(vcKey, enumLanguage);
+        List<TTemplates> tTemplates = DefaultLawfirm.getTemplates(lawfirmEntity.getVckey(), enumLanguage);
         tTemplatesRepository.saveAll(tTemplates);
 
-        List<TVcGroupment> groupmentList = DefaultLawfirm.getVcGroupment(vcKey);
+        List<TVcGroupment> groupmentList = DefaultLawfirm.getVcGroupment(lawfirmEntity.getVckey());
         tVcGroupmentRepository.saveAll(groupmentList);
+        log.debug("Leaving procedureDefinitiveEntitiesForCreation for vckey {}", lawfirmEntity.getVckey());
+
     }
 
-    private void procedureCreation(String vcKey, TUsers userEntity, String countryCode, boolean fullLawfirm) {
+    private void procedureCreation(String vcKey, TUsers userEntity, String countryCode, boolean fullLawfirm, EnumLanguage enumLanguage) {
         LawfirmEntity newLawfirm = new LawfirmEntity();
         newLawfirm.setVckey(vcKey);
         newLawfirm.setName(vcKey);
@@ -690,6 +805,7 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
         newLawfirm.setObjetsocial("");
         newLawfirm.setStartInvoiceNumber(1);
         newLawfirm.setCreUser(userEntity.getIdUser());
+        newLawfirm.setClientFrom(userEntity.getClientFrom());
 
         newLawfirm.setLawfirmUsers(new ArrayList<>());
 
@@ -706,20 +822,12 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
         newLawfirm.setLawfirmWebsite(lawfirmWebsiteEntity);
 
         if (fullLawfirm) {
+            // save is here
             List<ItemVatDTO> itemVatDTOS = searchService.getDefaultVatsByCountryCode(countryCode);
-            List<TVirtualcabVat> virtualcabVats = new ArrayList<>();
-            for (ItemVatDTO itemVatDTO : itemVatDTOS) {
-                TVirtualcabVat tVirtualcabVat = new TVirtualcabVat();
-                tVirtualcabVat.setVcKey(vcKey);
-                tVirtualcabVat.setVAT(itemVatDTO.getValue());
-                tVirtualcabVat.setCreUser("ulegalize");
-                tVirtualcabVat.setIsDefault(itemVatDTO.getIsDefault());
-                virtualcabVats.add(tVirtualcabVat);
-            }
-            newLawfirm.setTVirtualcabVatList(virtualcabVats);
+            procedureDefinitiveEntitiesForCreation(newLawfirm, enumLanguage, itemVatDTOS);
+        } else {
+            lawfirmRepository.save(newLawfirm);
         }
-
-        lawfirmRepository.save(newLawfirm);
 
     }
 
@@ -780,6 +888,22 @@ public class LawfirmV2ServiceImpl implements LawfirmV2Service {
 
         tSecurityGroups.setTSecurityGroupUsersList(new ArrayList<>());
         tSecurityGroups.getTSecurityGroupUsersList().add(tSecurityGroupUsers);
+    }
+
+    @Override
+    public void createDefaultVirtualcabNomenclature(LawfirmEntity lawfirmEntity) {
+        log.debug("Entering createDefaultVirtualcabNomenclature for vckey {}", lawfirmEntity.getVckey());
+
+        TVirtualcabNomenclature virtualcabNomenclature = new TVirtualcabNomenclature();
+        virtualcabNomenclature.setName(String.valueOf(ZonedDateTime.now().getYear()));
+        virtualcabNomenclature.setDrivePath(VirtualcabNomenclatureUtils.VIRTUALNOMENCLATUREYEAR + "/" + VirtualcabNomenclatureUtils.VIRTUALNOMENCLATURENOMENCLATURE);
+        virtualcabNomenclature.setLawfirmEntity(lawfirmEntity);
+        virtualcabNomenclature.setCreUser(lawfirmEntity.getCreUser());
+        if (lawfirmEntity.getVirtualcabNomenclatureList() == null) {
+            lawfirmEntity.setVirtualcabNomenclatureList(new ArrayList<>());
+        }
+        lawfirmEntity.getVirtualcabNomenclatureList().add(virtualcabNomenclature);
+        log.debug("Leaving createDefaultVirtualcabNomenclature for vckey {}", lawfirmEntity.getVckey());
     }
 
 }

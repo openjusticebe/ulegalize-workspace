@@ -17,7 +17,7 @@ public class PingFault
     /**
      * Java type that goes as soapenv:Fault detail element.
      */
-    private GeneralFault faultInfo;
+    private final GeneralFault faultInfo;
 
     /**
      * @param faultInfo

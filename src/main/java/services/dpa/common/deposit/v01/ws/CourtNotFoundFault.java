@@ -16,7 +16,7 @@ public class CourtNotFoundFault
     /**
      * Java type that goes as soapenv:Fault detail element.
      */
-    private services.dpa.common.addressbook.external.consult.court.v01.messages.CourtNotFoundFault faultInfo;
+    private final services.dpa.common.addressbook.external.consult.court.v01.messages.CourtNotFoundFault faultInfo;
 
     /**
      * @param faultInfo

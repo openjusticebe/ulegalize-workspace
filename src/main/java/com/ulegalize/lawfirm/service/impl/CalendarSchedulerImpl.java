@@ -30,7 +30,7 @@ import java.util.Optional;
 @Slf4j
 @Transactional
 public class CalendarSchedulerImpl implements CalendarScheduler {
-    private static int SLOT_EVENT = 30;
+    private static final int SLOT_EVENT = 30;
     private final TUsersRepository usersRepository;
     private final TCalendarEventRepository tCalendarEventRepository;
     private final SlackApi slackApi;

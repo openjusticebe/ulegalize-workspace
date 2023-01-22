@@ -12,7 +12,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import springfox.documentation.annotations.ApiIgnore;
 
 import java.util.concurrent.TimeUnit;
 
@@ -29,8 +28,7 @@ public class PrestationV2Controller {
             @RequestParam int limit,
             @RequestParam(required = false) Long dossierId,
             @RequestParam(required = false) String vcKey,
-            @RequestParam(required = false) String searchCriteriaYear,
-            @RequestParam(required = false) Long searchCriteriaNumber,
+            @RequestParam(required = false) String searchCriteriaNomenclature,
             @RequestParam(required = false) Integer searchCriteriaIdTsType
     ) throws LawfirmBusinessException {
         log.debug("getPrestations(offset: {} , limit {} and dossier id {}", offset, limit, dossierId);
@@ -43,15 +41,14 @@ public class PrestationV2Controller {
         if (dossierId != null) {
             prestationSummaryList = prestationService.getAllPrestationsByDossierId(limit, offset, dossierId, lawfirmToken.getUserId(), lawfirmToken.getVcKey());
         } else {
-            prestationSummaryList = prestationService.getAllPrestations(limit, offset, lawfirmToken.getUserId(), lawfirmToken.getVcKey(), searchCriteriaYear, searchCriteriaNumber, searchCriteriaIdTsType);
+            prestationSummaryList = prestationService.getAllPrestations(limit, offset, lawfirmToken.getUserId(), lawfirmToken.getVcKey(), searchCriteriaNomenclature, searchCriteriaIdTsType);
         }
 
         return ResponseEntity.ok().body(prestationSummaryList);
     }
 
     @GetMapping(value = "/default")
-    @ApiIgnore
-    public ResponseEntity<PrestationSummary> defaultPrestations() {
+    public ResponseEntity<PrestationSummary> defaultPrestations(@RequestParam(required = false) Long dossierId) {
         log.debug("defaultPrestations()");
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
@@ -59,11 +56,10 @@ public class PrestationV2Controller {
 
         return ResponseEntity
                 .ok()
-                .body(prestationService.getDefaultPrestations(lawfirmToken.getUserId(), lawfirmToken.getVcKey()));
+                .body(prestationService.getDefaultPrestations(dossierId, lawfirmToken.getUserId(), lawfirmToken.getVcKey()));
     }
 
     @GetMapping(value = "/{prestationId}")
-    @ApiIgnore
     public ResponseEntity<PrestationSummary> getPrestationById(@PathVariable Long prestationId) {
         log.debug("defaultPrestations()");
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -90,7 +86,6 @@ public class PrestationV2Controller {
     }
 
     @DeleteMapping(value = "/{prestationId}")
-    @ApiIgnore
     public Long deletePrestation(@PathVariable Long prestationId) {
         log.debug("defaultPrestations()");
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -102,7 +97,6 @@ public class PrestationV2Controller {
     }
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    @ApiIgnore
     public Long savePrestation(@RequestBody PrestationSummary prestationSummary) {
         log.debug("savePrestation({})", prestationSummary);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();

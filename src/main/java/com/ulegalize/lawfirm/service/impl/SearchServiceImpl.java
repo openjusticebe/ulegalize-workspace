@@ -13,6 +13,7 @@ import com.ulegalize.lawfirm.service.SearchService;
 import com.ulegalize.lawfirm.utils.DriveUtils;
 import com.ulegalize.utils.ClientsUtils;
 import com.ulegalize.utils.Utils;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -27,6 +28,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Transactional
 @Service
+@RequiredArgsConstructor
 public class SearchServiceImpl implements SearchService {
     private final LawfirmUserRepository lawfirmUserRepository;
     private final TUsersRepository usersRepository;
@@ -40,26 +42,6 @@ public class SearchServiceImpl implements SearchService {
     private final TFactureEcheanceRepository tFactureEcheanceRepository;
     private final VatCountryRepository vatCountryRepository;
     private final DriveFactory driveFactory;
-
-    public SearchServiceImpl(LawfirmUserRepository lawfirmUserRepository, TUsersRepository usersRepository, ClientRepository clientRepository, TLanguesRepository languesRepository,
-                             RefCompteRepository refCompteRepository, RefPosteRepository refPosteRepository,
-                             TTimesheetTypeRepository timesheetTypeRepository, TVirtualcabVatRepository tVirtualcabVatRepository,
-                             TDebourTypeRepository tDebourTypeRepository,
-                             TFactureEcheanceRepository tFactureEcheanceRepository,
-                             VatCountryRepository vatCountryRepository, DriveFactory driveFactory) {
-        this.lawfirmUserRepository = lawfirmUserRepository;
-        this.usersRepository = usersRepository;
-        this.clientRepository = clientRepository;
-        this.languesRepository = languesRepository;
-        this.refCompteRepository = refCompteRepository;
-        this.refPosteRepository = refPosteRepository;
-        this.timesheetTypeRepository = timesheetTypeRepository;
-        this.tVirtualcabVatRepository = tVirtualcabVatRepository;
-        this.tDebourTypeRepository = tDebourTypeRepository;
-        this.tFactureEcheanceRepository = tFactureEcheanceRepository;
-        this.vatCountryRepository = vatCountryRepository;
-        this.driveFactory = driveFactory;
-    }
 
     @Override
     public List<ItemLongDto> getUserResponsableByVcKey(String vcKey) {
@@ -123,11 +105,10 @@ public class SearchServiceImpl implements SearchService {
     }
 
     private ItemLongDto enumMatiereConcat(EnumMatiereRubrique enumMatiereRubrique, EnumMatiere enumMatiere, EnumLanguage finalEnumLanguage) {
-        return new ItemLongDto(enumMatiereRubrique.getId(), Utils.getLabel(finalEnumLanguage,
-                enumMatiere.getDescriptionFr().concat(" - ").concat(enumMatiereRubrique.getDescriptionFr()),
-                enumMatiere.getDescriptionEn().concat(" - ").concat(enumMatiereRubrique.getDescriptionEn()),
-                enumMatiere.getDescriptionNl().concat(" - ").concat(enumMatiereRubrique.getDescriptionNl()),
-                enumMatiere.getDescriptionDe().concat(" - ").concat(enumMatiereRubrique.getDescriptionDe())));
+        String labeLMatiere = Utils.getLabel(finalEnumLanguage, enumMatiere.name(), com.ulegalize.lawfirm.utils.Utils.PACKAGENAME);
+        String labelMatiereRubrique = Utils.getLabel(finalEnumLanguage, enumMatiereRubrique.name(), com.ulegalize.lawfirm.utils.Utils.PACKAGENAME);
+        return new ItemLongDto(enumMatiereRubrique.getId(),
+                labeLMatiere.concat(" - ").concat(labelMatiereRubrique));
     }
 
     @Override
@@ -222,14 +203,13 @@ public class SearchServiceImpl implements SearchService {
         return Arrays.stream(EnumFactureType.values())
                 .map(enumFactureType -> {
                     // don't show invoice sell into the list when it's in create state
-                    if (isCreated != null && isCreated && EnumFactureType.SELL.equals(enumFactureType)) {
+                    if (isCreated != null && isCreated
+                            && (EnumFactureType.CREDIT.equals(enumFactureType)
+                            || EnumFactureType.SELL.equals(enumFactureType))) {
                         return null;
                     }
-                    return new ItemLongDto(enumFactureType.getId(), Utils.getLabel(finalEnumLanguage,
-                            enumFactureType.getDescriptionFr(),
-                            enumFactureType.getDescriptionEn(),
-                            enumFactureType.getDescriptionNl(),
-                            enumFactureType.getDescriptionDe()));
+                    return new ItemLongDto(enumFactureType.getId(), com.ulegalize.utils.Utils.getLabel(finalEnumLanguage,
+                            enumFactureType.name(), null));
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
@@ -317,12 +297,43 @@ public class SearchServiceImpl implements SearchService {
         return Arrays.stream(EnumDossierType.values())
                 .map(enumDossierType -> {
                     EnumLanguage enumLanguage = EnumLanguage.fromshortCode(lawfirmToken.getLanguage());
-                    String label = Utils.getLabel(enumLanguage, enumDossierType.getLabelFr(), enumDossierType.getLabelEn(), enumDossierType.getLabelNl(), enumDossierType.getLabelNl());
+                    String label = Utils.getLabel(enumLanguage, enumDossierType.name(), null);
                     return new ItemStringDto(enumDossierType.getDossType(), label);
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
+
+    //add param
+    @Override
+    public List<ItemDto> getEnumDossierContactType(String typeDossierValue) {
+        log.info("Entering getDossierType");
+        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        EnumDossierType enumDossierTypeValue = EnumDossierType.fromdossType(typeDossierValue);
+
+        return Arrays.stream(EnumDossierContactType.values())
+                .map(enumDossierContactType -> {
+                    ItemDto enumItemDTO = null;
+                    if (!enumDossierTypeValue.equals(EnumDossierType.MD)) {
+                        if (!enumDossierContactType.equals(EnumDossierContactType.PARTY)) {
+                            EnumLanguage enumLanguage = EnumLanguage.fromshortCode(lawfirmToken.getLanguage());
+                            String label = Utils.getLabel(enumLanguage, enumDossierContactType.name(), null);
+                            enumItemDTO = new ItemDto(enumDossierContactType.getId(), label);
+                        }
+                    } else {
+                        if (enumDossierContactType.equals(EnumDossierContactType.PARTY)) {
+                            EnumLanguage enumLanguage = EnumLanguage.fromshortCode(lawfirmToken.getLanguage());
+                            String label = Utils.getLabel(enumLanguage, enumDossierContactType.name(), null);
+                            enumItemDTO = new ItemDto(enumDossierContactType.getId(), label);
+                        }
+                    }
+                    return enumItemDTO;
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
 
     @Override
     public List<ItemVatDTO> getVats(String vcKey) {
@@ -344,14 +355,42 @@ public class SearchServiceImpl implements SearchService {
         return Arrays.stream(EnumCalendarEventType.values()).map(enumCalendarEventType -> {
                     return new ItemEventDto(enumCalendarEventType.getCode(),
                             Utils.getLabel(enumLanguage,
-                                    enumCalendarEventType.getLabelFr(),
-                                    enumCalendarEventType.getLabelEn(),
-                                    enumCalendarEventType.getLabelNl(),
-                                    enumCalendarEventType.getLabelNl()),
+                                    enumCalendarEventType.name(), null),
                             enumCalendarEventType.getColor());
                 })
                 .collect(Collectors.toList());
 
+    }
+
+    @Override
+    public List<ItemStringDto> getTitleClient() {
+        log.info("Entering getDossierType");
+        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        return Arrays.stream(EnumTitle.values()).map(enumTitle -> {
+                    EnumLanguage enumLanguage = EnumLanguage.fromshortCode(lawfirmToken.getLanguage());
+                    String label = Utils.getLabel(enumLanguage, enumTitle.name(), null);
+                    return new ItemStringDto(enumTitle.getIdTitle(), label);
+                })
+                .collect(Collectors.toList());
+
+    }
+
+    @Override
+    public List<ItemDto> getRefTransaction(String language) {
+
+        log.info("Entering getAllCategories(), language {} ", language);
+        EnumLanguage enumLanguage = EnumLanguage.FR;
+
+        if (language != null) {
+            enumLanguage = EnumLanguage.fromshortCode(language);
+        }
+
+        EnumLanguage finalEnumLanguage = enumLanguage;
+
+        return Arrays.stream(EnumRefTransaction.values()).map(enumRefTransaction ->
+                        new ItemDto(enumRefTransaction.getId(), Utils.getLabel(finalEnumLanguage, enumRefTransaction.name(), null)))
+                .collect(Collectors.toList()
+                );
     }
 
 }

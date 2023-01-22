@@ -5,6 +5,7 @@ import com.ulegalize.enumeration.EnumValid;
 import com.ulegalize.lawfirm.model.entity.converter.EnumValidConverter;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import javax.persistence.*;
@@ -158,6 +159,12 @@ public class TUsers implements Serializable {
     @Getter
     @Setter
     private String clientFrom;
+
+    @Column(name = "cre_date")
+    @Getter
+    @Setter
+    @CreationTimestamp
+    private LocalDateTime creDate;
 
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     private List<LawfirmUsers> lawfirmUsers;

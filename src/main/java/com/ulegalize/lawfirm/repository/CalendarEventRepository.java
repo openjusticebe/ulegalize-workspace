@@ -16,8 +16,10 @@ public interface CalendarEventRepository extends JpaRepository<TCalendarEvent, L
     @Query(value = "SELECT e" +
             " from TCalendarEvent e" +
             " join e.tUsers user " +
-            " where user.id = ?1")
-    List<TCalendarEvent> findCalendarEventsByUserId(Long userId);
+            " where user.id = ?1" +
+            " and e.eventType = ?2 " +
+            " and e.start >= ?3 ")
+    List<TCalendarEvent> findCalendarEventsByUserId(Long userId, EnumCalendarEventType type, Date start);
 
     @Query(value = "SELECT e" +
             " FROM TCalendarEvent e" +
@@ -33,24 +35,25 @@ public interface CalendarEventRepository extends JpaRepository<TCalendarEvent, L
 
     @Query(value = "SELECT DISTINCT e" +
             " from TCalendarEvent e " +
-            " left join e.tUsers user " +
+            " left join fetch e.dossier dossier " +
+            " left join fetch e.tUsers user " +
             " left join e.tCalendarParticipants participant" +
             " where ( user.id = :userId or e.vcKey = :vcKey or participant.userEmail = :userEmail)" +
             " and e.eventType in :eventTypesSelected" +
-            " and e.start >= :start" +
-            " and e.end <= :end ")
+            " and ((e.start >= :start" +
+            " or e.start <= :end) or (e.end >= :end))")
     List<TCalendarEvent> findCalendarEventsByUserIdAndDate(Long userId, String vcKey, Date start, Date end, List<EnumCalendarEventType> eventTypesSelected, String userEmail);
 
     @Query(value = "SELECT DISTINCT e" +
             " from TCalendarEvent e " +
-            " join e.dossier dossier " +
+            " join fetch e.dossier dossier " +
             " left join e.tUsers user " +
             " left join e.tCalendarParticipants participant" +
             " where ( user.id = :userId or e.vcKey = :vcKey or participant.userEmail = :userEmail)" +
             " and dossier.idDoss = :dossierId" +
             " and e.eventType in :eventTypesSelected" +
-            " and e.start >= :start" +
-            " and e.end <= :end ")
+            " and ((e.start >= :start" +
+            " or e.start <= :end) or (e.end >= :end))")
     List<TCalendarEvent> findCalendarEventsByUserIdAndDateAndDossierId(Long userId, Long dossierId, String vcKey, Date start, Date end, List<EnumCalendarEventType> eventTypesSelected, String userEmail);
 
     @Query(

@@ -15,13 +15,24 @@ import java.util.Optional;
 @Repository
 public interface LawfirmUserRepository extends CrudRepository<LawfirmUsers, Long> {
 
-    @Query(value = "SELECT l from LawfirmUsers l where l.lawfirm.vckey = ?1")
+    @Query(value = "SELECT l from LawfirmUsers l" +
+            " join fetch l.lawfirm lawfirm " +
+            " left join fetch lawfirm.lawfirmWebsite " +
+            " where lawfirm.vckey = ?1")
     List<LawfirmUsers> findLawfirmUsersByVcKey(String vcKey);
 
-    @Query(value = "SELECT l from LawfirmUsers l where l.lawfirm.vckey = ?1 and l.isActive = true")
+    @Query(value = "SELECT l from LawfirmUsers l" +
+            " join fetch l.lawfirm lawfirm " +
+            " left join fetch lawfirm.lawfirmWebsite " +
+            " where lawfirm.vckey = ?1 and l.isActive = true")
     List<LawfirmUsers> findLawfirmUsersByVcKeyAndActive(String vcKey);
 
-    @Query(value = "SELECT l from LawfirmUsers l where l.lawfirm.vckey = ?1 and l.user.id = ?2")
+    @Query(value = "SELECT l " +
+            "from LawfirmUsers l " +
+            "join fetch l.lawfirm lawfirm " +
+            "left join fetch lawfirm.lawfirmWebsite " +
+            "join fetch l.user user " +
+            "where lawfirm.vckey = ?1 and user.id = ?2")
     Optional<LawfirmUsers> findLawfirmUsersByVcKeyAndUserId(String vcKey, Long userId);
 
     @Query(value = "SELECT l from LawfirmUsers l " +
@@ -49,7 +60,12 @@ public interface LawfirmUserRepository extends CrudRepository<LawfirmUsers, Long
     /*
     must be an optional , to avoid issue get a list
      */
-    @Query(value = "SELECT l from LawfirmUsers l join fetch l.user u where u.id = ?1 and l.isSelected = ?2 and l.isActive = true")
+    @Query(value = "SELECT l " +
+            "from LawfirmUsers l " +
+            "join fetch l.user u " +
+            "join fetch l.lawfirm lawfirm " +
+            "left join fetch lawfirm.lawfirmWebsite web " +
+            "where u.id = ?1 and l.isSelected = ?2 and l.isActive = true")
     List<LawfirmUsers> findLawfirmUsersByUserIdAndIsSelected(Long userId, Boolean selected);
 
     @Query(value = "delete from LawfirmUsers l where l.id = ?1")

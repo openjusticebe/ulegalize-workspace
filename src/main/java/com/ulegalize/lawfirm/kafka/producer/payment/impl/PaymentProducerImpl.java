@@ -5,6 +5,7 @@ import com.ulegalize.dto.LawfirmCalendarEventDTO;
 import com.ulegalize.lawfirm.kafka.producer.payment.IPaymentProducer;
 import com.ulegalize.lawfirm.model.LawfirmToken;
 import lombok.extern.slf4j.Slf4j;
+import net.minidev.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,9 @@ public class PaymentProducerImpl implements IPaymentProducer {
     private String activeProfile;
     @Value("${tpd.createInvoiceRecord-topic-name}")
     private String topicCreateInvoiceRecord;
+
+    @Value("${tpd.sendReportTopic-topic-name}")
+    private String sendReportTopic;
 
     public PaymentProducerImpl(KafkaTemplate<String, Object> kafkaTemplate) {
         this.kafkaTemplate = kafkaTemplate;
@@ -37,6 +41,27 @@ public class PaymentProducerImpl implements IPaymentProducer {
                 log.info("All messages received");
             } catch (Exception e) {
                 log.error("Error while sendPayment ", e);
+            }
+        }
+    }
+
+    @Override
+    public void sendReportTopic(Long totalWorkspace, long totalUser, Long newTotalUserWeek) {
+        log.debug("Entering sendReportTopic ");
+        if (!activeProfile.equalsIgnoreCase("integrationtest")
+//                && !activeProfile.equalsIgnoreCase("dev")
+                && !activeProfile.equalsIgnoreCase("devDocker")) {
+            try {
+                JSONObject jsonObject = new JSONObject();
+                jsonObject.put("totalWorkspace", totalWorkspace);
+                jsonObject.put("totalUser", totalUser);
+                jsonObject.put("newTotalUserWeek", newTotalUserWeek);
+                KafkaObject<JSONObject> messageKafka = new KafkaObject<>(null, jsonObject);
+                kafkaTemplate.send(sendReportTopic, messageKafka);
+
+                log.info("All messages sendReportTopic received");
+            } catch (Exception e) {
+                log.error("Error while sendReportTopic ", e);
             }
         }
     }

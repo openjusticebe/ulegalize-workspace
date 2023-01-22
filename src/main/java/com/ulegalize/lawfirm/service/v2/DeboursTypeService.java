@@ -5,7 +5,7 @@ import com.ulegalize.dto.FraisAdminDTO;
 import java.util.List;
 
 public interface DeboursTypeService {
-    public List<FraisAdminDTO> getAllDeboursType(String vcKey, Long userId);
+    List<FraisAdminDTO> getAllDeboursType(String vcKey, Long userId);
 
     FraisAdminDTO updateDeboursType(String vcKey, Long userId, Long deboursTypeId, FraisAdminDTO FraisAdminDTO);
 

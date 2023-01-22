@@ -8,12 +8,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import springfox.documentation.annotations.ApiIgnore;
 
 import java.io.IOException;
 
 @RestController
-@ApiIgnore
 @RequestMapping("/v2/lawyer")
 @Slf4j
 public class LawyerV2Controller {

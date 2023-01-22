@@ -8,5 +8,5 @@ import java.util.Optional;
 
 public interface TStripeSubscribersRepository extends JpaRepository<TStripeSubscribers, Integer>, JpaSpecificationExecutor<TStripeSubscribers> {
 
-    public Optional<TStripeSubscribers> findByIdUser(Long userId);
+    Optional<TStripeSubscribers> findByIdUser(Long userId);
 }

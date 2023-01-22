@@ -1,12 +1,9 @@
 package com.ulegalize.lawfirm.service.v2.impl;
 
-import com.ulegalize.dto.CaseCreationDTO;
-import com.ulegalize.dto.ContactSummary;
 import com.ulegalize.dto.LawfirmCalendarEventDTO;
 import com.ulegalize.dto.LawfirmDTO;
 import com.ulegalize.enumeration.EnumCalendarEventType;
 import com.ulegalize.enumeration.EnumClientType;
-import com.ulegalize.enumeration.EnumDossierType;
 import com.ulegalize.enumeration.EnumLanguage;
 import com.ulegalize.lawfirm.exception.LawfirmBusinessException;
 import com.ulegalize.lawfirm.kafka.producer.payment.IPaymentProducer;
@@ -37,7 +34,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Date;
@@ -241,10 +237,65 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
 
     @Override
     public Long deleteEvent(Long eventId) {
+        log.debug("Entering deleteEvent {} ", eventId);
+        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Optional<TCalendarEvent> eventEntityOptional = calendarEventRepository.findById(eventId);
         if (eventEntityOptional.isEmpty()) {
             log.warn("Event id {} not found ", eventId);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Event not found");
+        }
+
+        if (!CollectionUtils.isEmpty(eventEntityOptional.get().getTCalendarParticipants())) {
+            List<String> participantEmailList = eventEntityOptional.get().getTCalendarParticipants().stream().map(TCalendarParticipants::getUserEmail)
+                    .distinct()
+                    .collect(Collectors.toList());
+
+            log.info("Participants email approved {} list to be cancelled {}", eventEntityOptional.get().isApproved(), participantEmailList);
+
+
+            // send event to all participants to only approved event
+            if (eventEntityOptional.get().isApproved()) {
+                String lawfirmEmail = "";
+                List<String> emailContact = new ArrayList<>();
+                String phoneContact = "";
+
+
+                if (eventEntityOptional.get().getTUsers() != null) {
+                    emailContact.add(eventEntityOptional.get().getTUsers().getEmail());
+                } else {
+                    log.debug("Vc key {} contact person", eventEntityOptional.get().getVcKey());
+                    Optional<LawfirmEntity> optionalLawfirm = lawfirmRepository.findLawfirmByVckey(eventEntityOptional.get().getVcKey());
+                    if (optionalLawfirm.isPresent()) {
+                        // add all users
+                        emailContact.addAll(optionalLawfirm.get().getLawfirmUsers().stream()
+                                .map(LawfirmUsers::getUser)
+                                .map(TUsers::getEmail)
+                                .toList());
+                        phoneContact = optionalLawfirm.get().getPhoneNumber();
+                    }
+
+                }
+                log.debug("email into list {} and email responsable {}", participantEmailList, emailContact);
+                List<String> attendeesEmailTmp = participantEmailList.stream().distinct().collect(Collectors.toList());
+                if (!CollectionUtils.isEmpty(emailContact)) {
+                    attendeesEmailTmp.addAll(emailContact);
+                }
+                List<String> attendeesEmail = attendeesEmailTmp.stream().distinct().collect(Collectors.toList());
+
+                ZonedDateTime startime = CalendarEventsUtil.convertToZoneDateTimeViaInstant(eventEntityOptional.get().getStart());
+                ZonedDateTime endtime = CalendarEventsUtil.convertToZoneDateTimeViaInstant(eventEntityOptional.get().getEnd());
+
+                mailService.sendEvent(String.valueOf(eventEntityOptional.get().getId()),
+                        EnumMailTemplate.MAILAPPOINTMENT_CANCEL_NOTIFICATION,
+                        EmailUtils.prepareContextNotificationEmail(lawfirmToken.getLanguage(), eventEntityOptional.get(), CalendarEventsUtil.convertToDateViaInstant(startime), CalendarEventsUtil.convertToDateViaInstant(endtime),
+                                lawfirmEmail, phoneContact, portalUrl, "", lawfirmToken.getClientFrom(),
+                                ""),
+                        lawfirmToken.getLanguage(),
+                        CalendarEventsUtil.convertToZoneDateTimeViaInstant(eventEntityOptional.get().getStart()),
+                        CalendarEventsUtil.convertToZoneDateTimeViaInstant(eventEntityOptional.get().getEnd())
+                        , false, false, eventEntityOptional.get().getUrlRoom(), attendeesEmail);
+
+            }
         }
         calendarEventRepository.delete(eventEntityOptional.get());
 
@@ -258,7 +309,6 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
 
         Long userIdToSearch;
         // check if it's in the same vc
-        ;
         if (userId != null) {
             userIdToSearch = userId;
         } else {
@@ -292,20 +342,9 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
         }
 
         //search for an event matching start/end/lawyer
-        List<TCalendarEvent> events = calendarEventRepository.findCalendarEventsByUserId(userOptional.get().getId());
-        log.debug("Event from db {}", events);
+        List<TCalendarEvent> events = calendarEventRepository.getCalendarEventByStartEndUserIdType(appointment.getStart(), appointment.getEnd(), userOptional.get().getId(), EnumCalendarEventType.PERM);
 
-        LocalDateTime startLocal = CalendarEventsUtil.convertToLocalDateTimeViaInstant(appointment.getStart());
-        LocalDateTime endLocal = CalendarEventsUtil.convertToLocalDateTimeViaInstant(appointment.getEnd());
-
-        Optional<TCalendarEvent> eventOptional = events.stream().filter(e -> {
-            LocalDateTime start = CalendarEventsUtil.convertToLocalDateTimeViaInstant(e.getStart());
-            LocalDateTime end = CalendarEventsUtil.convertToLocalDateTimeViaInstant(e.getEnd());
-
-            return start.equals(startLocal)
-                    && end.equals(endLocal)
-                    && EnumCalendarEventType.PERM.equals(e.getEventType());
-        }).findFirst();
+        Optional<TCalendarEvent> eventOptional = events.stream().findFirst();
 
         if (eventOptional.isEmpty()) {
             log.warn("Event is null with start {}, end {}, user id {} , cal type {}", appointment.getStart(), appointment.getEnd(), userOptional.get().getId(), EnumCalendarEventType.PERM);
@@ -321,7 +360,6 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
         appointmentEvent.setCreationDate(new Date());
         appointmentEvent.setCreationUser(appointment.getLastName());
         appointmentEvent.setNote(appointment.getNote());
-        appointmentEvent.setTUsers(userOptional.get());
         appointmentEvent.setStart(appointment.getStart());
         appointmentEvent.setEnd(appointment.getEnd());
 
@@ -422,7 +460,7 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
 
                 break;
             case RDV:
-                createEvent(lawfirmToken.getUsername(), lawfirmToken.getLanguage(), vcKey, startime, endtime, calendarEvent, calendarEvent.isApproved(), lawfirmToken.getClientFrom());
+                createEvent(lawfirmToken.getUsername(), lawfirmToken.getLanguage(), vcKey, startime, endtime, calendarEvent, true, lawfirmToken.getClientFrom());
                 break;
             case AUD:
             case OTH:
@@ -443,27 +481,6 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
             default:
                 break;
         }
-    }
-
-    private void createCasLawfirm(LawfirmCalendarEventDTO lawfirmCalendarEventDTO, LawfirmToken lawfirmToken) throws ResponseStatusException {
-        CaseCreationDTO caseCreationDTO = new CaseCreationDTO();
-        caseCreationDTO.setDossier(lawfirmCalendarEventDTO.getDossier());
-        caseCreationDTO.setNote(lawfirmCalendarEventDTO.getNote());
-        caseCreationDTO.setContactSummaryList(new ArrayList<>());
-
-        for (String emailContact : lawfirmCalendarEventDTO.getParticipantsEmail()) {
-            ContactSummary contactSummary = new ContactSummary();
-            contactSummary.setEmail(emailContact);
-//            contactSummary.setLastname();
-//            contactSummary.setFirstname();
-//            contactSummary.setLanguage();
-            caseCreationDTO.getContactSummaryList().add(contactSummary);
-        }
-
-        if (lawfirmCalendarEventDTO.getDossier() != null && lawfirmCalendarEventDTO.getDossier().getType() != null) {
-            caseCreationDTO.setAssistanceJuridique(lawfirmCalendarEventDTO.getDossier().getType().equals(EnumDossierType.BA));
-        }
-        caseProducer.createCaseMessage(caseCreationDTO, lawfirmToken);
     }
 
     /**
@@ -491,6 +508,11 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
      */
     private void createEvent(String username, String language, String vcKey, ZonedDateTime startDate, ZonedDateTime endDate, LawfirmCalendarEventDTO lawfirmCalendarEventDTO, boolean approved, String clientFrom) {
         log.debug("Entering createEvent String username {}, LocalDateTime startDate {}, LocalDateTime endDate {}, LawfirmCalendarEvent lawfirmCalendarEventDTO {}, boolean approved {}", username, startDate, endDate, lawfirmCalendarEventDTO, approved);
+        Optional<LawfirmEntity> optionalLawfirm = lawfirmRepository.findLawfirmByVckey(vcKey);
+
+        if (optionalLawfirm.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "workspace " + vcKey + " not found");
+        }
 
         // recalculate the start and end date
         lawfirmCalendarEventDTO.setStart(CalendarEventsUtil.convertToDateViaInstant(startDate));
@@ -525,7 +547,9 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
             dossiersOptional.ifPresent(calendarEvent::setDossier);
         }
 
-        if (lawfirmCalendarEventDTO.getUserId() != null && lawfirmCalendarEventDTO.getUserId() != 0) {
+        // only assign user for PERM
+        if (lawfirmCalendarEventDTO.getUserId() != null && lawfirmCalendarEventDTO.getUserId() != 0
+                && lawfirmCalendarEventDTO.getEventType().equals(EnumCalendarEventType.PERM)) {
             Optional<TUsers> usersOptional = userRepository.findById(lawfirmCalendarEventDTO.getUserId());
             usersOptional.ifPresent(calendarEvent::setTUsers);
         } else {
@@ -603,7 +627,7 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
             for (String email : emailRemoved) {
                 List<TCalendarParticipants> tCalendarParticipantsToRemoved = calendarEvent.getTCalendarParticipants().stream()
                         .filter(cal -> cal.getUserEmail().equalsIgnoreCase(email))
-                        .collect(Collectors.toList());
+                        .toList();
 
                 calendarEvent.getTCalendarParticipants().removeAll(tCalendarParticipantsToRemoved);
             }
@@ -617,32 +641,27 @@ public class CalendarV2ServiceImpl implements CalendarV2Service {
         log.debug("Send email cancellation and enroll email");
 
         log.debug("start Notification added email {}", emailAdded);
-        String emailContact = "";
+        // this is the vcKey from workspace
+        String lawfirmEmail = optionalLawfirm.get().getEmail();
         String phoneContact = "";
 
 
-        if (savedEvent.getTUsers() != null) {
-            emailContact = savedEvent.getTUsers().getEmail();
-        } else {
-            log.debug("Vc key {} contact person", savedEvent.getVcKey());
-            Optional<LawfirmDTO> lawfirmDTOOptional = lawfirmRepository.findLawfirmDTOByVckey(savedEvent.getVcKey());
-            if (lawfirmDTOOptional.isPresent()) {
-                emailContact = lawfirmDTOOptional.get().getEmail();
-                phoneContact = lawfirmDTOOptional.get().getPhoneNumber();
-            }
-        }
+        phoneContact = optionalLawfirm.get().getPhoneNumber();
 
         // send event to all participants and NOT rdv because the notification will be sent once the event is approved/confirmed
-        if (!participantEmailList.isEmpty() && !savedEvent.getEventType().equals(EnumCalendarEventType.RDV)) {
-            log.debug("email into list {} and email responsable {}", participantEmailList, emailContact);
-            List<String> attendeesEmailTmp = participantEmailList.stream().distinct().collect(Collectors.toList());
-            attendeesEmailTmp.add(emailContact);
-            List<String> attendeesEmail = attendeesEmailTmp.stream().distinct().collect(Collectors.toList());
+        if (!savedEvent.getEventType().equals(EnumCalendarEventType.RDV)
+                || (savedEvent.isApproved())) {
+            log.debug("email into list {} and email responsable {}", participantEmailList);
+
+            List<String> attendeesEmail = participantEmailList.stream().distinct().collect(Collectors.toList());
 
             // mail to jitsi mediator (visio)
             mailService.sendEvent(String.valueOf(savedEvent.getId()),
                     EnumMailTemplate.MAILAPPOINTMENT_ADDED_NOTIFICATION,
-                    EmailUtils.prepareContextNotificationEmail(language, savedEvent, CalendarEventsUtil.convertToDateViaInstant(startDate), CalendarEventsUtil.convertToDateViaInstant(endDate), emailContact, phoneContact, portalUrl, "", clientFrom),
+                    EmailUtils.prepareContextNotificationEmail(language, savedEvent,
+                            CalendarEventsUtil.convertToDateViaInstant(startDate),
+                            CalendarEventsUtil.convertToDateViaInstant(endDate), lawfirmEmail, phoneContact, portalUrl, "", clientFrom,
+                            savedEvent.getNote() != null ? savedEvent.getNote() : null),
                     language,
                     CalendarEventsUtil.convertToZoneDateTimeViaInstant(savedEvent.getStart()),
                     CalendarEventsUtil.convertToZoneDateTimeViaInstant(savedEvent.getEnd())

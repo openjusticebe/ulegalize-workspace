@@ -19,6 +19,8 @@ public class AffaireProducerImpl implements IAffaireProducer {
     private String activeProfile;
     @Value("${tpd.attachAffaire-topic-name}")
     private String topicName;
+    @Value("${tpd.updateAffaire-topic-name}")
+    private String updateAffaireTopic;
 
     public AffaireProducerImpl(KafkaTemplate<String, Object> kafkaTemplate) {
         this.kafkaTemplate = kafkaTemplate;
@@ -37,6 +39,23 @@ public class AffaireProducerImpl implements IAffaireProducer {
                 log.info("All messages received attachAffaire");
             } catch (Exception e) {
                 log.error("Error while createCaseMessage ", e);
+            }
+        }
+    }
+
+    @Override
+    public void updateAffaire(CaseCreationDTO message, LawfirmToken lawfirmToken) {
+        log.debug("Entering updateAffaire with payload : caseCreationDTO {}", message);
+        if (!activeProfile.equalsIgnoreCase("integrationtest")
+//                && !activeProfile.equalsIgnoreCase("dev")
+                && !activeProfile.equalsIgnoreCase("devDocker")) {
+            try {
+                KafkaObject<CaseCreationDTO> messageKafka = new KafkaObject<>(lawfirmToken, message);
+                kafkaTemplate.send(updateAffaireTopic, messageKafka);
+
+                log.info("All messages received updateAffaire");
+            } catch (Exception e) {
+                log.error("Error while updateAffaire ", e);
             }
         }
     }

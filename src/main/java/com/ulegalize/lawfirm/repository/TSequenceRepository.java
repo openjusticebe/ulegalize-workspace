@@ -10,5 +10,5 @@ import java.util.Optional;
 
 public interface TSequenceRepository extends JpaRepository<TSequences, Long>, JpaSpecificationExecutor<TSequences> {
     @Query("select e from TSequences e where e.sequenceType = :sequenceType")
-    public Optional<TSequences> maxSequenceById(EnumSequenceType sequenceType);
+    Optional<TSequences> maxSequenceById(EnumSequenceType sequenceType);
 }

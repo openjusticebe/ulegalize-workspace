@@ -16,7 +16,7 @@ public class LanguageNotFoundFault
     /**
      * Java type that goes as soapenv:Fault detail element.
      */
-    private services.dpa.common.addressbook.external.consult.court.v01.messages.LanguageNotFoundFault faultInfo;
+    private final services.dpa.common.addressbook.external.consult.court.v01.messages.LanguageNotFoundFault faultInfo;
 
     /**
      * @param faultInfo

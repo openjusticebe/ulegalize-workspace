@@ -5,6 +5,7 @@ import com.ulegalize.lawfirm.model.entity.converter.EnumMatiereRubriqueConverter
 import com.ulegalize.lawfirm.model.enumeration.EnumMatiereRubrique;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.Type;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import javax.persistence.*;
@@ -37,6 +38,7 @@ public class TDossiers implements Serializable {
     @Column(columnDefinition = "INTEGER", name = "num_doss")
     @Getter
     @Setter
+    @Deprecated
     private Long num_doss;
     @Getter
     @Setter
@@ -71,6 +73,7 @@ public class TDossiers implements Serializable {
     @Column(name = "is_digital", nullable = false)
     @Getter
     @Setter
+    @Type(type= "org.hibernate.type.NumericBooleanType")
     private Boolean isDigital = Boolean.FALSE;
     @Column(name = "client_quality", nullable = true)
     @Getter
@@ -87,17 +90,26 @@ public class TDossiers implements Serializable {
     @Setter
     private String userUpd;
 
-    @ManyToOne
-    @JoinColumn(name = "opposing_counsel")
-    @Getter
-    @Setter
-    private TClients opposingCounsel;
-
     @Column(name = "id_matiere_rubrique", nullable = false)
     @Convert(converter = EnumMatiereRubriqueConverter.class)
     @Getter
     @Setter
     private EnumMatiereRubrique enumMatiereRubrique;
+
+    @Column(name = "nomenclature", nullable = false)
+    @Getter
+    @Setter
+    private String nomenclature;
+
+    @Column(name = "dossier_number", nullable = false)
+    @Getter
+    @Setter
+    private Long dossierNumber = 0L;
+
+    @Column(name = "drive_path", nullable = false)
+    @Getter
+    @Setter
+    private String drivePath;
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "dossier_id")
@@ -136,17 +148,28 @@ public class TDossiers implements Serializable {
     @Setter
     private List<DossierContact> dossierContactList = new ArrayList<>();
 
+    @OneToMany(mappedBy = "tDossiers", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    @Getter
+    @Setter
+    private List<TDossiersVcTags> tDossiersVcTags = new ArrayList<>();
+
+    public void addDossierVcTags(TDossiersVcTags tDossiersVcTag) {
+        this.tDossiersVcTags.add(tDossiersVcTag);
+        tDossiersVcTag.setTDossiers(this);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         TDossiers tDossiers = (TDossiers) o;
-        return Objects.equals(idDoss, tDossiers.idDoss) && Objects.equals(vc_key, tDossiers.vc_key) && Objects.equals(year_doss, tDossiers.year_doss) && Objects.equals(num_doss, tDossiers.num_doss) && Objects.equals(doss_type, tDossiers.doss_type) && Objects.equals(date_open, tDossiers.date_open) && Objects.equals(date_close, tDossiers.date_close) && Objects.equals(keywords, tDossiers.keywords) && Objects.equals(note, tDossiers.note) && Objects.equals(memo, tDossiers.memo) && Objects.equals(success_fee_perc, tDossiers.success_fee_perc) && Objects.equals(success_fee_montant, tDossiers.success_fee_montant) && Objects.equals(couthoraire, tDossiers.couthoraire) && Objects.equals(id_user_resp, tDossiers.id_user_resp) && Objects.equals(isDigital, tDossiers.isDigital) && Objects.equals(opposingCounsel, tDossiers.opposingCounsel) && Objects.equals(clientQuality, tDossiers.clientQuality) && Objects.equals(dateUpd, tDossiers.dateUpd);
+        return Objects.equals(idDoss, tDossiers.idDoss) && Objects.equals(vc_key, tDossiers.vc_key) && Objects.equals(year_doss, tDossiers.year_doss) && Objects.equals(num_doss, tDossiers.num_doss) && Objects.equals(doss_type, tDossiers.doss_type) && Objects.equals(date_open, tDossiers.date_open) && Objects.equals(date_close, tDossiers.date_close) && Objects.equals(keywords, tDossiers.keywords) && Objects.equals(note, tDossiers.note) && Objects.equals(memo, tDossiers.memo) && Objects.equals(success_fee_perc, tDossiers.success_fee_perc) && Objects.equals(success_fee_montant, tDossiers.success_fee_montant) && Objects.equals(couthoraire, tDossiers.couthoraire) && Objects.equals(id_user_resp, tDossiers.id_user_resp) && Objects.equals(isDigital, tDossiers.isDigital) && Objects.equals(clientQuality, tDossiers.clientQuality) && Objects.equals(dateUpd, tDossiers.dateUpd) && Objects.equals(userUpd, tDossiers.userUpd) && enumMatiereRubrique == tDossiers.enumMatiereRubrique && Objects.equals(nomenclature, tDossiers.nomenclature) && Objects.equals(dossierNumber, tDossiers.dossierNumber) && Objects.equals(drivePath, tDossiers.drivePath) && Objects.equals(dossierRightsList, tDossiers.dossierRightsList) && Objects.equals(facturesList, tDossiers.facturesList) && Objects.equals(tTimesheetList, tDossiers.tTimesheetList) && Objects.equals(tDebourList, tDossiers.tDebourList) && Objects.equals(tFraisList, tDossiers.tFraisList) && Objects.equals(dossierContactList, tDossiers.dossierContactList);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(idDoss, vc_key, year_doss, num_doss, doss_type, date_open, date_close, keywords, note, memo, success_fee_perc, success_fee_montant, couthoraire, id_user_resp, isDigital, opposingCounsel, clientQuality, dateUpd);
+        return Objects.hash(idDoss, vc_key, year_doss, num_doss, doss_type, date_open, date_close, keywords, note, memo, success_fee_perc, success_fee_montant, couthoraire, id_user_resp, isDigital, clientQuality, dateUpd, userUpd, enumMatiereRubrique, nomenclature, dossierNumber, drivePath, dossierRightsList, facturesList, tTimesheetList, tDebourList, tFraisList, dossierContactList);
     }
 
     @Override
@@ -167,7 +190,6 @@ public class TDossiers implements Serializable {
                 ", couthoraire=" + couthoraire +
                 ", id_user_resp=" + id_user_resp +
                 ", isDigital=" + isDigital +
-                ", opposingCounsel=" + opposingCounsel +
                 ", clientQuality='" + clientQuality + '\'' +
                 ", dateUpd=" + dateUpd +
                 '}';

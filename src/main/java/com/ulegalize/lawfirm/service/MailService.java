@@ -84,43 +84,40 @@ public class MailService {
             subjectDe = appointmentType + " - ";
         }
 
-        subjectFr += type.getSubjectFr();
-        subjectEn += type.getSubjectEn();
-        subjectNl += type.getSubjectNl();
-        subjectDe += type.getSubjectDe();
+        String label = Utils.getLabel(enumLanguage, type.name(), null);
 
         String subject;
 
         switch (type) {
             case MAILAPPOINTMENT_ADDED_NOTIFICATION:
 
-                subject = context.get("title") != null && !((String) context.get("title")).isEmpty() ? (String) context.get("title") : Utils.getLabel(enumLanguage, subjectFr, subjectEn, subjectNl, subjectNl);
+                subject = context.get("title") != null && !((String) context.get("title")).isEmpty() ? (String) context.get("title") : label;
                 break;
             case MAILAPPOINTMENT_CANCEL_NOTIFICATION:
             case MAILAPPOINTMENTCONFIRMEDTEMPLATE:
             case MAILNEWAPPOINTMENTREQUESTTEMPLATE: {
             }
             case MAILAPPOINTMENTREGISTEREDTEMPLATE: {
-                subject = Utils.getLabel(enumLanguage, subjectFr, subjectEn, subjectNl, subjectDe);
+                subject = label;
                 break;
             }
             case MAILSHAREDFOLDERUSERTEMPLATE: {
-                subject = Utils.getLabel(enumLanguage, subjectFr, subjectEn, subjectNl, subjectDe) + (String) context.get("dossier");
+                subject = label + context.get("dossier");
 
                 break;
             }
             case MAILSHAREDUSERSECURITYTEMPLATE: {
-                subject = Utils.getLabel(enumLanguage, subjectFr, subjectEn, subjectNl, subjectDe) + (String) context.get("vckey");
+                subject = label + context.get("vckey");
 
                 break;
             }
             case MAILVERIFYTEMPLATE: {
-                subject = Utils.getLabel(enumLanguage, subjectFr, subjectEn, subjectNl, subjectDe);
+                subject = label;
 
                 break;
             }
             case MAILWORKSPACEASSOCIATION: {
-                subject = Utils.getLabel(enumLanguage, subjectFr, subjectEn, subjectNl, subjectDe);
+                subject = label;
                 break;
             }
 

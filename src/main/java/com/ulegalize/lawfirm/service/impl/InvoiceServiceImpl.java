@@ -1,22 +1,30 @@
 package com.ulegalize.lawfirm.service.impl;
 
 import com.ulegalize.dto.*;
+import com.ulegalize.dto.template.Item;
+import com.ulegalize.dto.template.*;
+import com.ulegalize.enumeration.EnumAccountType;
 import com.ulegalize.enumeration.EnumFactureType;
 import com.ulegalize.enumeration.EnumLanguage;
+import com.ulegalize.lawfirm.kafka.producer.template.IInvoiceProducer;
 import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.converter.DTOToInvoiceDetailsEntityConverter;
 import com.ulegalize.lawfirm.model.converter.DTOToInvoiceEntityConverter;
 import com.ulegalize.lawfirm.model.converter.EntityToInvoiceConverter;
+import com.ulegalize.lawfirm.model.dto.GroupVatDTO;
 import com.ulegalize.lawfirm.model.entity.*;
 import com.ulegalize.lawfirm.repository.*;
 import com.ulegalize.lawfirm.rest.DriveFactory;
 import com.ulegalize.lawfirm.rest.v2.DriveApi;
 import com.ulegalize.lawfirm.rest.v2.ReportApi;
 import com.ulegalize.lawfirm.service.InvoiceService;
+import com.ulegalize.lawfirm.service.InvoiceUtils;
 import com.ulegalize.lawfirm.service.SearchService;
 import com.ulegalize.lawfirm.utils.DriveUtils;
 import com.ulegalize.lawfirm.utils.InvoicesUtils;
+import com.ulegalize.utils.ClientsUtils;
 import com.ulegalize.utils.Utils;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
@@ -32,10 +40,12 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -46,10 +56,12 @@ import static java.util.stream.Collectors.toList;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class InvoiceServiceImpl implements InvoiceService {
     private final TFacturesRepository facturesRepository;
     private final LawfirmRepository lawfirmRepository;
     private final RefPosteRepository refPosteRepository;
+    private final RefCompteRepository refCompteRepository;
     private final LawfirmUserRepository lawfirmUserRepository;
     private final TTimesheetRepository timesheetRepository;
     private final TDebourRepository tDebourRepository;
@@ -63,67 +75,43 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final TFactureEcheanceRepository tfactureEcheanceRepository;
     private final ReportApi reportApi;
     private final DriveFactory driveFactory;
+    private final IInvoiceProducer invoiceProducer;
+    private final TFactureTimesheetRepository tFactureTimesheetRepository;
+    private final TFactureDetailsRepository tFactureDetailsRepository;
+    private final InvoiceUtils invoiceUtils;
     @Value("${spring.profiles.active}")
     private String activeProfile;
 
-    public InvoiceServiceImpl(TFacturesRepository facturesRepository,
-                              LawfirmRepository lawfirmRepository,
-                              RefPosteRepository refPosteRepository,
-                              LawfirmUserRepository lawfirmUserRepository,
-                              TTimesheetRepository timesheetRepository,
-                              TDebourRepository tDebourRepository,
-                              SearchService searchService,
-                              EntityToInvoiceConverter entityToInvoiceConverter,
-                              DTOToInvoiceEntityConverter dtoToInvoiceEntityConverter,
-                              DTOToInvoiceDetailsEntityConverter dtoToInvoiceDetailsEntityConverter,
-                              DossierRepository dossierRepository,
-                              ClientRepository clientRepository,
-                              TFraisRepository fraisRepository,
-                              TFactureEcheanceRepository tfactureEcheanceRepository,
-                              ReportApi reportApi,
-                              DriveFactory driveFactory) {
-        this.facturesRepository = facturesRepository;
-        this.lawfirmRepository = lawfirmRepository;
-        this.tDebourRepository = tDebourRepository;
-        this.entityToInvoiceConverter = entityToInvoiceConverter;
-        this.refPosteRepository = refPosteRepository;
-        this.lawfirmUserRepository = lawfirmUserRepository;
-        this.timesheetRepository = timesheetRepository;
-        this.searchService = searchService;
-        this.dtoToInvoiceEntityConverter = dtoToInvoiceEntityConverter;
-        this.dtoToInvoiceDetailsEntityConverter = dtoToInvoiceDetailsEntityConverter;
-        this.dossierRepository = dossierRepository;
-        this.clientRepository = clientRepository;
-        this.fraisRepository = fraisRepository;
-        this.tfactureEcheanceRepository = tfactureEcheanceRepository;
-        this.reportApi = reportApi;
-        this.driveFactory = driveFactory;
-    }
+    @Value("${biglelegal.activation}")
+    private Boolean bigleLegalActivation;
 
     @Override
     public Page<InvoiceDTO> getAllInvoices(int limit, int offset, String vcKey, Integer searchEcheance,
-                                           ZonedDateTime searchDate, String searchYearDossier,
-                                           Long searchNumberDossier, String searchClient) {
+                                           ZonedDateTime searchDate, String searchNomenclature,
+                                           String searchClient, Boolean sortFacture) {
         log.debug("Get all Invoices with user {} limit {} and offset {}", vcKey, limit, offset);
 
-        Sort.Order order = new Sort.Order(Sort.Direction.ASC, "idFactureType");
-        Sort.Order order2 = new Sort.Order(Sort.Direction.DESC, "factureRef");
-        Pageable pageable = new OffsetBasedPageRequest(limit, offset, Sort.by(order, order2));
-        // if it's 0 , transform to null like this it will query on all result
-        Long number = searchNumberDossier != null && searchNumberDossier == 0 ? null : searchNumberDossier;
+        Pageable pageable;
+
+        if (sortFacture == null) {
+            pageable = new OffsetBasedPageRequest(limit, offset, Sort.by(Sort.Direction.DESC, "idFacture"));
+        } else if (sortFacture) {
+            pageable = new OffsetBasedPageRequest(limit, offset, Sort.by(Sort.Direction.ASC, "factureRef"));
+        } else {
+            pageable = new OffsetBasedPageRequest(limit, offset, Sort.by(Sort.Direction.DESC, "factureRef"));
+        }
 
         Page<TFactures> allInvoices;
         if (searchDate != null) {
-            allInvoices = facturesRepository.findAllByDateWithPagination(vcKey, searchEcheance, searchDate, searchYearDossier, number, pageable);
+            allInvoices = facturesRepository.findAllByDateWithPagination(vcKey, searchEcheance, searchDate, searchNomenclature, pageable);
         } else {
-            allInvoices = facturesRepository.findAllWithPagination(vcKey, searchEcheance, searchYearDossier, number, searchClient, pageable);
-
+            allInvoices = facturesRepository.findAllWithPagination(vcKey, searchEcheance, searchNomenclature, searchClient, pageable);
         }
+
         List<InvoiceDTO> invoiceDTOList = new ArrayList<>();
         if (!CollectionUtils.isEmpty(allInvoices.getContent())) {
             invoiceDTOList = entityToInvoiceConverter.convertToList(allInvoices.getContent(), true);
         }
-
 
         return new PageImpl<>(invoiceDTOList, Pageable.unpaged(), allInvoices.getTotalElements());
     }
@@ -142,24 +130,23 @@ public class InvoiceServiceImpl implements InvoiceService {
     }
 
     @Override
-    public List<ItemLongDto> getInvoicesBySearchCriteria(String vcKey, String searchCriteria) {
+    public List<ItemLongDto> getInvoicesBySearchCriteria(String vcKey, String searchCriteria, Long dossierId) {
 
-        log.debug("Get all Invoices with user {} ", vcKey);
-        List<TFactures> allInvoices = facturesRepository.findAll(vcKey);
-        List<InvoiceDTO> invoiceDTOList = entityToInvoiceConverter.convertToList(allInvoices, false);
+        log.debug("get invoices by search criteria {} and user {} ", searchCriteria, vcKey);
 
-        List<InvoiceDTO> resultList = invoiceDTOList;
-        if (searchCriteria != null && !searchCriteria.isEmpty()) {
+        Optional<LawfirmEntity> lawfirmEntityOptional = lawfirmRepository.findLawfirmByVckey(vcKey);
 
-            resultList = invoiceDTOList.stream()
-                    .filter(facture
-                            -> facture.getReference().toLowerCase().contains(searchCriteria.toLowerCase()))
-                    .collect(toList());
-
+        if (lawfirmEntityOptional.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Lawfirm does not exist");
         }
-        return resultList.stream()
-                .map(facture -> new ItemLongDto(facture.getId(), facture.getReference()))
-                .collect(toList());
+
+        var search = searchCriteria;
+
+        if (searchCriteria == null || searchCriteria.isEmpty()) {
+            search = "%";
+        }
+
+        return facturesRepository.findInvoicesBySearchCriteria(vcKey, search, dossierId);
     }
 
     @Override
@@ -180,13 +167,17 @@ public class InvoiceServiceImpl implements InvoiceService {
         invoiceDTO.setTypeItem(new ItemLongDto(
                 EnumFactureType.TEMP.getId(),
                 Utils.getLabel(enumLanguage,
-                        EnumFactureType.TEMP.getDescriptionFr(),
-                        EnumFactureType.TEMP.getDescriptionEn(),
-                        EnumFactureType.TEMP.getDescriptionNl(),
-                        EnumFactureType.TEMP.getDescriptionDe())
+                        EnumFactureType.TEMP.name(), null)
         ));
 
         invoiceDTO.setMontant(BigDecimal.ZERO);
+
+        List<ItemDto> refCompte = refCompteRepository.findDTOByIdAndAccountTypeId(vcKey, EnumAccountType.PRO_ACCOUNT);
+
+        if (!CollectionUtils.isEmpty(refCompte)) {
+            invoiceDTO.setBankAccountId(refCompte.get(0).getValue());
+            invoiceDTO.setBankAccountItem(new ItemIntegerDto(refCompte.get(0).getValue(), refCompte.get(0).getLabel()));
+        }
 
         Optional<RefPoste> refPoste = refPosteRepository.findFirstByVcKeyAndHonoraires(vcKey, true);
 
@@ -304,34 +295,55 @@ public class InvoiceServiceImpl implements InvoiceService {
     public Long createInvoice(InvoiceDTO invoiceDTO, String vcKey) {
         log.debug("Entering createInvoice with {}", invoiceDTO.toString());
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Optional<LawfirmEntity> lawfirmEntityOptional = lawfirmRepository.findLawfirmByVckey(vcKey);
+
+        if (lawfirmEntityOptional.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "lawfirm is unknown");
+        }
 
         commonRules(invoiceDTO, vcKey, lawfirmToken.getUserId());
 
+        EnumFactureType enumFactureType = EnumFactureType.fromId(invoiceDTO.getTypeId());
+        if (enumFactureType == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Facture type is not found");
+        }
+
         invoiceDTO.setVcKey(vcKey);
         Integer yearFacture = invoiceDTO.getDateValue().getYear();
-        Integer numFacture = facturesRepository.getMaxNumFactTempByVcKey(vcKey);
+        // if it's credit there is no temporary so get max number directly
+//        if (enumFactureType.equals(EnumFactureType.TEMP_NC)) {
+//            maxNumFactTempByVcKey = facturesRepository.getMaxNumFacture(vcKey, EnumFactureType.CREDIT, yearFacture);
+//        } else {
+//        }
+        Integer maxNumFactTempByVcKey = facturesRepository.getMaxNumFactTempByVcKey(vcKey, enumFactureType);
+
+
+        log.info("maxNumFactTempByVcKey {}", maxNumFactTempByVcKey);
         Optional<LawfirmDTO> lawfirmDTOOptional = lawfirmRepository.findLawfirmDTOByVckey(vcKey);
 
         if (lawfirmDTOOptional.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "lawfirm is not found");
         }
 
-        if (numFacture == null) {
-            numFacture = lawfirmDTOOptional.get().getStartInvoiceNumber();
+        if (maxNumFactTempByVcKey == null) {
+            maxNumFactTempByVcKey = lawfirmDTOOptional.get().getStartInvoiceNumber();
         } else {
-            numFacture++;
+            maxNumFactTempByVcKey++;
         }
-        EnumFactureType enumFactureType = EnumFactureType.fromId(invoiceDTO.getTypeId());
+
+
         if (enumFactureType == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Facture type is not found");
         }
 
-        String factureRef = InvoicesUtils.getInvoiceReference(yearFacture, numFacture, enumFactureType);
+        String factureRef = InvoicesUtils.getInvoiceReference(yearFacture, maxNumFactTempByVcKey, enumFactureType);
+        log.info("facture ref {}", factureRef);
         invoiceDTO.setYearFacture(yearFacture);
-        invoiceDTO.setNumFacture(numFacture);
+        invoiceDTO.setNumFacture(maxNumFactTempByVcKey);
         invoiceDTO.setReference(factureRef);
 
         TFactures tFactures = dtoToInvoiceEntityConverter.apply(invoiceDTO, new TFactures());
+
 
         log.info("Create facture details");
         invoiceDTO.getInvoiceDetailsDTOList().forEach(invoiceDetailsDTO -> {
@@ -347,6 +359,11 @@ public class InvoiceServiceImpl implements InvoiceService {
             TFactureTimesheet tFactureTimesheet = new TFactureTimesheet();
             tFactureTimesheet.setTsId(prestationId);
             tFactureTimesheet.setCreUser(lawfirmToken.getUsername());
+            Optional<TTimesheet> tTimesheetOptional = timesheetRepository.findById(prestationId);
+            if (tTimesheetOptional.isPresent()) {
+                tTimesheetOptional.get().setIdTs(prestationId);
+                tFactureTimesheet.setTTimesheet(tTimesheetOptional.get());
+            }
             tFactureTimesheet.setUpdUser(lawfirmToken.getUsername());
             tFactures.addTFactureTimesheet(tFactureTimesheet);
             log.info("TFactureTimesheet : {} was added to tFacture : {} ", prestationId, tFactures);
@@ -357,6 +374,11 @@ public class InvoiceServiceImpl implements InvoiceService {
             FactureFraisAdmin factureFraisAdmin = new FactureFraisAdmin();
             factureFraisAdmin.setDeboursId(fraisAdminId);
             factureFraisAdmin.setCreUser(lawfirmToken.getUsername());
+            Optional<TDebour> debourOptional = tDebourRepository.findById(fraisAdminId);
+            if (debourOptional.isPresent()) {
+                debourOptional.get().setIdDebour(fraisAdminId);
+                factureFraisAdmin.setTDebour(debourOptional.get());
+            }
             factureFraisAdmin.setUpdUser(lawfirmToken.getUsername());
             tFactures.addFactureFraisAdmin(factureFraisAdmin);
             log.info("FactureFraisAdmin : {} was added to tFacture : {} ", fraisAdminId, tFactures);
@@ -386,9 +408,22 @@ public class InvoiceServiceImpl implements InvoiceService {
         tFactures.setUserUpd(lawfirmToken.getUsername());
 
         facturesRepository.save(tFactures);
+        invoiceDTO.setId(tFactures.getIdFacture());
+        String communication = invoiceUtils.communication(invoiceDTO.getId(), invoiceDTO.getYearFacture());
+        tFactures.setCommunicationStruct(communication);
+        invoiceDTO.setCommunication(communication);
+        log.debug("invoice communication struct {}: ", communication);
+
+        facturesRepository.save(tFactures);
 
         log.info("invoice saved in repo with id {}: ", tFactures.getIdFacture());
         log.debug("Leaving createInvoice with {}", invoiceDTO);
+
+        // Create invoice with Template API
+        if (bigleLegalActivation) {
+            invoiceProducer.createDocument(lawfirmToken, createInvoiceTemplateDTO(invoiceDTO, lawfirmEntityOptional.get()));
+        }
+
         return tFactures.getIdFacture();
     }
 
@@ -396,6 +431,12 @@ public class InvoiceServiceImpl implements InvoiceService {
     public InvoiceDTO updateInvoice(InvoiceDTO invoiceDTO, String vcKey) {
         log.debug("Entering updateInvoice with invoice id : {}", invoiceDTO.getId());
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        Optional<LawfirmEntity> lawfirmEntityOptional = lawfirmRepository.findLawfirmByVckey(vcKey);
+
+        if (lawfirmEntityOptional.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "lawfirm is unknown");
+        }
 
         commonRules(invoiceDTO, vcKey, lawfirmToken.getUserId());
 
@@ -418,6 +459,12 @@ public class InvoiceServiceImpl implements InvoiceService {
         }
 
         if (invoiceDTO.getInvoiceDetailsDTOList() != null) {
+
+            for (InvoiceDetailsDTO invoiceDetailsDTO : invoiceDTO.getInvoiceDetailsDTOList()) {
+                if (invoiceDetailsDTO.getMontantHt() == null) {
+                    throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Montant ht cannot be empty !");
+                }
+            }
 
             TFactureDetails factureDetails;
             boolean factureDetailsExist;
@@ -475,10 +522,15 @@ public class InvoiceServiceImpl implements InvoiceService {
             tFacturesOptional.get().getTFactureTimesheetList().clear();
             facturesRepository.save(tFacturesOptional.get());
 
-            for (Long prestattionId : invoiceDTO.getPrestationIdList()) {
+            for (Long prestationId : invoiceDTO.getPrestationIdList()) {
                 TFactureTimesheet tFactureTimesheet = new TFactureTimesheet();
-                tFactureTimesheet.setTsId(prestattionId);
+                tFactureTimesheet.setTsId(prestationId);
                 tFactureTimesheet.setCreUser(lawfirmToken.getUsername());
+                Optional<TTimesheet> tTimesheetOptional = timesheetRepository.findById(prestationId);
+                if (tTimesheetOptional.isPresent()) {
+                    tTimesheetOptional.get().setIdTs(prestationId);
+                    tFactureTimesheet.setTTimesheet(tTimesheetOptional.get());
+                }
                 tFactureTimesheetList.add(tFactureTimesheet);
                 tFactureTimesheet.setTFactures(tFacturesOptional.get());
             }
@@ -497,11 +549,16 @@ public class InvoiceServiceImpl implements InvoiceService {
 
             log.debug("frais admin clear");
             for (Long deboursId : invoiceDTO.getFraisAdminIdList()) {
-                FactureFraisAdmin tFactureTimesheet = new FactureFraisAdmin();
-                tFactureTimesheet.setDeboursId(deboursId);
-                tFactureTimesheet.setCreUser(lawfirmToken.getUsername());
-                tFactureTimesheetList.add(tFactureTimesheet);
-                tFactureTimesheet.setTFactures(tFacturesOptional.get());
+                FactureFraisAdmin factureFraisAdmin = new FactureFraisAdmin();
+                factureFraisAdmin.setDeboursId(deboursId);
+                factureFraisAdmin.setCreUser(lawfirmToken.getUsername());
+                Optional<TDebour> debourOptional = tDebourRepository.findById(deboursId);
+                if (debourOptional.isPresent()) {
+                    debourOptional.get().setIdDebour(deboursId);
+                    factureFraisAdmin.setTDebour(debourOptional.get());
+                }
+                tFactureTimesheetList.add(factureFraisAdmin);
+                factureFraisAdmin.setTFactures(tFacturesOptional.get());
             }
             tFacturesOptional.get().getFraisAdminList().addAll(tFactureTimesheetList);
             log.debug("frais admin added");
@@ -583,6 +640,9 @@ public class InvoiceServiceImpl implements InvoiceService {
             tDossiersOptional.ifPresent(dossiers -> tFacturesOptional.get().setIdDoss(invoiceDTO.getDossierId()));
         }
         facturesRepository.save(tFacturesOptional.get());
+        if (bigleLegalActivation) {
+            invoiceProducer.createDocument(lawfirmToken, createInvoiceTemplateDTO(invoiceDTO, lawfirmEntityOptional.get()));
+        }
 
         log.debug("Leaving updateInvoice with invoice id : {}", invoiceDTO.getId());
         return invoiceDTO;
@@ -701,6 +761,13 @@ public class InvoiceServiceImpl implements InvoiceService {
     public InvoiceDTO validateInvoice(Long invoiceId, String vcKey) {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         log.debug("Entering validateInvoice implementation with invoiceId = {} and vcKey {}", invoiceId, lawfirmToken.getVcKey());
+
+        Optional<LawfirmEntity> lawfirmEntityOptional = lawfirmRepository.findLawfirmByVckey(vcKey);
+
+        if (lawfirmEntityOptional.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "lawfirm is unknown");
+        }
+
         InvoiceDTO invoiceDTO = null;
         if (invoiceId == null) {
             log.warn("invoiceId is null {}", invoiceId);
@@ -718,12 +785,27 @@ public class InvoiceServiceImpl implements InvoiceService {
             log.warn("invoice is already valid {}", invoiceId);
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "invoice is already valid");
         } else {
-            if (tFacturesOptional.get().getIdFactureType().equals(EnumFactureType.TEMP)) {
-
-                tFacturesOptional.get().setIdFactureType(EnumFactureType.SELL);
+            if (tFacturesOptional.get().getIdFactureType().equals(EnumFactureType.TEMP)
+                    || tFacturesOptional.get().getIdFactureType().equals(EnumFactureType.TEMP_NC)) {
 
                 Integer yearFacture = tFacturesOptional.get().getDateValue().getYear();
-                Integer numFacture = facturesRepository.getMaxNumFacture(vcKey, tFacturesOptional.get().getIdFactureType(), yearFacture);
+
+                Long alreadyInvoiceForCurrentYear = facturesRepository.countInvoiceByVcAndYear(vcKey, EnumFactureType.SELL, yearFacture);
+
+                Integer numFacture;
+
+                if (tFacturesOptional.get().getIdFactureType().equals(EnumFactureType.TEMP)) {
+                    tFacturesOptional.get().setIdFactureType(EnumFactureType.SELL);
+                } else if (tFacturesOptional.get().getIdFactureType().equals(EnumFactureType.TEMP_NC)) {
+                    tFacturesOptional.get().setIdFactureType(EnumFactureType.CREDIT);
+                }
+
+                if (alreadyInvoiceForCurrentYear == 0) {
+                    numFacture = 0;
+                } else {
+                    numFacture = facturesRepository.getMaxNumFactureAndValid(vcKey, tFacturesOptional.get().getIdFactureType(), yearFacture);
+                }
+
                 Optional<LawfirmDTO> lawfirmDTOOptional = lawfirmRepository.findLawfirmDTOByVckey(vcKey);
 
                 if (lawfirmDTOOptional.isEmpty()) {
@@ -750,7 +832,12 @@ public class InvoiceServiceImpl implements InvoiceService {
 
         invoiceDTO = getInvoiceById(invoiceId, vcKey);
 
-        sendInvoiceToDrive(lawfirmToken, invoiceId, tFacturesOptional.get().getFactureRef(), tFacturesOptional.get().getYearFacture());
+        if (bigleLegalActivation) {
+            // Create invoice with Template API
+            invoiceProducer.createDocument(lawfirmToken, createInvoiceTemplateDTO(invoiceDTO, lawfirmEntityOptional.get()));
+        } else {
+            sendInvoiceToDrive(lawfirmToken, invoiceId, tFacturesOptional.get().getFactureRef(), tFacturesOptional.get().getYearFacture());
+        }
 
         log.debug("Leaving validateInvoice implementation with isValid = {}", invoiceDTO.getValid());
 
@@ -760,7 +847,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Override
     public ByteArrayResource downloadInvoice(Long invoiceId) {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        log.debug("Entering validateInvoice implementation with invoiceId = {} and vcKey {}", invoiceId, lawfirmToken.getVcKey());
+        log.debug("Entering downloadInvoice implementation with invoiceId = {} and vcKey {}", invoiceId, lawfirmToken.getVcKey());
         if (invoiceId == null) {
             log.warn("invoiceId is null {}", invoiceId);
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "invoiceId is null");
@@ -840,7 +927,7 @@ public class InvoiceServiceImpl implements InvoiceService {
                 BigInteger convertAlreadyInvoiced = (BigInteger) r[18];
                 boolean testAlreadyInvoiced = convertAlreadyInvoiced != null && convertAlreadyInvoiced.longValue() != 0;
                 String factExtRef = (r[19] != null ? (String) r[19] : null);
-                Long factId = (BigInteger) r[20] != null ? ((BigInteger) r[20]).longValue() : null;
+                Long factId = r[20] != null ? ((BigInteger) r[20]).longValue() : null;
 
                 PrestationSummary prestationSummary = new PrestationSummary(
                         (longConvertId != null ? longConvertId.longValue() : null),
@@ -888,7 +975,6 @@ public class InvoiceServiceImpl implements InvoiceService {
                         Integer longConvertUnit = r[4] != null ? Integer.valueOf(((Short) r[4])) : null;
                         Integer longConvertMesureTypeId = r[5] != null ? Integer.valueOf(((Byte) r[5])) : null;
                         Long longConvertIdDoss = r[7] != null ? ((BigInteger) r[7]).longValue() : null;
-                        Long longConvertNumDossier = r[9] != null ? ((Integer) r[9]).longValue() : null;
                         Long longConvertTime = r[10] != null ? ((Date) r[10]).getTime() : null;
                         ZonedDateTime zdt = ZonedDateTime.ofInstant(Instant.ofEpochMilli(longConvertTime),
                                 ZoneId.systemDefault());
@@ -898,7 +984,7 @@ public class InvoiceServiceImpl implements InvoiceService {
                         boolean testInvoiceChecked = r[13] != null && ((BigInteger) r[13]).longValue() != 0;
                         boolean testAlreadyInvoiced = r[14] != null && ((BigInteger) r[14]).longValue() != 0;
                         String factExtRef = (r[15] != null ? (String) r[15] : null);
-                        Long factId = (BigInteger) r[16] != null ? ((BigInteger) r[16]).longValue() : null;
+                        Long factId = r[16] != null ? ((BigInteger) r[16]).longValue() : null;
 
                         return new FraisAdminDTO(
                                 longConvertId,
@@ -910,7 +996,6 @@ public class InvoiceServiceImpl implements InvoiceService {
                                 (r[6] != null ? (String) r[6] : null),
                                 longConvertIdDoss,
                                 (r[8] != null ? (String) r[8] : null),
-                                longConvertNumDossier,
                                 zdt,
                                 convertComment,
                                 convertFactureFraisId,
@@ -943,8 +1028,11 @@ public class InvoiceServiceImpl implements InvoiceService {
                 boolean testInvoiceChecked = longConvertInvoiceChecked != null && longConvertInvoiceChecked.longValue() != 0;
                 BigInteger longConvertAlreadyInvoiced = (BigInteger) r[10];
                 boolean testAlreadyInvoiced = longConvertAlreadyInvoiced != null && longConvertAlreadyInvoiced.longValue() != 0;
-                String factExtRef = (r[12] != null ? (String) r[11] : null);
-                Long factId = (BigInteger) r[12] != null ? ((BigInteger) r[12]).longValue() : null;
+                String factExtRef = (r[11] != null ? (String) r[11] : null);
+                Long factId = r[12] != null ? ((BigInteger) r[12]).longValue() : null;
+                Integer idTransaction = r[13] != null ? ((Integer) r[13]) : null;
+
+                String language = lawfirmUsers.get().getUser().getLanguage();
 
                 return new ComptaDTO(
                         (longConvertId != null ? longConvertId.longValue() : null),
@@ -958,7 +1046,9 @@ public class InvoiceServiceImpl implements InvoiceService {
                         (testInvoiceChecked),
                         (testAlreadyInvoiced),
                         factId,
-                        factExtRef
+                        factExtRef,
+                        idTransaction,
+                        language
                 );
 
             }).collect(Collectors.toList());
@@ -983,7 +1073,10 @@ public class InvoiceServiceImpl implements InvoiceService {
                 BigInteger longConvertAlreadyInvoiced = (BigInteger) r[10];
                 boolean testAlreadyInvoiced = longConvertAlreadyInvoiced != null && longConvertAlreadyInvoiced.longValue() != 0;
                 String factExtRef = (r[11] != null ? (String) r[11] : null);
-                Long factId = r[11] != null ? ((BigInteger) r[11]).longValue() : null;
+                Long factId = r[12] != null ? ((BigInteger) r[12]).longValue() : null;
+                Integer idTransaction = r[13] != null ? (Integer) r[13] : null;
+
+                String language = lawfirmUsers.get().getUser().getLanguage();
 
                 return new ComptaDTO(
                         (longConvertId != null ? longConvertId.longValue() : null),
@@ -997,7 +1090,9 @@ public class InvoiceServiceImpl implements InvoiceService {
                         (testInvoiceChecked),
                         (testAlreadyInvoiced),
                         factId,
-                        factExtRef
+                        factExtRef,
+                        idTransaction,
+                        language
                 );
 
             }).collect(Collectors.toList());
@@ -1005,19 +1100,158 @@ public class InvoiceServiceImpl implements InvoiceService {
         return new ArrayList<>();
     }
 
+    @Override
+    public Long countAllActiveByVcKey(String vckey) {
+        log.info("Entering countAllActiveByVcKey with vckey {}", vckey);
+
+        return facturesRepository.countAllActiveByVcKey(vckey);
+    }
+
     private void sendInvoiceToDrive(LawfirmToken lawfirmToken, Long invoiceId, String factureRef, Integer yearFacture) {
         log.debug("Entering sendInvoiceToDrive invoiceId = {} for facture ref = {}", invoiceId, factureRef);
         if (!activeProfile.equalsIgnoreCase("integrationtest")
-                && !activeProfile.equalsIgnoreCase("dev")
+//                && !activeProfile.equalsIgnoreCase("dev")
                 && !activeProfile.equalsIgnoreCase("devDocker")) {
-            // get invoice pdf
-            ByteArrayResource resourceInvoice = reportApi.getInvoice(lawfirmToken, invoiceId);
+            try {
+                // get invoice pdf
+                ByteArrayResource resourceInvoice = reportApi.getInvoice(lawfirmToken, invoiceId);
 
-            log.debug("Getting invoice pdf factureRef = {} ", factureRef);
-            DriveApi driveApi = driveFactory.getDriveImpl(lawfirmToken.getDriveType());
-            // send it to Udrive
-            driveApi.uploadFile(lawfirmToken, resourceInvoice.getByteArray(), factureRef + ".pdf", DriveUtils.INVOICE_PATH + yearFacture + "/");
-            log.debug("Leaving sendInvoiceToDrive with factureRef = {}", factureRef);
+                log.debug("Getting invoice pdf factureRef = {} ", factureRef);
+                DriveApi driveApi = driveFactory.getDriveImpl(lawfirmToken.getDriveType());
+                // send it to Udrive
+                driveApi.uploadFile(lawfirmToken, resourceInvoice.getByteArray(), factureRef + ".pdf", DriveUtils.INVOICE_PATH + yearFacture + "/");
+                log.debug("Leaving sendInvoiceToDrive with factureRef = {}", factureRef);
+            } catch (Exception e) {
+                log.error("Error wghile sending invoice (report or drive)", e);
+                throw new RuntimeException("Error wghile sending invoice (report or drive)");
+            }
         }
     }
+
+    private InvoiceTemplateDTO createInvoiceTemplateDTO(InvoiceDTO invoiceDTO, LawfirmEntity lawfirmEntity) {
+        log.debug("Entering createInvoiceTemplateDTO invoiceDTO = {} and lawfirmEntity = {}", invoiceDTO, lawfirmEntity);
+        InvoiceTemplateDTO main = new InvoiceTemplateDTO();
+
+        main.setId(invoiceDTO.getId());
+
+        //TODO Set logo
+        main.setLogo(null);
+
+        main.setCompanyName(lawfirmEntity.getObjetsocial());
+
+        main.setAddress(lawfirmEntity.getStreet());
+        main.setPostalCode(lawfirmEntity.getPostalCode());
+        main.setCity(lawfirmEntity.getCity());
+        main.setCountry(lawfirmEntity.getCountryCode());
+        main.setEmail(lawfirmEntity.getEmail());
+        main.setInvoiceNumber(Long.valueOf(invoiceDTO.getNumFacture()));
+
+        main.setRefInvoice(invoiceDTO.getReference());
+        if (invoiceDTO.getDossierItem() != null) {
+            main.setDossierNumber(invoiceDTO.getDossierItem().label);
+        }
+
+        main.setInvoiceDate(DateTimeFormatter.ofPattern("dd/MM/yyyy").format(invoiceDTO.getDateValue()));
+
+        main.setEcheanceDate(invoiceDTO.getDateEcheance() == null ? null : DateTimeFormatter.ofPattern("dd/MM/yyyy").format(invoiceDTO.getDateEcheance()));
+
+        main.setEcheanceVisible(invoiceDTO.getDateEcheance() == null ? 0 : 1);
+
+        //Client
+        Optional<TClients> clientsEntity = clientRepository.findById(invoiceDTO.getClientId());
+        if (clientsEntity.isPresent()) {
+            String fullname = ClientsUtils.getFullname(clientsEntity.get().getF_nom(), clientsEntity.get().getF_prenom(), clientsEntity.get().getF_company());
+            main.setClientName(fullname);
+            main.setClientStreet(clientsEntity.get().getF_rue() == null ? "" : clientsEntity.get().getF_rue());
+            main.setClientCp(clientsEntity.get().getF_cp() == null ? "" : clientsEntity.get().getF_cp());
+            main.setClientCity(clientsEntity.get().getF_ville() == null ? "" : clientsEntity.get().getF_ville());
+            main.setClientCountry(clientsEntity.get().getId_country_alpha3() == null ? "" : clientsEntity.get().getId_country_alpha3());
+        }
+
+        // Invoice Details
+        List<Item> itemList = new ArrayList<>();
+        for (InvoiceDetailsDTO dto : invoiceDTO.getInvoiceDetailsDTOList()) {
+            Item item = new Item();
+            item.setDescription(dto.getDescription());
+            item.setAmount(dto.getMontantHt().setScale(2, RoundingMode.HALF_UP));
+            item.setAmountTax(dto.getMontant().setScale(2, RoundingMode.HALF_UP));
+            item.setVat(dto.getTva().setScale(2, RoundingMode.HALF_UP));
+
+            itemList.add(item);
+        }
+        main.setItem(itemList);
+
+        // Prestation
+        List<TFactureTimesheet> tFactureTimesheetList = tFactureTimesheetRepository.findAllByTFactures(invoiceDTO.getId());
+        List<ItemPrestation> itemPrestationList = new ArrayList<>();
+        for (TFactureTimesheet tFactureTimesheet : tFactureTimesheetList) {
+            if (tFactureTimesheet.getTTimesheet() != null) {
+                ItemPrestation itemPrestation = new ItemPrestation();
+
+                itemPrestation.setDescriptionPrestation(tFactureTimesheet.getTTimesheet().getTTimesheetType().getDescription());
+                if (!tFactureTimesheet.getTTimesheet().getForfait()) {
+                    itemPrestation.setAmountPrestation(BigDecimal.valueOf(((((tFactureTimesheet.getTTimesheet().getDh().doubleValue() * 60) + tFactureTimesheet.getTTimesheet().getDm().doubleValue()) / 60) * tFactureTimesheet.getTTimesheet().getCouthoraire())).setScale(2, RoundingMode.HALF_UP));
+                    itemPrestation.setAmountTaxPrestation(BigDecimal.valueOf((((((tFactureTimesheet.getTTimesheet().getDh().doubleValue() * 60) + tFactureTimesheet.getTTimesheet().getDm().doubleValue()) / 60) * tFactureTimesheet.getTTimesheet().getCouthoraire()) * (1 + (tFactureTimesheet.getTTimesheet().getVat().doubleValue() / 100)))).setScale(2, RoundingMode.HALF_UP));
+                } else {
+                    itemPrestation.setAmountPrestation(tFactureTimesheet.getTTimesheet().getForfaitHt());
+                    itemPrestation.setAmountTaxPrestation(BigDecimal.valueOf((tFactureTimesheet.getTTimesheet().getForfaitHt().doubleValue() * (1 + (tFactureTimesheet.getTTimesheet().getVat().doubleValue() / 100)))).setScale(2, RoundingMode.HALF_UP));
+                }
+
+                itemPrestation.setVatPrestation(tFactureTimesheet.getTTimesheet().getVat());
+                itemPrestation.setDatePrestation(DateTimeFormatter.ofPattern("dd/MM/yyyy").format(tFactureTimesheet.getTTimesheet().getDateAction()));
+                itemPrestationList.add(itemPrestation);
+            }
+        }
+        main.setItemPrestation(itemPrestationList);
+
+        // Frais Admin
+        List<Object[]> fraisAdminDTOS = tDebourRepository.findAllByInvoiceIdDossierId(invoiceDTO.getId());
+
+        List<ItemFraisAdmin> itemFraisAdminList = fraisAdminDTOS.stream().map(r -> {
+                    String debourTypeDescription = (r[0] != null ? (String) r[0] : null);
+                    String mesureDesc = r[1] != null ? (String) r[1] : null;
+                    BigDecimal longConvertPricePerUnit = r[2] != null ? BigDecimal.valueOf(((Double) r[2])) : null;
+                    Integer unit = r[3] != null ? Integer.valueOf(((Short) r[3])) : null;
+                    BigDecimal unit2 = BigDecimal.valueOf((unit));
+
+                    return new ItemFraisAdmin(debourTypeDescription, mesureDesc, longConvertPricePerUnit, unit2);
+                })
+                .collect(Collectors.toList());
+        main.setItemFraisAdmins(itemFraisAdminList);
+
+        // Debours
+        List<ItemDebours> itemDeboursList = fraisRepository.findAllDeboursByIdPosteAndFactureId(invoiceDTO.getId());
+        main.setItemDebours(itemDeboursList);
+
+        // Collaboration
+        List<ItemFraisColla> itemFraisCollaList = fraisRepository.findAllCollaByIdPosteAndFactureId(invoiceDTO.getId());
+        main.setItemFraisCollas(itemFraisCollaList);
+
+
+        // ItemVat
+        List<ItemVat> itemVatList = new ArrayList<>();
+        List<GroupVatDTO> groupVatDTOList = tFactureDetailsRepository.findItemVat(invoiceDTO.getId());
+
+        for (GroupVatDTO groupVatDTO : groupVatDTOList) {
+            ItemVat itemVat = new ItemVat();
+            itemVat.setVatVat(groupVatDTO.getVatVat().setScale(2, RoundingMode.HALF_UP));
+            itemVat.setGroupAmountVat(groupVatDTO.getGroupAmountVat().setScale(2, RoundingMode.HALF_UP));
+            itemVat.setDescriptionVat("");
+            itemVatList.add(itemVat);
+        }
+
+        main.setItemVat(itemVatList);
+
+        main.setCurrency(lawfirmEntity.getCurrency().getSymbol());
+        main.setTotalHtAmount(BigDecimal.valueOf(invoiceDTO.getInvoiceDetailsDTOList().stream().mapToDouble(i -> i.getMontantHt().doubleValue()).sum()).setScale(2, RoundingMode.HALF_UP));
+        main.setTotalAmount(invoiceDTO.getMontant() == null ? null : invoiceDTO.getMontant().setScale(2, RoundingMode.HALF_UP));
+
+        main.setTitleName(invoiceDTO.getTypeItem().getLabel());
+
+        main.setIsValid(invoiceDTO.getValid());
+
+        log.debug("Leaving createInvoiceTemplateDTO");
+        return main;
+    }
+
 }

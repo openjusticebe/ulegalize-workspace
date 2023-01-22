@@ -21,10 +21,10 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
-import springfox.documentation.annotations.ApiIgnore;
 
 import java.io.IOException;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
@@ -43,7 +43,6 @@ public class DriveV2Controller {
     private ObjSharedV2Service objSharedV2Service;
 
     @PostMapping("/inbox")
-    @ApiIgnore
     public InboxDTO uploadFileInbox(@RequestParam("files") MultipartFile file, @RequestParam("userId") String userId, @RequestParam(value = "dossier", required = false) String dossier) throws IOException {
         log.debug("Entering uploadFileInbox()");
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -56,7 +55,6 @@ public class DriveV2Controller {
     }
 
     @PostMapping("/template")
-    @ApiIgnore
     public InboxDTO uploadTemplate(@RequestParam("files") MultipartFile file) throws IOException {
         log.debug("Entering uploadTemplate()");
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -71,7 +69,6 @@ public class DriveV2Controller {
     }
 
     @GetMapping("/inbox")
-    @ApiIgnore
     public List<ItemStringDto> getPostingDossierList(@RequestParam String userId, @RequestParam(required = false) String path) {
         log.debug("Entering getDossierList()");
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -81,22 +78,21 @@ public class DriveV2Controller {
 
         List<ObjectResponseDTO> dossierList = driveApi.getDossierList(lawfirmToken, pathFolders);
         return dossierList.stream().map(dossier -> {
-            // return folder only
-            // and check split "/"  => dossiers/2020/001 so 3 and display it
-            if (dossier.getSize() == null
-                    && dossier.getName().split("/").length == 3) {
-                return new ItemStringDto(dossier.getName(), dossier.getName());
-            } else {
-                return null;
-            }
-        })
+                    // return folder only
+                    // and check split "/"  => dossiers/2020/001 so 3 and display it
+                    if (dossier.getSize() == null
+                            && dossier.getName().split("/").length == 3) {
+                        return new ItemStringDto(dossier.getName(), dossier.getName());
+                    } else {
+                        return null;
+                    }
+                })
                 .filter(Objects::nonNull)
                 .sorted(Comparator.comparing(ItemStringDto::getValue).reversed())
                 .collect(Collectors.toList());
     }
 
     @GetMapping("")
-    @ApiIgnore
     public List<ObjectResponseDTO> getDossierList(@RequestParam(required = false) String path) {
         log.debug("Entering getDossierList({})", path);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -108,22 +104,21 @@ public class DriveV2Controller {
 
         List<ObjectResponseDTO> dossierList = driveApi.getObjects(lawfirmToken, pathFolders);
         return dossierList.stream().map(dossier -> {
-            // remove the path and postin
-            if (dossier.getName() != null
-                    && !dossier.getName().equalsIgnoreCase(DriveUtils.POSTIN_PATH)
-                    && !dossier.getName().equalsIgnoreCase(pathFolders)) {
-                return dossier;
-            } else {
-                return null;
-            }
-        })
+                    // remove the path and postin
+                    if (dossier.getName() != null
+                            && !dossier.getName().equalsIgnoreCase(DriveUtils.POSTIN_PATH)
+                            && !dossier.getName().equalsIgnoreCase(pathFolders)) {
+                        return dossier;
+                    } else {
+                        return null;
+                    }
+                })
                 .filter(Objects::nonNull)
                 .sorted(Comparator.comparing(ObjectResponseDTO::getName).reversed())
                 .collect(Collectors.toList());
     }
 
     @GetMapping("/inbox/dispatching")
-    @ApiIgnore
     public List<InboxDTO> getDispatchingFiles(@RequestParam String userId) {
         log.debug("Entering getDispatchingFiles()");
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -139,7 +134,6 @@ public class DriveV2Controller {
     }
 
     @DeleteMapping("/inbox")
-    @ApiIgnore
     public String deletingFileInbox(@RequestParam String userId, @RequestParam String filename) {
         log.debug("Entering deletingFileInbox({} and {})", userId, filename);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -151,7 +145,6 @@ public class DriveV2Controller {
     }
 
     @PostMapping("/inbox/move")
-    @ApiIgnore
     public String moveFile(@RequestParam String userId, @RequestParam String filename, @RequestParam String pathTo) {
         log.debug("Entering moveFile( to {})", pathTo);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -163,7 +156,6 @@ public class DriveV2Controller {
     }
 
     @GetMapping("/inbox/file")
-    @ApiIgnore
     public ResponseEntity<Resource> downloadFileInbox(@RequestParam String userId, @RequestParam String filename) {
         log.debug("Entering downloadFile( user {} to filename {})", userId, filename);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -186,7 +178,6 @@ public class DriveV2Controller {
     }
 
     @GetMapping("/template/file")
-    @ApiIgnore
     public ResponseEntity<Resource> downloadTemplateFile(@RequestParam String filename) {
         log.debug("Entering downloadFile( to filename {})", filename);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -209,14 +200,13 @@ public class DriveV2Controller {
     }
 
     @GetMapping("/file")
-    @ApiIgnore
     public ResponseEntity<Resource> downloadFile(@RequestParam String path) {
         log.debug("Entering downloadFile( to path {})", path);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         log.debug("moveFile by (vckey: {}, user id: {})", lawfirmToken.getVcKey(), lawfirmToken.getUserId());
         DriveApi driveApi = driveFactory.getDriveImpl(lawfirmToken.getDriveType());
 
-        ByteArrayResource fileResponse = driveApi.downloadFile(lawfirmToken, URLDecoder.decode(path));
+        ByteArrayResource fileResponse = driveApi.downloadFile(lawfirmToken, URLDecoder.decode(path, StandardCharsets.UTF_8));
         log.debug(" Document {} RECEIVED ", fileResponse.getFilename());
 
         HttpHeaders headers = new HttpHeaders();
@@ -231,29 +221,27 @@ public class DriveV2Controller {
     }
 
     @PostMapping("/folder/rename")
-    @ApiIgnore
     public String renameFolder(@RequestParam String pathFrom, @RequestParam String pathTo) {
         log.debug("Entering renameFolder(from {} to {})", pathFrom, pathTo);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         log.debug("renameFolder by (vckey: {}, user id: {})", lawfirmToken.getVcKey(), lawfirmToken.getUserId());
-        String from = pathFrom != null && !pathFrom.isEmpty() ? URLDecoder.decode(pathFrom) : "";
-        String to = pathTo != null && !pathTo.isEmpty() ? URLDecoder.decode(pathTo) : "";
+        String from = pathFrom != null && !pathFrom.isEmpty() ? URLDecoder.decode(pathFrom, StandardCharsets.UTF_8) : "";
+        String to = pathTo != null && !pathTo.isEmpty() ? URLDecoder.decode(pathTo, StandardCharsets.UTF_8) : "";
         log.debug("Path from {}", from);
         log.debug("Path to {}", to);
         DriveApi driveApi = driveFactory.getDriveImpl(lawfirmToken.getDriveType());
 
-        return driveApi.moveFolders(lawfirmToken, from, to);
+        return driveApi.moveFolders(lawfirmToken.getToken(), lawfirmToken.getVcKey(), from, to);
     }
 
 
     @PostMapping("/file/rename")
-    @ApiIgnore
     public String renameFile(@RequestParam String newfilename, @RequestParam String pathFrom, @RequestParam String pathTo) {
         log.debug("Entering renameFile( to {})", pathTo);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         log.debug("renameFile by (vckey: {}, user id: {})", lawfirmToken.getVcKey(), lawfirmToken.getUserId());
-        String from = pathFrom != null && !pathFrom.isEmpty() ? URLDecoder.decode(pathFrom) : "";
-        String to = pathTo != null && !pathTo.isEmpty() ? URLDecoder.decode(pathTo) : "";
+        String from = pathFrom != null && !pathFrom.isEmpty() ? URLDecoder.decode(pathFrom, StandardCharsets.UTF_8) : "";
+        String to = pathTo != null && !pathTo.isEmpty() ? URLDecoder.decode(pathTo, StandardCharsets.UTF_8) : "";
         log.debug("Path from {}", from);
         log.debug("Path to {}", to);
 
@@ -263,13 +251,12 @@ public class DriveV2Controller {
     }
 
     @PostMapping("/file")
-    @ApiIgnore
     public InboxDTO uploadFile(@RequestParam("files") MultipartFile file, @RequestParam("path") String path) throws IOException {
         log.debug("Entering uploadFile({})", path);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         log.debug("uploadTemplate by (vckey: {}, user id: {})", lawfirmToken.getVcKey(), lawfirmToken.getUserId());
 
-        String pathFolder = URLDecoder.decode(path);
+        String pathFolder = URLDecoder.decode(path, StandardCharsets.UTF_8);
         // extension must be docx
         DriveApi driveApi = driveFactory.getDriveImpl(lawfirmToken.getDriveType());
 
@@ -279,45 +266,42 @@ public class DriveV2Controller {
     }
 
     @DeleteMapping("/file")
-    @ApiIgnore
     public String deletingFile(@RequestParam String path) {
         log.debug("Entering deletingFile({})", path);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         log.debug("deletingFile by (vckey: {}, user id: {})", lawfirmToken.getVcKey(), lawfirmToken.getUserId());
-        String pathFile = URLDecoder.decode(path);
+        String pathFile = URLDecoder.decode(path, StandardCharsets.UTF_8);
         DriveApi driveApi = driveFactory.getDriveImpl(lawfirmToken.getDriveType());
 
         return driveApi.deletingFile(lawfirmToken, pathFile);
     }
 
     @DeleteMapping("/folder")
-    @ApiIgnore
     public String deletingFolder(@RequestParam String path) {
         log.debug("Entering deletingFolder({})", path);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         log.debug("deletingFile by (vckey: {}, user id: {})", lawfirmToken.getVcKey(), lawfirmToken.getUserId());
-        String pathFile = URLDecoder.decode(path);
+        String pathFile = URLDecoder.decode(path, StandardCharsets.UTF_8);
         DriveApi driveApi = driveFactory.getDriveImpl(lawfirmToken.getDriveType());
 
         return driveApi.deletingFolder(lawfirmToken, pathFile);
     }
 
     @PostMapping("/folder")
-    @ApiIgnore
-    public String createFolder(@RequestParam String fullpath) {
+    public String createFolder(@RequestParam String fullpath, @RequestParam(required = false) String parentId) {
         log.debug("Entering createFolder({})", fullpath);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         log.debug("createFolder by (vckey: {}, user id: {})", lawfirmToken.getVcKey(), lawfirmToken.getUserId());
-        String pathFile = URLDecoder.decode(fullpath);
+        String pathFile = URLDecoder.decode(fullpath, StandardCharsets.UTF_8);
+        String parentIdDecoded = URLDecoder.decode(parentId, StandardCharsets.UTF_8);
         DriveApi driveApi = driveFactory.getDriveImpl(lawfirmToken.getDriveType());
 
-        driveApi.createFolders(lawfirmToken, lawfirmToken.getVcKey(), List.of(pathFile));
+        driveApi.createFolders(lawfirmToken, lawfirmToken.getVcKey(), List.of(pathFile), parentIdDecoded);
 
         return "ok";
     }
 
     @PostMapping("/share")
-    @ApiIgnore
     public String shareObject(@RequestBody ShareFileDTO shareFileDTO) {
         log.debug("Entering shareObject({})", shareFileDTO);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -339,7 +323,6 @@ public class DriveV2Controller {
     }
 
     @GetMapping("/share")
-    @ApiIgnore
     public ShareFileDTO getShareObject(@RequestParam String path) {
         log.debug("Entering getShareObject({})", path);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -349,7 +332,6 @@ public class DriveV2Controller {
     }
 
     @GetMapping("/share/link")
-    @ApiIgnore
     public String getShareLink(@RequestParam String path) {
         log.debug("Entering getShareLink({})", path);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -380,5 +362,17 @@ public class DriveV2Controller {
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body((fileResponse))
                 ;
+    }
+
+    @GetMapping("/size")
+    public Integer getSizeContainer() {
+        log.debug("Entering getSizeContainer()");
+        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        log.debug("getSizeContainer by (vckey: {}, user id: {})", lawfirmToken.getVcKey(), lawfirmToken.getUserId());
+
+        DriveApi driveApi = driveFactory.getDriveImpl(lawfirmToken.getDriveType());
+
+        return driveApi.getSizeContainer(lawfirmToken, lawfirmToken.getVcKey());
+
     }
 }

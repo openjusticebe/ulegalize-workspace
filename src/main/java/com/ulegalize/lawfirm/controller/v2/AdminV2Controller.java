@@ -7,46 +7,33 @@ import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.dto.AssociatedWorkspaceDTO;
 import com.ulegalize.lawfirm.service.SecurityGroupService;
 import com.ulegalize.lawfirm.service.v2.*;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.minidev.json.JSONObject;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import springfox.documentation.annotations.ApiIgnore;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
-@ApiIgnore
 @RequestMapping("/v2/admin")
 @Slf4j
+@AllArgsConstructor
 public class AdminV2Controller {
-    @Autowired
-    private LawfirmV2Service lawfirmV2Service;
-    @Autowired
-    private LawfirmConfigV2Service lawfirmConfigV2Service;
-    @Autowired
-    private LawfirmVatV2Service lawfirmVatV2Service;
-    @Autowired
-    private PrestationTypeService prestationTypeService;
-    @Autowired
-    private DeboursTypeService deboursTypeService;
-    @Autowired
-    private RefPosteService refPosteService;
-    @Autowired
-    private RefCompteService refCompteService;
-    @Autowired
-    private TemplateV2Service templateV2Service;
-    @Autowired
-    private SecurityGroupService securityGroupService;
-    @Autowired
-    private DossierV2Service dossierV2Service;
-    @Autowired
-    private WorkspaceAssociatedService workspaceAssociatedService;
+    private final LawfirmV2Service lawfirmV2Service;
+    private final LawfirmVatV2Service lawfirmVatV2Service;
+    private final PrestationTypeService prestationTypeService;
+    private final DeboursTypeService deboursTypeService;
+    private final RefPosteService refPosteService;
+    private final RefCompteService refCompteService;
+    private final TemplateV2Service templateV2Service;
+    private final SecurityGroupService securityGroupService;
+    private final DossierV2Service dossierV2Service;
+    private final WorkspaceAssociatedService workspaceAssociatedService;
 
     // VirtualCab
     @GetMapping(value = "/lawfirm")
@@ -55,7 +42,7 @@ public class AdminV2Controller {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
 
-        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+        log.info("Lawfirm connected vc {} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
         return lawfirmV2Service.getLawfirmInfoByVcKey(lawfirmToken.getVcKey());
     }
@@ -66,9 +53,20 @@ public class AdminV2Controller {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
 
-        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+        log.info("Lawfirm connected vc {} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
         return lawfirmV2Service.updateLawfirmInfoByVcKey(lawfirmDTO);
+    }
+
+    @PutMapping(value = "/lawfirm/drive")
+    public LawfirmDTO updateLawfirmDriveInfo(@RequestBody LawfirmDTO lawfirmDTO) {
+        log.debug("updateLawfirmDriveInfo({})", lawfirmDTO);
+        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication()
+                .getPrincipal();
+
+        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+
+        return lawfirmV2Service.updateLawfirmDriveInfo(lawfirmDTO);
     }
 
     @PostMapping("/lawfirm/logo")
@@ -80,44 +78,6 @@ public class AdminV2Controller {
         return lawfirmV2Service.uploadImageVirtualcab(file.getBytes());
     }
 
-    // VirtualCabConfig
-    @GetMapping(value = "/lawfirmConfig")
-    public List<LawfirmConfigDTO> getLawfirmConfigInfo() {
-        log.debug("getLawfirmConfigInfo()");
-        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication()
-                .getPrincipal();
-
-        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
-
-        List<LawfirmConfigDTO> listDTO = lawfirmConfigV2Service.getLawfirmConfigInfoByVcKey(lawfirmToken.getVcKey());
-        return listDTO;
-    }
-
-    @PutMapping(value = "/lawfirmConfig")
-    public void addLawfirmConfigInfo(@RequestBody LawfirmConfigDTO lawfirmConfigDTO) {
-        log.debug("addLawfirmConfigInfo()");
-
-        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication()
-                .getPrincipal();
-
-        log.debug(lawfirmConfigDTO.getDescription() + " " + lawfirmToken.getVcKey() + " "
-                + lawfirmConfigDTO.getParameter());
-        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
-
-        lawfirmConfigV2Service.addLawfirmConfigByVcKey(lawfirmConfigDTO, lawfirmToken.getVcKey());
-    }
-
-    @DeleteMapping(path = "/lawfirmConfigDelete/{lawfirmConfigDescription}")
-    public void removeLawfirmConfigInfo(@PathVariable String lawfirmConfigDescription) {
-        log.debug("(Backend) removeLawfirmConfigInfo() {}", lawfirmConfigDescription);
-
-        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication()
-                .getPrincipal();
-        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
-
-        lawfirmConfigV2Service.removeLawfirmConfig(lawfirmConfigDescription, lawfirmToken.getVcKey());
-    }
-
     // Prestation
     @GetMapping(value = "/prestation/type")
     public List<PrestationTypeDTO> getPrestationsType() {
@@ -125,7 +85,7 @@ public class AdminV2Controller {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
 
-        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+        log.info("Lawfirm connected vc {} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
         return prestationTypeService.getAllPrestationsType(lawfirmToken.getVcKey(), lawfirmToken.getUserId());
     }
@@ -137,7 +97,7 @@ public class AdminV2Controller {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
 
-        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+        log.info("Lawfirm connected vc {} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
         return prestationTypeService.updatePrestationsType(lawfirmToken.getVcKey(), lawfirmToken.getUserId(),
                 prestationTypeId, prestationTypeDTO);
@@ -149,7 +109,7 @@ public class AdminV2Controller {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
 
-        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+        log.info("Lawfirm connected vc {} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
         Integer prestationsType = prestationTypeService.createPrestationsType(lawfirmToken.getVcKey(),
                 lawfirmToken.getUserId(), prestationTypeDTO);
@@ -164,7 +124,7 @@ public class AdminV2Controller {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
 
-        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+        log.info("Lawfirm connected vc {} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
         return prestationTypeService.deletePrestationsType(lawfirmToken.getVcKey(), lawfirmToken.getUserId(),
                 prestationTypeId);
@@ -176,7 +136,7 @@ public class AdminV2Controller {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
 
-        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+        log.info("Lawfirm connected vc {} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
         return deboursTypeService.getAllDeboursType(lawfirmToken.getVcKey(), lawfirmToken.getUserId());
     }
@@ -187,7 +147,7 @@ public class AdminV2Controller {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
 
-        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+        log.info("Lawfirm connected vc {} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
         return deboursTypeService.updateDeboursType(lawfirmToken.getVcKey(), lawfirmToken.getUserId(), deboursTypeId,
                 fraisAdminDTO);
@@ -199,7 +159,7 @@ public class AdminV2Controller {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
 
-        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+        log.info("Lawfirm connected vc {} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
         Long deboursTypeId = deboursTypeService.createDeboursType(lawfirmToken.getVcKey(), lawfirmToken.getUserId(),
                 fraisAdminDTO);
@@ -213,7 +173,7 @@ public class AdminV2Controller {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
 
-        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+        log.info("Lawfirm connected vc {} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
         return deboursTypeService.deleteDeboursType(lawfirmToken.getVcKey(), lawfirmToken.getUserId(), deboursTypeId);
     }
@@ -224,7 +184,7 @@ public class AdminV2Controller {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
 
-        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+        log.info("Lawfirm connected vc {} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
         return refPosteService.getAllRefPoste(lawfirmToken.getVcKey(), lawfirmToken.getUserId());
     }
@@ -236,7 +196,7 @@ public class AdminV2Controller {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
 
-        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+        log.info("Lawfirm connected vc {} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
         return refPosteService.updateRefPoste(lawfirmToken.getVcKey(), lawfirmToken.getUserId(), accountingTypeId,
                 accountingTypeDTO);
@@ -248,7 +208,7 @@ public class AdminV2Controller {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
 
-        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+        log.info("Lawfirm connected vc {} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
         Integer accountingTypeId = refPosteService.createRefPoste(lawfirmToken.getVcKey(), lawfirmToken.getUserId(),
                 accountingTypeDTO);
@@ -262,7 +222,7 @@ public class AdminV2Controller {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
 
-        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+        log.info("Lawfirm connected vc {} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
         return refPosteService.deleteRefPoste(lawfirmToken.getVcKey(), lawfirmToken.getUserId(), accountingTypeId);
     }
@@ -273,9 +233,9 @@ public class AdminV2Controller {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
 
-        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+        log.info("Lawfirm connected vc {} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
-        return refCompteService.getAllBankAccount(lawfirmToken.getVcKey(), lawfirmToken.getUserId());
+        return refCompteService.getAllBankAccount(lawfirmToken.getVcKey(), lawfirmToken.getUserId(), lawfirmToken.getLanguage());
     }
 
     @PutMapping(value = "/bankaccount/type/{compteId}")
@@ -285,7 +245,7 @@ public class AdminV2Controller {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
 
-        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+        log.info("Lawfirm connected vc {} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
         return refCompteService.updateBankAccount(lawfirmToken.getVcKey(), lawfirmToken.getUserId(), compteId,
                 bankAccountDTO);
@@ -297,12 +257,12 @@ public class AdminV2Controller {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
 
-        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+        log.info("Lawfirm connected vc {} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
         Integer compteId = refCompteService.createBankAccount(lawfirmToken.getVcKey(), lawfirmToken.getUserId(),
                 accountingTypeDTO);
 
-        return refCompteService.getBankAccountById(lawfirmToken.getVcKey(), lawfirmToken.getUserId(), compteId);
+        return refCompteService.getBankAccountById(lawfirmToken.getVcKey(), lawfirmToken.getUserId(), compteId, lawfirmToken.getLanguage());
     }
 
     @DeleteMapping(value = "/bankaccount/type/{compteId}")
@@ -311,7 +271,7 @@ public class AdminV2Controller {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
 
-        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+        log.info("Lawfirm connected vc {} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
         return refCompteService.deleteBankAccount(lawfirmToken.getVcKey(), lawfirmToken.getUserId(), compteId);
     }
@@ -370,7 +330,7 @@ public class AdminV2Controller {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
 
-        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+        log.info("Lawfirm connected vc {} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
         return securityGroupService.createSecurityGroup(lawfirmToken.getUserId(), newName);
     }
@@ -381,7 +341,7 @@ public class AdminV2Controller {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
 
-        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+        log.info("Lawfirm connected vc {} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
         return securityGroupService.createUserSecurity(lawfirmToken.getUserId(), lawfirmToken.getVcKey(), securityGroupUserDTO);
     }
@@ -392,7 +352,7 @@ public class AdminV2Controller {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
 
-        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+        log.info("Lawfirm connected vc {} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
         return securityGroupService.addUserSecurity(securityGroupId, Long.valueOf(userId));
     }
@@ -431,7 +391,7 @@ public class AdminV2Controller {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
 
-        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+        log.info("Lawfirm connected vc {} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
         return securityGroupService.addRightSecurity(securityGroupId, Integer.valueOf(rightId));
     }
@@ -449,7 +409,7 @@ public class AdminV2Controller {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
 
-        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+        log.info("Lawfirm connected vc {} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
         return lawfirmVatV2Service.createVat(new BigDecimal(newVat));
     }
@@ -460,7 +420,7 @@ public class AdminV2Controller {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
 
-        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+        log.info("Lawfirm connected vc {} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
         return lawfirmVatV2Service.deleteVat(vat);
     }
@@ -471,7 +431,7 @@ public class AdminV2Controller {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
 
-        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+        log.info("Lawfirm connected vc {} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
         return lawfirmVatV2Service.changeDefaultVat(vat);
     }
@@ -533,7 +493,6 @@ public class AdminV2Controller {
     }
 
     @PostMapping(value = "/users/share/global")
-    @ApiIgnore
     public String adminAddShareUser() throws RestException {
         log.debug("adminAddShareUser()");
 
@@ -542,14 +501,14 @@ public class AdminV2Controller {
 
     @RequestMapping(method = RequestMethod.GET, path = "/security/approveWorkspace")
     public Boolean approveWorkspace(@RequestParam("id") Long id, @RequestParam("vckey") String vckey, @RequestParam("hashkey") String hashkey, @RequestParam("status") Boolean status) {
-        log.debug("approveWorkspace()");
+        log.debug("approveWorkspace() with id {} and vckey {} and hashkey {} and status {}", id, vckey, hashkey, status);
 
         return workspaceAssociatedService.validateAssociation(id, vckey, hashkey, status);
     }
 
     @PostMapping(value = "/security/createAssociation")
     public Boolean createAssociation(@RequestBody AssociatedWorkspaceDTO associatedWorkspaceDTO) throws RestException {
-        log.debug("createAssociation()");
+        log.debug("createAssociation() with associatedWorkspaceDTO {}", associatedWorkspaceDTO);
 
         return workspaceAssociatedService.createAssociation(associatedWorkspaceDTO);
     }
@@ -561,22 +520,22 @@ public class AdminV2Controller {
             @RequestParam(required = false) String vcKey,
             @RequestParam(required = false) Boolean searchCriteriaType
     ) throws LawfirmBusinessException {
-        log.debug("getAssociatedWorkspace()");
+        log.debug("getAssociatedWorkspace() with offset {} and limit {} and vckey {} and searchCriteriaType {}", offset, limit, vcKey, searchCriteriaType);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
 
-        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+        log.info("Lawfirm connected vc {} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
         return workspaceAssociatedService.getAllAssociatedWorkspace(limit, offset, lawfirmToken.getVcKey(), lawfirmToken.getUserId(), searchCriteriaType);
     }
 
     @RequestMapping(method = RequestMethod.GET, path = "/security/updateAssociation")
     public Boolean updateAssociation(@RequestParam("vckeyRecipient") String vckeyRecipient, @RequestParam("typeAssociation") Boolean typeAssociation, @RequestParam("status") Boolean status) {
-        log.debug("updateAssociation()");
+        log.debug("updateAssociation() with vckeyRecipient {} and typeAssociation {} and status {}", vckeyRecipient, typeAssociation, status);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
 
-        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+        log.info("Lawfirm connected vc {} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
 
         return workspaceAssociatedService.updateAssociation(lawfirmToken.getVcKey(), lawfirmToken.getUserId(), vckeyRecipient, typeAssociation, status);
     }

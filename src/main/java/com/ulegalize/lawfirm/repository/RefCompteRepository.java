@@ -20,16 +20,17 @@ public interface RefCompteRepository extends JpaRepository<RefCompte, Integer>, 
     List<ItemDto> findAllOrderBy(String vcKey);
 
     @Query("select new com.ulegalize.dto.BankAccountDTO(m.idCompte , m.vcKey, m.compteNum, " +
-            "m.compteRef, m.userUpd, m.dateUpd, m.archived, m.accountTypeId) " +
+            "m.compteRef, m.userUpd, m.dateUpd, m.archived, m.accountTypeId, cast(:enumLanguage as string) )" +
             " from RefCompte m" +
-            " where m.vcKey = :vcKey order by m.compteRef desc")
-    List<BankAccountDTO> findAllItemByVcKey(String vcKey);
+            " where m.vcKey = :vcKey " +
+            " order by m.compteRef desc")
+    List<BankAccountDTO> findAllItemByVcKey(String vcKey, String enumLanguage);
 
     @Query("select new com.ulegalize.dto.BankAccountDTO(m.idCompte , m.vcKey, m.compteNum, " +
-            "m.compteRef, m.userUpd, m.dateUpd, m.archived, m.accountTypeId) " +
+            "m.compteRef, m.userUpd, m.dateUpd, m.archived, m.accountTypeId, cast(:enumLanguage as string)) " +
             " from RefCompte m" +
             " where m.vcKey = :vcKey and m.idCompte = :compteId")
-    BankAccountDTO findDTOById(String vcKey, Integer compteId);
+    BankAccountDTO findDTOById(String vcKey, Integer compteId, String enumLanguage);
 
     @Query("select new com.ulegalize.dto.ItemDto(r.idCompte, CONCAT(r.compteNum, ' - ', r.compteRef )) " +
             " from RefCompte r" +

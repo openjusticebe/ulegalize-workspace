@@ -8,13 +8,11 @@ import com.ulegalize.lawfirm.repository.LawfirmRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import springfox.documentation.annotations.ApiIgnore;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @RestController
-@ApiIgnore
 @RequestMapping("/v2/public/lawfirms")
 @Slf4j
 public class LawfirmPublicV2Controller {

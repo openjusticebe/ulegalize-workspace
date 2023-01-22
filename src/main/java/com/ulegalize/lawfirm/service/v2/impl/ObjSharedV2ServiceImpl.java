@@ -13,15 +13,18 @@ import com.ulegalize.lawfirm.repository.TUsersRepository;
 import com.ulegalize.lawfirm.rest.DriveFactory;
 import com.ulegalize.lawfirm.rest.v2.DriveApi;
 import com.ulegalize.lawfirm.service.MailService;
+import com.ulegalize.lawfirm.service.v2.LawfirmV2Service;
 import com.ulegalize.lawfirm.service.v2.ObjSharedV2Service;
 import com.ulegalize.lawfirm.service.v2.UserV2Service;
 import com.ulegalize.lawfirm.utils.EmailUtils;
 import com.ulegalize.mail.transparency.EnumMailTemplate;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -35,15 +38,17 @@ public class ObjSharedV2ServiceImpl implements ObjSharedV2Service {
     private final TObjSharedRepository tObjSharedRepository;
     private final TObjSharedWithRepository tObjSharedWithRepository;
     private final UserV2Service userV2Service;
+    private final LawfirmV2Service lawfirmV2Service;
     private final TUsersRepository tUsersRepository;
     private final MailService mailService;
     private final DriveFactory driveFactory;
 
-    public ObjSharedV2ServiceImpl(TObjSharedRepository tObjSharedRepository, TObjSharedWithRepository tObjSharedWithRepository, UserV2Service userV2Service, TUsersRepository tUsersRepository,
+    public ObjSharedV2ServiceImpl(TObjSharedRepository tObjSharedRepository, TObjSharedWithRepository tObjSharedWithRepository, UserV2Service userV2Service, LawfirmV2Service lawfirmV2Service, TUsersRepository tUsersRepository,
                                   MailService mailService, DriveFactory driveFactory) {
         this.tObjSharedRepository = tObjSharedRepository;
         this.tObjSharedWithRepository = tObjSharedWithRepository;
         this.userV2Service = userV2Service;
+        this.lawfirmV2Service = lawfirmV2Service;
         this.tUsersRepository = tUsersRepository;
         this.mailService = mailService;
         this.driveFactory = driveFactory;
@@ -83,7 +88,7 @@ public class ObjSharedV2ServiceImpl implements ObjSharedV2Service {
         Optional<TObjShared> optionalTObjShared = tObjSharedRepository.findByVcKeyAndObj(vckey, obj);
         TObjShared tObjShared = null;
 
-        if (!optionalTObjShared.isPresent()) {
+        if (optionalTObjShared.isEmpty()) {
             tObjShared = new TObjShared();
             tObjShared.setObj(obj);
             tObjShared.setVcKey(vckey);
@@ -96,10 +101,21 @@ public class ObjSharedV2ServiceImpl implements ObjSharedV2Service {
         }
 
         TObjShared finalTObjShared = tObjShared;
-        emails.forEach(email -> {
+        for (String email : emails) {
             log.debug("Email {} to be sent", email);
             Optional<TUsers> usersOptional = tUsersRepository.findByEmail(email);
-            TUsers users = usersOptional.orElseGet(() -> userV2Service.createUsers(email, clientFrom, EnumLanguage.FR, true));
+            TUsers users;
+
+            if (usersOptional.isEmpty()) {
+                lawfirmV2Service.registerUser(email, clientFrom, true);
+                Optional<TUsers> newUsersOptional = tUsersRepository.findByEmail(email);
+                if (newUsersOptional.isEmpty()) {
+                    throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User is definitively not created");
+                }
+                users = newUsersOptional.get();
+            } else {
+                users = usersOptional.get();
+            }
 
             tObjSharedWithRepository.deleteByObjAndUserTo(finalTObjShared.getId(), users.getId());
             TObjSharedWith tObjSharedWith = new TObjSharedWith();
@@ -113,7 +129,7 @@ public class ObjSharedV2ServiceImpl implements ObjSharedV2Service {
             tObjSharedWith.setDateUpd(LocalDateTime.now());
 
             tObjSharedWithRepository.save(tObjSharedWith);
-        });
+        }
         log.debug("Leaving shareFolder ");
 
     }

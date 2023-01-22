@@ -2,24 +2,26 @@ package com.ulegalize.lawfirm.service.v2.impl;
 
 import com.ulegalize.dto.*;
 import com.ulegalize.enumeration.*;
+import com.ulegalize.lawfirm.exception.LawfirmBusinessException;
 import com.ulegalize.lawfirm.kafka.producer.drive.IDriveProducer;
 import com.ulegalize.lawfirm.kafka.producer.transparency.IAffaireProducer;
 import com.ulegalize.lawfirm.kafka.producer.transparency.ICaseProducer;
 import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.converter.EntityToDossierConverter;
+import com.ulegalize.lawfirm.model.dto.CaseDTO;
+import com.ulegalize.lawfirm.model.dto.NomenclatureDTO;
 import com.ulegalize.lawfirm.model.entity.*;
 import com.ulegalize.lawfirm.model.enumeration.EnumMatiereRubrique;
 import com.ulegalize.lawfirm.repository.*;
 import com.ulegalize.lawfirm.rest.DriveFactory;
+import com.ulegalize.lawfirm.rest.v2.DriveApi;
 import com.ulegalize.lawfirm.service.MailService;
 import com.ulegalize.lawfirm.service.PrestationService;
-import com.ulegalize.lawfirm.service.v2.ClientV2Service;
-import com.ulegalize.lawfirm.service.v2.DossierV2Service;
-import com.ulegalize.lawfirm.service.v2.LawfirmV2Service;
-import com.ulegalize.lawfirm.service.v2.ObjSharedV2Service;
+import com.ulegalize.lawfirm.service.v2.*;
 import com.ulegalize.lawfirm.service.validator.DossierValidator;
 import com.ulegalize.lawfirm.utils.DriveUtils;
 import com.ulegalize.lawfirm.utils.EmailUtils;
+import com.ulegalize.lawfirm.utils.VirtualcabNomenclatureUtils;
 import com.ulegalize.mail.transparency.EnumMailTemplate;
 import com.ulegalize.utils.DossiersUtils;
 import com.ulegalize.utils.PrestationUtils;
@@ -56,7 +58,6 @@ public class DossierV2ServiceImpl implements DossierV2Service {
     private final LawfirmRepository lawfirmRepository;
     private final ClientRepository clientRepository;
     private final VirtualcabClientRepository virtualcabClientRepository;
-    private final TVirtualcabConfigRepository tVirtualcabConfigRepository;
     private final PrestationService prestationService;
     private final TFraisRepository tFraisRepository;
     private final TDebourRepository tDebourRepository;
@@ -65,17 +66,23 @@ public class DossierV2ServiceImpl implements DossierV2Service {
     private final ObjSharedV2Service objSharedV2Service;
     private final TObjSharedRepository tObjSharedRepository;
     private final TObjSharedWithRepository tObjSharedWithRepository;
+    private final VirtualcabTagsRepository virtualcabTagsRepository;
+    private final TDossiersVcTagsRepository tDossiersVcTagsRepository;
     private final MailService mailService;
     private final DriveFactory driveFactory;
     private final LawfirmV2Service lawfirmV2Service;
     private final ClientV2Service clientV2Service;
+
+    private final VirtualcabTagsService virtualcabTagsService;
     private final DossierValidator dossierValidator;
 
     // api
     private final ICaseProducer caseProducer;
     private final IAffaireProducer affaireProducer;
+    private final TVirtualcabNomenclatureRepository tVirtualcabNomenclatureRepository;
+    private final TNomenclatureConfigRepository nomenclatureConfigRepository;
 
-    private String REGEX = "^[a-zA-Z0-9_!#$%&'*+/=?`{|}~^.-]+@[a-zA-Z0-9.-]+$";
+    private final String REGEX = "^[a-zA-Z0-9_!#$%&'*+/=?`{|}~^.-]+@[a-zA-Z0-9.-]+$";
 
     public DossierV2ServiceImpl(EntityToDossierConverter entityToDossierConverter,
                                 DossierRepository dossierRepository,
@@ -83,13 +90,12 @@ public class DossierV2ServiceImpl implements DossierV2Service {
                                 LawfirmUserRepository lawfirmUserRepository,
                                 LawfirmRepository lawfirmRepository, ClientRepository clientRepository,
                                 VirtualcabClientRepository virtualcabClientRepository,
-                                TVirtualcabConfigRepository tVirtualcabConfigRepository,
                                 PrestationService prestationService,
                                 TFraisRepository tFraisRepository,
                                 TDebourRepository tDebourRepository,
                                 TUsersRepository tUsersRepository, TFacturesRepository tFacturesRepository, ObjSharedV2Service objSharedV2Service, TObjSharedRepository tObjSharedRepository,
-                                TObjSharedWithRepository tObjSharedWithRepository, MailService mailService, DriveFactory driveFactory, LawfirmV2Service lawfirmV2Service,
-                                ClientV2Service clientV2Service, ICaseProducer caseProducer, IAffaireProducer affaireProducer, DossierValidator dossierValidator) {
+                                TObjSharedWithRepository tObjSharedWithRepository, TDossiersVcTagsRepository tDossiersVcTagsRepository, MailService mailService, DriveFactory driveFactory, LawfirmV2Service lawfirmV2Service,
+                                ClientV2Service clientV2Service, VirtualcabTagsService virtualcabTagsService, ICaseProducer caseProducer, IAffaireProducer affaireProducer, DossierValidator dossierValidator, VirtualcabTagsRepository virtualcabTagsRepository, TVirtualcabNomenclatureRepository tVirtualcabNomenclatureRepository, TNomenclatureConfigRepository nomenclatureConfigRepository) {
         this.entityToDossierConverter = entityToDossierConverter;
         this.dossierRepository = dossierRepository;
         this.tDossierRightsRepository = tDossierRightsRepository;
@@ -97,7 +103,6 @@ public class DossierV2ServiceImpl implements DossierV2Service {
         this.lawfirmRepository = lawfirmRepository;
         this.clientRepository = clientRepository;
         this.virtualcabClientRepository = virtualcabClientRepository;
-        this.tVirtualcabConfigRepository = tVirtualcabConfigRepository;
         this.prestationService = prestationService;
         this.tFraisRepository = tFraisRepository;
         this.tDebourRepository = tDebourRepository;
@@ -106,13 +111,18 @@ public class DossierV2ServiceImpl implements DossierV2Service {
         this.objSharedV2Service = objSharedV2Service;
         this.tObjSharedRepository = tObjSharedRepository;
         this.tObjSharedWithRepository = tObjSharedWithRepository;
+        this.tDossiersVcTagsRepository = tDossiersVcTagsRepository;
         this.mailService = mailService;
         this.driveFactory = driveFactory;
         this.lawfirmV2Service = lawfirmV2Service;
         this.clientV2Service = clientV2Service;
+        this.virtualcabTagsService = virtualcabTagsService;
         this.caseProducer = caseProducer;
         this.affaireProducer = affaireProducer;
         this.dossierValidator = dossierValidator;
+        this.virtualcabTagsRepository = virtualcabTagsRepository;
+        this.tVirtualcabNomenclatureRepository = tVirtualcabNomenclatureRepository;
+        this.nomenclatureConfigRepository = nomenclatureConfigRepository;
     }
 
     @Override
@@ -153,19 +163,17 @@ public class DossierV2ServiceImpl implements DossierV2Service {
 
 
     @Override
-    public Page<DossierDTO> getAllAffaires(int limit, int offset, Long userId, String vcKey, List<EnumVCOwner> enumVCOwner,
-                                           String searchCriteriaClient, String searchCriteriaYear, Long searchCriteriaNumber, Boolean searchCriteriaBalance, String searchCriteriaInitiale, Boolean searchArchived, Boolean sortOpenDate) {
+    public Page<DossierDTO> getAllAffaires(int limit, int offset, Long userId, String vcKey, String language, List<EnumVCOwner> enumVCOwner,
+                                           String searchCriteriaClient, String searchCriteriaYear, String searchCriteriaNomenclature, Boolean searchCriteriaBalance, String searchCriteriaInitiale, Boolean searchArchived, Boolean sortOpenDate) {
         log.debug("Get all Affaires with limit {} and offset {} , user id {} and vckey {}", limit, offset, userId, vcKey);
         Optional<LawfirmUsers> lawfirmUsers = lawfirmUserRepository.findLawfirmUsersByVcKeyAndUserId(vcKey, userId);
 
         if (lawfirmUsers.isPresent()) {
             log.debug("Law firm list {} user id {}", lawfirmUsers.get().getId(), userId);
-            LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            EnumLanguage enumLanguage = EnumLanguage.fromshortCode(lawfirmToken.getLanguage());
-
+            EnumLanguage enumLanguage = EnumLanguage.fromshortCode(language);
 
             // if it's 0 , transform to null like this it will query on all result
-            Long numberDossier = searchCriteriaNumber != null && searchCriteriaNumber == 0 ? null : searchCriteriaNumber;
+            /* Long numberDossier = searchCriteriaNumber != null && searchCriteriaNumber == 0 ? null : searchCriteriaNumber;*/
 
             searchCriteriaClient = searchCriteriaClient != null && !searchCriteriaClient.isEmpty() ? searchCriteriaClient : "%";
 
@@ -182,37 +190,34 @@ public class DossierV2ServiceImpl implements DossierV2Service {
 
             }
 
+
             Page<IDossierDTO> tDossiersList = null;
             String initiales = searchCriteriaInitiale != null && !searchCriteriaInitiale.isEmpty() ? searchCriteriaInitiale.toUpperCase() : "%";
             List<Integer> integers = enumVCOwner.stream().map(EnumVCOwner::getId).collect(Collectors.toList());
 
-            log.debug("Search based on owner {} , client {}, year {}, number {}, initiale {}, balance {} and archived {}", integers,
-                    searchCriteriaClient, searchCriteriaYear, numberDossier, initiales, searchCriteriaBalance, searchArchived);
+            log.debug("Search based on owner {} , client {}, searchCriteriaYear {}, nomenclature {}, initiale {}, balance {} and archived {}", integers,
+                    searchCriteriaClient, searchCriteriaYear, searchCriteriaNomenclature, initiales, searchCriteriaBalance, searchArchived);
 
             tDossiersList = dossierRepository.findByVcUserIdAllWithPagination(lawfirmUsers.get().getId(), integers,
-                    searchCriteriaClient, searchCriteriaYear, numberDossier, initiales, searchCriteriaBalance, searchArchived,
-                    pageable);
+                    searchCriteriaClient, searchCriteriaNomenclature, initiales, searchCriteriaBalance, searchArchived, searchCriteriaYear, pageable);
 
             Optional<EnumVCOwner> enumVCOwnerOptional = enumVCOwner.stream().filter(enumVCOwner1 -> enumVCOwner1.equals(EnumVCOwner.NOT_SAME_VC)).findFirst();
 
             List<DossierDTO> dossierDTOS = tDossiersList.getContent().stream().map(dossier -> {
                 DossierDTO dossierDTO = new DossierDTO(dossier.getId(), dossier.getYear(), dossier.getNum(), dossier.getInitiales(),
-                        dossier.getFirstnameClient(), dossier.getLastnameClient(), dossier.getCompanyClient(), dossier.getIdClient(),
-                        dossier.getAdverseFirstnameClient(), dossier.getAdverseLastnameClient(), dossier.getAdverseCompanyClient(), dossier.getAdverseIdClient(),
                         dossier.getBalance(), dossier.getVckeyOwner(), enumVCOwnerOptional.orElse(null),
                         dossier.getCloseDossier(),
                         dossier.getOpenDossier(),
                         dossier.getType(),
                         dossier.getLastAccessDate(),
-                        dossier.getPartiesName()
+                        dossier.getPartiesName(),
+                        dossier.getNomenclature(),
+                        dossier.getDrivePath(),
+                        dossier.getTagsName()
                 );
                 dossierDTO.setTypeItem(new ItemStringDto(dossier.getType().getDossType(),
                         Utils.getLabel(enumLanguage,
-                                dossier.getType().getLabelFr(),
-                                dossier.getType().getLabelEn(),
-                                dossier.getType().getLabelNl(),
-                                dossier.getType().getLabelNl())));
-
+                                dossier.getType().name(), null)));
                 return dossierDTO;
             }).collect(Collectors.toList());
 
@@ -222,6 +227,68 @@ public class DossierV2ServiceImpl implements DossierV2Service {
         }
 
         return null;
+    }
+
+    @Override
+    public Long countSharedAffaires(Long userId, String vcKey, List<EnumVCOwner> enumVCOwner) {
+        log.debug("Count all shared Affaires with user id {} and vckey {}", userId, vcKey);
+        Optional<LawfirmUsers> lawfirmUsers = lawfirmUserRepository.findLawfirmUsersByVcKeyAndUserId(vcKey, userId);
+
+        if (lawfirmUsers.isPresent()) {
+            log.debug("Law firm list {} user id {}", lawfirmUsers.get().getId(), userId);
+
+            log.debug("Search based on owner {}", enumVCOwner);
+
+            Long countShared = dossierRepository.countSharedAffaires(lawfirmUsers.get().getId(), enumVCOwner);
+
+            log.debug("Count shared dossier {}", countShared);
+
+            return countShared;
+        }
+
+        return null;
+    }
+
+    @Override
+    public boolean addNewContactToDossier(DossierDTO dossierDTO, List<Long> newContactIdList) {
+
+        log.debug("Entering addNewContactToDossier() with dossier {} and list id {}", dossierDTO, newContactIdList);
+        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        for (Long contactId : newContactIdList) {
+
+            Optional<TClients> client = clientRepository.findById(contactId);
+
+            if (client.isEmpty()) {
+                log.warn("client {} is not found", contactId);
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "client is not found");
+            }
+
+            ItemLongDto clientItem = new ItemLongDto(client.get().getId_client(), client.get().getF_nom());
+            DossierContactDTO dossierContactDTO = new DossierContactDTO();
+
+            if (!dossierDTO.getType().equals(EnumDossierType.MD)) {
+
+                ItemDto clientType = new ItemDto(EnumDossierContactType.OTHER.getId(), EnumDossierContactType.OTHER.name());
+
+                dossierContactDTO.setClient(clientItem);
+                dossierContactDTO.setClientType(clientType);
+
+                dossierDTO.getDossierContactDTO().add(dossierContactDTO);
+            } else {
+                ItemDto clientType = new ItemDto(EnumDossierContactType.PARTY.getId(), EnumDossierContactType.PARTY.name());
+
+                dossierContactDTO.setClient(clientItem);
+                dossierContactDTO.setClientType(clientType);
+
+                dossierDTO.getDossierContactDTO().add(dossierContactDTO);
+            }
+
+        }
+
+        updateAffaire(dossierDTO, lawfirmToken.getUserId(), lawfirmToken.getUsername(), lawfirmToken.getVcKey(), true);
+
+        return true;
     }
 
     private FinanceDTO getBalancePerDossier(Long dossierId, Long userId, String vcKey, Long vcUserId) {
@@ -268,6 +335,12 @@ public class DossierV2ServiceImpl implements DossierV2Service {
         String username = lawfirmToken.getUsername();
         log.debug("saveAffaire -> username {}", username);
 
+        Optional<LawfirmEntity> lawfirmEntityOptional = lawfirmRepository.findLawfirmByVckey(vcKey);
+
+        if (lawfirmEntityOptional.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "lawfirm is not found");
+        }
+
         TDossiers tDossiers = new TDossiers();
 
         dossierValidator.commonRuleDossier(dossierDTO);
@@ -277,9 +350,35 @@ public class DossierV2ServiceImpl implements DossierV2Service {
         int yearInt = cal.get(Calendar.YEAR);
         String year = String.valueOf(yearInt);
         tDossiers.setYear_doss(year);
-        Long maxDossier = dossierRepository.getMaxDossierByVckeyAndYear(vcKey, year);
+
+        Long maxDossier = dossierRepository.getMaxDossierByVckey(vcKey);
+
+        // start max number dossier to 1 OR set with the value from USER
+        if (maxDossier == null || maxDossier < lawfirmEntityOptional.get().getStartDossierNumber()) {
+            maxDossier = lawfirmEntityOptional.get().getStartDossierNumber();
+        }
+
+        //TODO num_dossier deprecated should be deleted in the futur
         tDossiers.setNum_doss(maxDossier);
+        tDossiers.setDossierNumber(maxDossier);
+
         tDossiers.setDoss_type(dossierDTO.getType().getDossType());
+        Optional<TVirtualcabNomenclature> virtualcabNomenclatureOptional = tVirtualcabNomenclatureRepository.findByIdAndLawfirmEntity(dossierDTO.getVirtualcabNomenclature().getValue(), lawfirmEntityOptional.get());
+
+        if (virtualcabNomenclatureOptional.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "VirtualcabNomenclature is not found");
+        }
+
+        tDossiers.setNomenclature(virtualcabNomenclatureOptional.get().getName() + "-" + StringUtils.leftPad(maxDossier.toString(), 4, '0'));
+
+        String drivePath = virtualcabNomenclatureOptional.get().getDrivePath();
+        // Replace {year}, {num} and {nomenclature}
+        drivePath = drivePath.replace(VirtualcabNomenclatureUtils.VIRTUALNOMENCLATUREYEAR, tDossiers.getYear_doss());
+        drivePath = drivePath.replace(VirtualcabNomenclatureUtils.VIRTUALNOMENCLATURENUM, StringUtils.leftPad(tDossiers.getDossierNumber().toString(), 4, '0'));
+        drivePath = drivePath.replace(VirtualcabNomenclatureUtils.VIRTUALNOMENCLATURENOMENCLATURE, virtualcabNomenclatureOptional.get().getName());
+        drivePath = drivePath + "/" + tDossiers.getNomenclature();
+
+        tDossiers.setDrivePath(drivePath);
 
         Integer coutHoraire = dossierDTO.getCouthoraire();
         if (dossierDTO.getCouthoraire() == null || dossierDTO.getCouthoraire() == 0) {
@@ -293,57 +392,57 @@ public class DossierV2ServiceImpl implements DossierV2Service {
         Optional<TClients> client = Optional.empty();
         DossierContact dossierContact = null;
         switch (dossierDTO.getType()) {
-            case BA:
-            case DC:
-            case DF:
-                client = clientRepository.findById(dossierDTO.getIdClient());
-                if (client.isEmpty()) {
-                    log.warn("client {} is not found", dossierDTO.getIdClient());
-                    throw new ResponseStatusException(HttpStatus.NOT_FOUND, "client is not found");
-                }
-                dossierContact = new DossierContact();
-                dossierContact.setDossiers(tDossiers);
-                dossierContact.setContactTypeId(EnumDossierContactType.CLIENT);
-                dossierContact.setClients(client.get());
-                dossierContact.setCreUser(username);
-                tDossiers.getDossierContactList().add(dossierContact);
-
-                client = clientRepository.findById(dossierDTO.getIdAdverseClient());
-
-                if (client.isEmpty()) {
-                    log.warn("client adv {} is not found", dossierDTO.getIdAdverseClient());
-                    throw new ResponseStatusException(HttpStatus.NOT_FOUND, "client adv is not found");
-                }
-
-                dossierContact = new DossierContact();
-                dossierContact.setDossiers(tDossiers);
-                dossierContact.setContactTypeId(EnumDossierContactType.OPPOSING);
-                dossierContact.setClients(client.get());
-                dossierContact.setCreUser(username);
-                tDossiers.getDossierContactList().add(dossierContact);
-                break;
-            case MD:
-                for (ItemClientDto dossierContact1 : dossierDTO.getClientList()) {
+            case BA, DC, DF -> {
+                for (DossierContactDTO dossierContactDTO : dossierDTO.getDossierContactDTO()) {
                     dossierContact = new DossierContact();
-                    log.info(" Contact type {}", dossierContact1.getType());
-                    client = clientRepository.findById(dossierContact1.getValue());
+
+                    client = clientRepository.findById(dossierContactDTO.getClient().getValue());
+
+                    log.info(" Contact type {}", dossierContactDTO.getClientType().getLabel());
 
                     if (client.isEmpty()) {
-                        log.warn("client partie {} is not found", dossierContact1.getValue());
-                        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "client adv is not found");
+                        log.warn("client {} is not found", dossierContactDTO.getClient().getValue());
+                        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "client is not found");
                     }
-                    if (dossierContact1.getType().equals(EnumDossierContactType.PARTY)) {
+
+                    if (dossierContactDTO.getClientType() == null) {
+                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Client type is null");
+                    }
+
+                    EnumDossierContactType enumContact = EnumDossierContactType.fromId(dossierContactDTO.getClientType().getValue());
+
+                    if (enumContact == null) {
+                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not in EnumDossierContactType");
+                    }
+                    dossierContact.setDossiers(tDossiers);
+                    dossierContact.setContactTypeId(enumContact);
+                    dossierContact.setClients(client.get());
+                    dossierContact.setCreUser(username);
+                    tDossiers.getDossierContactList().add(dossierContact);
+                }
+            }
+            case MD -> {
+                for (DossierContactDTO dossierContactDTO : dossierDTO.getDossierContactDTO()) {
+
+                    client = clientRepository.findById(dossierContactDTO.getClient().getValue());
+
+                    log.info(" Contact type {}", dossierContactDTO.getClientType().getLabel());
+
+                    if (client.isEmpty()) {
+                        log.warn("client {} is not found", dossierContactDTO.getClient().getValue());
+                        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "client is not found");
+                    }
+
+                    if (dossierContactDTO.getClientType().getValue().equals(EnumDossierContactType.PARTY.getId())) {
                         dossierContact = new DossierContact();
                         dossierContact.setDossiers(tDossiers);
                         dossierContact.setContactTypeId(EnumDossierContactType.PARTY);
-
                         dossierContact.setClients(client.get());
                         dossierContact.setCreUser(username);
                         tDossiers.getDossierContactList().add(dossierContact);
                     }
-
                 }
-                break;
+            }
         }
 
         tDossiers.setVc_key(vcKey);
@@ -351,6 +450,8 @@ public class DossierV2ServiceImpl implements DossierV2Service {
 
         tDossiers.setDate_open(dossierDTO.getOpenDossier());
         tDossiers.setDate_close(null);
+        //Sort by contactType to avoid parties name starting with opposing parties e.g
+        tDossiers.getDossierContactList().sort(Comparator.comparing(DossierContact::getContactTypeId));
 
         if (EnumMatiereRubrique.fromId(dossierDTO.getId_matiere_rubrique()) == null) {
 
@@ -368,27 +469,48 @@ public class DossierV2ServiceImpl implements DossierV2Service {
         tDossiers.setSuccess_fee_montant(dossierDTO.getSuccess_fee_montant() != null ? dossierDTO.getSuccess_fee_montant() : BigDecimal.ZERO);
         tDossiers.setSuccess_fee_perc(dossierDTO.getSuccess_fee_perc());
         tDossiers.setId_user_resp(dossierDTO.getIdUserResponsible());
-        if (dossierDTO.getConseilIdAdverseClient() != null) {
-            Optional<TClients> clientOpposent = clientRepository.findById(dossierDTO.getConseilIdAdverseClient());
-            if (clientOpposent.isEmpty()) {
-                log.warn("client adv {} is not found", dossierDTO.getIdAdverseClient());
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "client opposent is not found");
-            }
-            tDossiers.setOpposingCounsel(clientOpposent.get());
-        } else {
-            tDossiers.setOpposingCounsel(null);
-        }
 
         tDossiers.setClientQuality(dossierDTO.getQuality());
         // be sure that the transparency is created
         tDossiers.setIsDigital(false);
-//
+
         dossierRepository.save(tDossiers);
 
-        createTDossierRight(tDossiers, userId, vcKey, username);
+        if (!CollectionUtils.isEmpty(dossierDTO.getTagsList())) {
+            List<TDossiersVcTags> tDossiersVcTagsList = new ArrayList<>();
+            for (ItemLongDto itemLongDto : dossierDTO.getTagsList()) {
 
+                if (itemLongDto.getIsDefault().equals("true")) {
+                    TVirtualCabTags tVirtualCabTags = new TVirtualCabTags();
+                    tVirtualCabTags.setLabel(itemLongDto.getLabel());
+                    tVirtualCabTags.setLawfirmEntity(lawfirmEntityOptional.get());
+
+                    virtualcabTagsRepository.save(tVirtualCabTags);
+                }
+
+                TDossiersVcTags tDossiersVcTags = new TDossiersVcTags();
+
+                tDossiersVcTags.setTDossiers(tDossiers);
+
+                Optional<TVirtualCabTags> tVirtualCabTagsOptional = virtualcabTagsService.findTVirtualCabTagsByLabel(itemLongDto.getLabel());
+                tDossiersVcTags.setTVirtualCabTags(tVirtualCabTagsOptional.get());
+
+                tDossiersVcTagsRepository.save(tDossiersVcTags);
+
+                tDossiersVcTagsList.add(tDossiersVcTags);
+            }
+
+            tDossiers.setTDossiersVcTags(tDossiersVcTagsList);
+
+        }
+
+        createTDossierRight(tDossiers, userId, vcKey, username, EnumVCOwner.OWNER_VC);
+        // this is maybe the same user so don't give another vcowner right
+        if (!userId.equals(tDossiers.getId_user_resp())) {
+            createTDossierRight(tDossiers, tDossiers.getId_user_resp(), vcKey, username, EnumVCOwner.NOT_OWNER_VC);
+        }
         // get path in order to create folder within drive
-        List<String> paths = getPaths(vcKey, tDossiers.getYear_doss(), StringUtils.leftPad(tDossiers.getNum_doss().toString(), 4, "0"));
+        List<String> paths = getPaths(virtualcabNomenclatureOptional.get(), tDossiers.getDrivePath());
 
         IDriveProducer driveProducer = driveFactory.getDriveProducer(lawfirmToken.getDriveType());
         driveProducer.createFolders(lawfirmToken, vcKey, paths);
@@ -405,14 +527,53 @@ public class DossierV2ServiceImpl implements DossierV2Service {
     }
 
     @Override
-    public Long saveAffaireAndAttachToCase(String caseId, DossierDTO dossierDTO, String vcKey) {
-        log.debug("entering saveAffaireAndAttachToCase {}", dossierDTO);
+    public Long saveAffaireAndAttachToCase(CaseDTO casesModal, int responsableId, String virtualcabNomenclatureLabel, int virtualcabNomenclatureId, String vcKey) throws LawfirmBusinessException {
+        log.debug("entering saveAffaireAndAttachToCase");
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        //creation dto
+        DossierDTO dossierDTO = new DossierDTO();
+
+        ContactSummary contactSummary = clientV2Service.getCientById(casesModal.getPartieEmail().get(0).getContactId());
+
+        if (contactSummary != null) {
+            ItemLongDto clientItemDTO = new ItemLongDto();
+            clientItemDTO.setLabel(contactSummary.getFullName());
+            clientItemDTO.setValue(contactSummary.getId());
+
+            ItemDto clientTypeDTO = new ItemDto();
+            clientTypeDTO.setLabel(EnumDossierContactType.CLIENT.name());
+            clientTypeDTO.setValue(EnumDossierContactType.CLIENT.getId());
+
+            DossierContactDTO dossierContactDTO = new DossierContactDTO();
+            dossierContactDTO.setClient(clientItemDTO);
+            dossierContactDTO.setClientType(clientTypeDTO);
+
+            List<DossierContactDTO> dossierContactDTOS = new ArrayList<>();
+            dossierContactDTOS.add(dossierContactDTO);
+
+            dossierDTO.setDossierContactDTO(dossierContactDTOS);
+        } else {
+            log.warn("Client creation error");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No contact found with contactID");
+        }
+
+        dossierDTO.setOpenDossier(new Date());
+        dossierDTO.setId_matiere_rubrique(EnumMatiereRubrique.ADMINISTRATION_PROVISOIRE.getId());
+        dossierDTO.setType(EnumDossierType.DC);
+        dossierDTO.setIdUserResponsible((long) responsableId);
+
+        ItemLongDto virtualCabNom = new ItemLongDto();
+        virtualCabNom.setValue((long) virtualcabNomenclatureId);
+        virtualCabNom.setLabel(virtualcabNomenclatureLabel);
+
+        dossierDTO.setVirtualcabNomenclature(virtualCabNom);
+        dossierDTO.setSuccess_fee_perc(100);
 
         Long saveAffaire = saveAffaire(dossierDTO, vcKey);
         DossierDTO newDossierDto = getDossierById(saveAffaire);
 
-        attachAffaire(caseId, newDossierDto, lawfirmToken);
+        attachAffaire(casesModal.getId(), newDossierDto, lawfirmToken);
 
         return saveAffaire;
     }
@@ -426,14 +587,18 @@ public class DossierV2ServiceImpl implements DossierV2Service {
             case BA:
             case DC:
             case DF:
-                ContactSummary contactSummary = clientV2Service.getCientById(dossierDTO.getIdClient());
-                contactSummaryList.add(contactSummary);
+                for (DossierContactDTO dossierContactDTO : dossierDTO.getDossierContactDTO()) {
+                    if (dossierContactDTO.getClientType().getValue().equals(EnumDossierContactType.CLIENT.getId())) {
+                        ContactSummary contactSummary = clientV2Service.getCientById(dossierContactDTO.getClient().getValue());
+                        contactSummaryList.add(contactSummary);
+                    }
+                }
                 break;
             case MD:
-                for (ItemClientDto dossierContact1 : dossierDTO.getClientList()) {
-                    log.info(" Contact type {}", dossierContact1.getType());
+                for (DossierContactDTO dossierContactDTO : dossierDTO.getDossierContactDTO()) {
+                    log.info(" Contact type {}", dossierContactDTO.getClientType().getLabel());
                     try {
-                        ContactSummary contactSummary1 = clientV2Service.getCientById(dossierContact1.getValue());
+                        ContactSummary contactSummary1 = clientV2Service.getCientById(dossierContactDTO.getClient().getValue());
                         if (contactSummary1.getEmail() != null && !contactSummary1.getEmail().isEmpty()) {
                             contactSummaryList.add(contactSummary1);
                         }
@@ -441,6 +606,7 @@ public class DossierV2ServiceImpl implements DossierV2Service {
                         log.warn("Client does not exist {}", rs.getMessage());
                     }
                 }
+
                 break;
         }
 
@@ -457,7 +623,7 @@ public class DossierV2ServiceImpl implements DossierV2Service {
         }
     }
 
-    private void createTDossierRight(TDossiers dossiers, Long userId, String vcKey, String username) {
+    private void createTDossierRight(TDossiers dossiers, Long userId, String vcKey, String username, EnumVCOwner enumVCOwner) {
         TDossierRights tDossierRights = new TDossierRights();
         tDossierRights.setDossierId(dossiers.getIdDoss());
 
@@ -467,7 +633,7 @@ public class DossierV2ServiceImpl implements DossierV2Service {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Lawfirm with key: {" + vcKey + "} not found.");
         }
         tDossierRights.setVcUserId(lawfirmUsersOptional.get().getId());
-        tDossierRights.setVcOwner(EnumVCOwner.OWNER_VC);
+        tDossierRights.setVcOwner(enumVCOwner);
         tDossierRights.setRIGHTS("ACCESS");
         tDossierRights.setTDossiers(dossiers);
         tDossierRights.setCreUser(username);
@@ -475,15 +641,16 @@ public class DossierV2ServiceImpl implements DossierV2Service {
         tDossierRightsRepository.save(tDossierRights);
     }
 
-    public List<String> getPaths(String vcKey, String year, String number) {
-        List<TVirtualcabConfig> virtualcabConfigs = tVirtualcabConfigRepository.findAllByVcKey(vcKey);
+    public List<String> getPaths(TVirtualcabNomenclature virtualcabNomenclature, String drivePath) {
+        List<TNomenclatureConfig> nomenclatureConfigs = nomenclatureConfigRepository.findAllByVcNomenclature(virtualcabNomenclature);
 
-        List<String> folders = virtualcabConfigs.stream()
-                .map(tVirtualcabConfig -> ",dossiers," + year + "," + number + "," + tVirtualcabConfig.getDescription() + ",")
+        List<String> folders = nomenclatureConfigs.stream()
+                .map(tNomenclatureConfig -> ",dossiers," + drivePath + "," + tNomenclatureConfig.getLabel() + ",")
                 .collect(Collectors.toList());
 
         // create at least the folder
-        folders.add(",dossiers," + year + "," + number + ",");
+        // add
+        folders.add("," + DriveUtils.DOSSIER + "," + drivePath + ",");
 
         return folders;
     }
@@ -505,19 +672,27 @@ public class DossierV2ServiceImpl implements DossierV2Service {
         dossierDTO.setSuccess_fee_montant(BigDecimal.ZERO);
         dossierDTO.setOpenDossier(new Date());
         dossierDTO.setType(EnumDossierType.DC);
-        dossierDTO.setClientList(new ArrayList<>());
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         EnumLanguage enumLanguage = EnumLanguage.fromshortCode(lawfirmToken.getLanguage());
-        String label = Utils.getLabel(enumLanguage, EnumDossierType.DC.getLabelFr(), EnumDossierType.DC.getLabelEn(), EnumDossierType.DC.getLabelNl(), EnumDossierType.DC.getLabelNl());
+        String label = Utils.getLabel(enumLanguage, EnumDossierType.DC.name(), null);
 
         dossierDTO.setTypeItem(new ItemStringDto(EnumDossierType.DC.getDossType(), label));
         dossierDTO.setIdUserResponsible(userId);
+        dossierDTO.setId_matiere_rubrique(EnumMatiereRubrique.DROIT_FAMILLE.getId());
+        dossierDTO.setDossierContactDTO(new ArrayList<>());
+
+        Long maxDossier = dossierRepository.getMaxDossierByVckey(vcKey);
+        // start max number dossier to 1 OR set with the value from USER
+        if (maxDossier == null || maxDossier < lawfirmUsersOptional.get().getLawfirm().getStartDossierNumber()) {
+            maxDossier = lawfirmUsersOptional.get().getLawfirm().getStartDossierNumber();
+        }
+        dossierDTO.setNum(maxDossier);
 
         return dossierDTO;
     }
 
     @Override
-    public DossierDTO updateAffaire(DossierDTO dossierDTO, Long userId, String username, String vcKey) {
+    public DossierDTO updateAffaire(DossierDTO dossierDTO, Long userId, String username, String vcKey, boolean fromAddNewContact) {
         log.debug("updateAffaire -> Vckey {}", vcKey);
         log.debug("updateAffaire -> userId {}", userId);
         log.debug("updateAffaire -> username {}", username);
@@ -528,6 +703,7 @@ public class DossierV2ServiceImpl implements DossierV2Service {
             log.warn("Dossier is not filled in {}", dossierDTO.getId());
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Dossier is not filled in");
         }
+
         Optional<LawfirmUsers> lawfirmUsers = lawfirmUserRepository.findLawfirmUsersByVcKeyAndUserId(vcKey, userId);
 
         if (lawfirmUsers.isPresent()) {
@@ -541,65 +717,134 @@ public class DossierV2ServiceImpl implements DossierV2Service {
             TDossiers tDossiers = tDossiersOptional.get();
             tDossiers.setDoss_type(dossierDTO.getType().getDossType());
 
+            if (!CollectionUtils.isEmpty(dossierDTO.getTagsList())) {
+                tDossiers.getTDossiersVcTags().clear();
+                for (ItemLongDto itemLongDto : dossierDTO.getTagsList()) {
+                    TVirtualCabTags tVirtualCabTags;
+                    // if tag isDefault is null or false means that tag already exist
+                    if (itemLongDto.getIsDefault() == null || itemLongDto.getIsDefault().equals("false")) {
+                        Optional<TVirtualCabTags> tVirtualCabTagsOptional = virtualcabTagsService.findTVirtualCabTagsByLabel(itemLongDto.getLabel());
+
+                        tVirtualCabTags = tVirtualCabTagsOptional.orElseGet(TVirtualCabTags::new);
+
+                        if (tVirtualCabTagsOptional.isEmpty()) {
+                            tVirtualCabTags = saveVirtualCabTags(itemLongDto.getLabel(), lawfirmUsers.get().getLawfirm());
+                        }
+
+                        Optional<TDossiersVcTags> tDossiersVcTagsOptional = tDossiersVcTagsRepository.findDossierTagsByIdDossandTagsId(dossierDTO.getId(), tVirtualCabTags.getId());
+
+                        if (tDossiersVcTagsOptional.isEmpty()) {
+                            TDossiersVcTags tDossiersVcTags = new TDossiersVcTags();
+                            tDossiersVcTags.setTVirtualCabTags(tVirtualCabTags);
+                            tDossiers.addDossierVcTags(tDossiersVcTags);
+                        } else {
+                            tDossiers.addDossierVcTags(tDossiersVcTagsOptional.get());
+                        }
+
+                    } else {
+                        tVirtualCabTags = saveVirtualCabTags(itemLongDto.getLabel(), lawfirmUsers.get().getLawfirm());
+                        TDossiersVcTags tDossiersVcTags = new TDossiersVcTags();
+                        tDossiersVcTags.setTVirtualCabTags(tVirtualCabTags);
+                        tDossiers.addDossierVcTags(tDossiersVcTags);
+                    }
+
+                }
+
+            }
 
             DossierContact dossierContact = null;
             switch (dossierDTO.getType()) {
                 case BA:
                 case DC:
 
-                    Optional<TClients> clientAdverse = clientRepository.findById(dossierDTO.getIdAdverseClient());
-                    if (clientAdverse.isEmpty()) {
-                        log.warn("client adv {} is not found", dossierDTO.getIdAdverseClient());
-                        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "client adv is not found");
-                    }
-                    // link client-dossier
+                    Optional<TClients> client = Optional.empty();
 
-                    Optional<TClients> client = clientRepository.findById(dossierDTO.getIdClient());
-                    if (client.isEmpty()) {
-                        log.warn("client {} is not found", dossierDTO.getIdClient());
-                        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "client is not found");
-                    }
-                    for (DossierContact dossierContact1 : tDossiers.getDossierContactList()) {
-                        log.info(" Contact type {}", dossierContact1.getContactTypeId());
-                        switch (dossierContact1.getContactTypeId()) {
+                    tDossiers.getDossierContactList().clear();
+
+                    for (DossierContactDTO dossierContactDTO : dossierDTO.getDossierContactDTO()) {
+
+                        if (dossierContactDTO.getClient().getValue() == null) {
+                            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "client value is null");
+                        }
+
+                        client = clientRepository.findById(dossierContactDTO.getClient().getValue());
+
+                        if (client.isEmpty()) {
+                            log.warn("client {} is not found", dossierContactDTO.getClient().getValue());
+                            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "client is not found");
+                        }
+
+                        EnumDossierContactType enumContact = EnumDossierContactType.fromId(dossierContactDTO.getClientType().getValue());
+
+                        switch (enumContact) {
                             case CLIENT:
-                                if (!dossierContact1.getClients().getId_client().equals(client.get().getId_client())) {
-                                    log.debug("Client registered has been changed old {} with the new {}", dossierContact1.getClients().getId_client(), client.get().getId_client());
-                                    dossierContact1.setClients(client.get());
-                                    dossierContact1.setUpdUser(username);
-                                }
+                                dossierContact = new DossierContact();
+                                dossierContact.setDossiers(tDossiers);
+                                dossierContact.setContactTypeId(EnumDossierContactType.CLIENT);
 
+                                dossierContact.setClients(client.get());
+                                dossierContact.setCreUser(username);
+                                dossierContact.setUpdUser(username);
+                                tDossiers.getDossierContactList().add(dossierContact);
                                 break;
                             case OPPOSING:
-                                if (!dossierContact1.getClients().getId_client().equals(clientAdverse.get().getId_client())) {
-                                    log.debug("Client registered has been changed old {} with the new {}", dossierContact1.getClients().getId_client(), clientAdverse.get().getId_client());
-                                    dossierContact1.setClients(clientAdverse.get());
-                                    dossierContact1.setUpdUser(username);
-                                }
+                                dossierContact = new DossierContact();
+                                dossierContact.setDossiers(tDossiers);
+                                dossierContact.setContactTypeId(EnumDossierContactType.OPPOSING);
+
+                                dossierContact.setClients(client.get());
+                                dossierContact.setCreUser(username);
+                                dossierContact.setUpdUser(username);
+                                tDossiers.getDossierContactList().add(dossierContact);
                                 break;
+                            case OPPONENT_COUNSIL:
+                                dossierContact = new DossierContact();
+                                dossierContact.setDossiers(tDossiers);
+                                dossierContact.setContactTypeId(EnumDossierContactType.OPPONENT_COUNSIL);
+
+                                dossierContact.setClients(client.get());
+                                dossierContact.setCreUser(username);
+                                dossierContact.setUpdUser(username);
+                                tDossiers.getDossierContactList().add(dossierContact);
+
+                                break;
+                            case OTHER:
+                                dossierContact = new DossierContact();
+                                dossierContact.setDossiers(tDossiers);
+                                dossierContact.setContactTypeId(EnumDossierContactType.OTHER);
+
+                                dossierContact.setClients(client.get());
+                                dossierContact.setCreUser(username);
+                                dossierContact.setUpdUser(username);
+                                tDossiers.getDossierContactList().add(dossierContact);
+
+                                break;
+
+                            default:
+                                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not in EnumDossierContactType");
                         }
                     }
                     break;
                 case MD:
                     tDossiers.getDossierContactList().clear();
 
-                    for (ItemClientDto dossierContact1 : dossierDTO.getClientList()) {
+                    for (DossierContactDTO dossierContactDTO : dossierDTO.getDossierContactDTO()) {
                         // Mediation is always party client
-                        if (dossierContact1.getType().equals(EnumDossierContactType.PARTY)) {
-                            log.info(" Contact type {}", dossierContact1.getType());
-                            client = clientRepository.findById(dossierContact1.getValue());
+                        if (dossierContactDTO.getClientType().getValue().equals(EnumDossierContactType.PARTY.getId())) {
+                            client = clientRepository.findById(dossierContactDTO.getClient().getValue());
+
+                            log.info(" Contact type {}", dossierContactDTO.getClientType().getLabel());
 
                             if (client.isEmpty()) {
-                                log.warn("client partie {} is not found", dossierContact1.getValue());
-                                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "client adv is not found");
+                                log.warn("client {} is not found", dossierContactDTO.getClient().getValue());
+                                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "client is not found");
                             }
+
                             dossierContact = new DossierContact();
                             dossierContact.setDossiers(tDossiers);
                             dossierContact.setContactTypeId(EnumDossierContactType.PARTY);
-
                             dossierContact.setClients(client.get());
                             dossierContact.setCreUser(username);
-                            dossierContact.setUpdUser(username);
                             tDossiers.getDossierContactList().add(dossierContact);
                         }
 
@@ -631,16 +876,6 @@ public class DossierV2ServiceImpl implements DossierV2Service {
             if (lawfirmUsersOptional.isPresent()) {
                 tDossiers.setId_user_resp(dossierDTO.getIdUserResponsible());
             }
-            if (dossierDTO.getConseilIdAdverseClient() != null) {
-                Optional<TClients> clientOpposent = clientRepository.findById(dossierDTO.getConseilIdAdverseClient());
-                if (clientOpposent.isEmpty()) {
-                    log.warn("client adv {} is not found", dossierDTO.getIdAdverseClient());
-                    throw new ResponseStatusException(HttpStatus.NOT_FOUND, "client opposent is not found");
-                }
-                tDossiers.setOpposingCounsel(clientOpposent.get());
-            } else {
-                tDossiers.setOpposingCounsel(null);
-            }
 
             tDossiers.setClientQuality(dossierDTO.getQuality());
             tDossiers.setUserUpd(username);
@@ -655,9 +890,19 @@ public class DossierV2ServiceImpl implements DossierV2Service {
         }
     }
 
+    private TVirtualCabTags saveVirtualCabTags(String label, LawfirmEntity lawfirm) {
+        TVirtualCabTags tVirtualCabTags = new TVirtualCabTags();
+        tVirtualCabTags.setLabel(label);
+        tVirtualCabTags.setLawfirmEntity(lawfirm);
+
+        virtualcabTagsRepository.save(tVirtualCabTags);
+
+        return tVirtualCabTags;
+    }
+
     @Override
     public List<ItemLongDto> getAffairesByVcUserIdAndSearchCriteria(String vcKey, Long userId, String
-            searchCriteria) {
+            searchCriteria, boolean digital) {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         log.debug("Get Affaires by vcKey {} and userId {} and Search Criteria {}", vcKey, userId, searchCriteria);
@@ -670,68 +915,40 @@ public class DossierV2ServiceImpl implements DossierV2Service {
         log.debug("Law firm list {} user id {}", lawfirmUsers.get().getId(), userId);
 
         List<DossierDTO> resultList = new ArrayList<>();
-        String finalYear = "%";
-        Long finalNumber = null;
+        String nomenclature = "%";
         String client = "%";
-        boolean bothYearAndNumber = false;
 
         if (searchCriteria != null && !searchCriteria.isEmpty()) {
-            long number = 0;
-            String year = "%";
-
-            bothYearAndNumber = searchCriteria.contains("/");
-            // remove all non digit and /
-            //year = searchCriteria.replaceAll("[^\\d/]", "");
-            year = StringUtils.substringBefore(searchCriteria, "/");
-            try {
-                if (bothYearAndNumber) {
-                    year = StringUtils.substringBefore(searchCriteria, "/");
-                    number = Long.valueOf(StringUtils.substringAfter(searchCriteria, "/"));
-                } else if (searchCriteria.matches("^[0-9]*$")) {
-                    number = Long.valueOf(searchCriteria);
-                }
-            } catch (NumberFormatException nf) {
-                log.warn("Number of dossier is wrong {}", searchCriteria);
-            }
-
-            finalYear = year;
-            finalNumber = number != 0 ? number : null;
-            // if year AND number contain digit or "/"
-            if (!year.matches("[0-9]+") && finalNumber == null) {
-                client = searchCriteria;
-            }
+            nomenclature = searchCriteria;
 
             log.info("****************");
             log.info("Search criteria {}", searchCriteria);
-            log.info("Number {}", finalNumber);
-            log.info("year {}", finalYear);
-            log.info("bothYearAndNumber {}", bothYearAndNumber);
+            log.info("Search criteria {}", nomenclature);
             log.info("client {}", client);
             log.info("****************");
         }
+
         List<Integer> integersOwners = Arrays.stream(EnumVCOwner.values()).map(EnumVCOwner::getId).collect(Collectors.toList());
 
-        List<IDossierDTO> tDossiersList = dossierRepository.findAffairesByVcUserId(lawfirmUsers.get().getId(), integersOwners, client, finalYear, finalNumber, bothYearAndNumber);
+        List<IDossierDTO> tDossiersList = dossierRepository.findAffairesByVcUserId(lawfirmUsers.get().getId(), integersOwners, searchCriteria, searchCriteria, digital);
 
         EnumLanguage enumLanguage = EnumLanguage.fromshortCode(lawfirmToken.getLanguage());
 
         resultList = tDossiersList.stream().map(dossier -> {
             DossierDTO dossierDTO = new DossierDTO(dossier.getId(), dossier.getYear(), dossier.getNum(), dossier.getInitiales(),
-                    dossier.getFirstnameClient(), dossier.getLastnameClient(), dossier.getCompanyClient(), dossier.getIdClient(),
-                    dossier.getAdverseFirstnameClient(), dossier.getAdverseLastnameClient(), dossier.getAdverseCompanyClient(), dossier.getAdverseIdClient(),
                     dossier.getBalance(), dossier.getVckeyOwner(), dossier.getOwner(),
                     dossier.getCloseDossier(),
                     dossier.getOpenDossier(),
                     dossier.getType(),
                     dossier.getLastAccessDate(),
-                    dossier.getPartiesName()
+                    dossier.getPartiesName(),
+                    dossier.getNomenclature(),
+                    dossier.getDrivePath(),
+                    dossier.getTagsName()
             );
             dossierDTO.setTypeItem(new ItemStringDto(dossier.getType().getDossType(),
                     Utils.getLabel(enumLanguage,
-                            dossier.getType().getLabelFr(),
-                            dossier.getType().getLabelEn(),
-                            dossier.getType().getLabelNl(),
-                            dossier.getType().getLabelNl())));
+                            dossier.getType().name(), null)));
 
             return dossierDTO;
         }).collect(Collectors.toList());
@@ -791,7 +1008,7 @@ public class DossierV2ServiceImpl implements DossierV2Service {
     public Long countAffairesByClientId(Long clientId) {
         log.debug("countAffairesByClientId and clientId {}", clientId);
 
-        Long aLong = dossierRepository.countByClient_cabAndOrClient_adv(clientId, clientId, clientId);
+        Long aLong = dossierRepository.countByClient_cabAndOrClient_adv(List.of(clientId));
         log.debug("countAffairesByClientId dossier number {}", aLong);
         return aLong;
     }
@@ -944,7 +1161,7 @@ public class DossierV2ServiceImpl implements DossierV2Service {
                 log.debug("Email {} to be sent", email);
                 Optional<TUsers> usersOptional = tUsersRepository.findByEmail(email);
                 String language = usersOptional.get().getLanguage() != null ? usersOptional.get().getLanguage().toLowerCase() : EnumLanguage.FR.getShortCode();
-                mailService.sendMailWithoutMeetingAndIcs(EnumMailTemplate.MAILSHAREDFOLDERUSERTEMPLATE, EmailUtils.prepareContextForSharedFolderUser(email, DossiersUtils.getDossierLabelItem(dossiersOptional.get().getYear_doss(), dossiersOptional.get().getNum_doss()), usersOptional.get().getFullname(), lawfirmToken.getVcKey(), lawfirmToken.getClientFrom()), language);
+                mailService.sendMailWithoutMeetingAndIcs(EnumMailTemplate.MAILSHAREDFOLDERUSERTEMPLATE, EmailUtils.prepareContextForSharedFolderUser(email, DossiersUtils.getDossierLabelItem(dossiersOptional.get().getNomenclature()), usersOptional.get().getFullname(), lawfirmToken.getVcKey(), lawfirmToken.getClientFrom()), language);
             });
         }
     }
@@ -1143,6 +1360,7 @@ public class DossierV2ServiceImpl implements DossierV2Service {
                 shareAffaireDTO.getUserIdSelected().add(lawfirmUsersOptional.get().getUser().getId());
                 shareAffaireDTO.setUserId(lawfirmUsersOptional.get().getUser().getId());
                 shareAffaireDTO.setAffaireId(dossiers.getIdDoss());
+                shareAffaireDTO.setNomenclature(dossiers.getNomenclature());
                 shareAffaireDTO.setVcKey(lawfirmUsersOptional.get().getLawfirm().getVckey());
                 Optional<TDossierRights> optionalTDossierRights = tDossierRightsRepository.findAllByVcUserIdAndDossierId(lawfirmUsersOptional.get().getId(), dossiers.getIdDoss());
                 if (optionalTDossierRights.isEmpty()) {
@@ -1155,8 +1373,8 @@ public class DossierV2ServiceImpl implements DossierV2Service {
     }
 
     @Override
-    public List<DossierDTO> findAllByVCKey(String vcKey, Long userId) {
-        log.debug("Entering findAllByVCKey {}, userId {}", vcKey, userId);
+    public List<DossierDTO> findAllByVCKeyAndUser(String vcKey, Long userId) {
+        log.debug("Entering findAllByVCKeyAndUser {}, userId {}", vcKey, userId);
         List<TDossiers> dossiers = dossierRepository.findAllByVCKeyAndUserId(vcKey, userId, List.of(EnumVCOwner.OWNER_VC, EnumVCOwner.NOT_OWNER_VC));
 
         log.debug("dossier size {}", dossiers.size());
@@ -1165,10 +1383,97 @@ public class DossierV2ServiceImpl implements DossierV2Service {
             dossierDTO.setId(dossier.getIdDoss());
             dossierDTO.setYear(Long.parseLong(dossier.getYear_doss()));
             dossierDTO.setNum(dossier.getNum_doss());
+            dossierDTO.setNomenclature(dossier.getNomenclature());
 
             return dossierDTO;
         }).collect(Collectors.toList());
     }
+
+    @Override
+    public List<DossierDTO> findAllByVCKey(String vcKey) {
+        log.debug("Entering findAllByVCKey {}", vcKey);
+        List<TDossiers> dossiers = dossierRepository.findAllByVCKey(vcKey, List.of(EnumVCOwner.OWNER_VC, EnumVCOwner.NOT_OWNER_VC));
+
+        log.debug("dossier size {}", dossiers.size());
+        return dossiers.stream().map(dossier -> {
+            DossierDTO dossierDTO = new DossierDTO();
+            dossierDTO.setId(dossier.getIdDoss());
+            dossierDTO.setYear(Long.parseLong(dossier.getYear_doss()));
+            dossierDTO.setNum(dossier.getNum_doss());
+            dossierDTO.setNomenclature(dossier.getNomenclature());
+
+            return dossierDTO;
+        }).collect(Collectors.toList());
+    }
+
+    @Override
+    public void changeNomenclature(NomenclatureDTO nomenclatureDTO) {
+        log.debug("changeNomenclature -> nomenclatureDTO {}", nomenclatureDTO);
+        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+
+        Optional<LawfirmUsers> lawfirmUsersOptional = lawfirmUserRepository.findLawfirmUsersByVcKeyAndUserId(lawfirmToken.getVcKey(), lawfirmToken.getUserId());
+
+        if (lawfirmUsersOptional.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Lawfirm User not found");
+        }
+
+        Optional<LawfirmEntity> lawfirmEntityToChange = lawfirmRepository.findLawfirmByVckey(nomenclatureDTO.getVcKey());
+
+        if (lawfirmEntityToChange.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Lawfirm with vckey" + nomenclatureDTO.getVcKey() + " is not found");
+        }
+
+        Optional<TDossiers> tDossiersToRename = dossierRepository.findByIdDossAndVcKey(nomenclatureDTO.getDossierIdToRename(), nomenclatureDTO.getVcKey());
+
+        if (tDossiersToRename.isPresent()) {
+            TDossiers tDossiers = tDossiersToRename.get();
+
+            if (nomenclatureDTO.getIdNomenclature() == null) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Error : nomenclature id is null or empty ");
+            }
+
+            Optional<TVirtualcabNomenclature> virtualcabNomenclatureOptional = tVirtualcabNomenclatureRepository.findByIdAndLawfirmEntity(nomenclatureDTO.getIdNomenclature(), lawfirmEntityToChange.get());
+
+            if (virtualcabNomenclatureOptional.isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "VirtualcabNomenclature is not found");
+            }
+
+            tDossiers.setNomenclature(virtualcabNomenclatureOptional.get().getName() + "-" + StringUtils.leftPad(tDossiers.getDossierNumber().toString(), 4, '0'));
+            String drivePath = virtualcabNomenclatureOptional.get().getDrivePath();
+            // Replace {year}, {num} and {nomenclature}
+            drivePath = drivePath.replace(VirtualcabNomenclatureUtils.VIRTUALNOMENCLATUREYEAR, tDossiers.getYear_doss());
+            drivePath = drivePath.replace(VirtualcabNomenclatureUtils.VIRTUALNOMENCLATURENUM, StringUtils.leftPad(tDossiers.getDossierNumber().toString(), 4, '0'));
+            drivePath = drivePath.replace(VirtualcabNomenclatureUtils.VIRTUALNOMENCLATURENOMENCLATURE, virtualcabNomenclatureOptional.get().getName());
+            drivePath = drivePath + "/" + tDossiers.getNomenclature();
+
+
+            DriveApi driveImpl = driveFactory.getDriveImpl(DriveType.openstack);
+            driveImpl.moveFolders(null, nomenclatureDTO.getVcKey(), DriveUtils.DOSSIER_PATH + tDossiers.getDrivePath() + "/", DriveUtils.DOSSIER_PATH + drivePath + "/");
+
+            tDossiers.setDrivePath(drivePath);
+            tDossiers.setUserUpd(lawfirmToken.getUsername());
+            CaseCreationDTO caseCreationDTO = new CaseCreationDTO();
+            DossierDTO dossierDTO = new DossierDTO();
+            dossierDTO.setId(nomenclatureDTO.getDossierIdToRename());
+            dossierDTO.setNomenclature(tDossiers.getNomenclature());
+            dossierDTO.setNum(tDossiers.getDossierNumber());
+            caseCreationDTO.setDossier(dossierDTO);
+
+            affaireProducer.updateAffaire(caseCreationDTO, lawfirmToken);
+
+            // get path in order to create folder within drive
+            List<String> paths = getPaths(virtualcabNomenclatureOptional.get(), tDossiers.getDrivePath());
+
+            IDriveProducer driveProducer = driveFactory.getDriveProducer(lawfirmToken.getDriveType());
+            driveProducer.createFolders(lawfirmToken, lawfirmEntityToChange.get().getVckey(), paths);
+
+        } else {
+            log.warn("Dossier to rename does not exist {} and vckey {}", nomenclatureDTO.getDossierIdToRename(), nomenclatureDTO.getVcKey());
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Dossier does not exist");
+        }
+    }
+
 
     private String getObjShared(String year_doss, Long num_doss) {
         return DriveUtils.DOSSIER_PATH + year_doss + "/" + DossiersUtils.getDossierNum(num_doss) + "/";

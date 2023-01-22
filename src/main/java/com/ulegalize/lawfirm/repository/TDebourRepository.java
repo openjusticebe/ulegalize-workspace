@@ -34,7 +34,7 @@ public interface TDebourRepository extends JpaRepository<TDebour, Long>, JpaSpec
     @Query(nativeQuery = true, value = "select" +
             " debour.id_debour as id, debour.id_debour_type as idDebourType, debourType.description as debourTypeDescription, debour.price_per_unit as pricePerUnit," +
             " debour.unit as unit, debour.id_mesure_type as idMesureType, mesureType.description as mesureDescription, debour.id_doss as idDoss," +
-            " dossier.year_doss as yearDossier, dossier.num_doss as numDossier, debour.date_action as dateAction, debour.comment as comment, facture_frais_admin.ID as factureLinkedFraisId," +
+            " dossier.year_doss as yearDossier, dossier.nomenclature as nomenclature, debour.date_action as dateAction, debour.comment as comment, facture_frais_admin.ID as factureLinkedFraisId," +
             " ifNull(facture_frais_admin.ID, 0) as invoiceChecked, ifNull(facture.id_facture, 0) as alreadyInvoiced," +
             " facture.facture_ref as factExtRef, facture.id_facture as factExtId" +
             " from t_debour debour" +
@@ -54,4 +54,18 @@ public interface TDebourRepository extends JpaRepository<TDebour, Long>, JpaSpec
             " and case when ?4 = 0 then facture.id_facture is null" +
             "    when ?4 = 1 then facture.id_facture is not null else 1=1 end")
     List<Object[]> findAllByInvoiceIdDossierId(Long invoiceId, Long dossierId, Long vcUserId, Boolean filterAlreadyInvoiced);
+
+    @Query(nativeQuery = true, value = "select" +
+            " debourType.description as descriptionFraisAdmin," +
+            " mesureType.description as mesureFraisAdmin," +
+            " debour.price_per_unit as pricePerUnitFraisAdmin," +
+            " debour.unit as unitFraisAdmin" +
+            " from t_factures facture" +
+            "         inner join t_facture_frais_admin facture_frais_admin" +
+            "                         on facture.id_facture = facture_frais_admin.facture_id" +
+            " inner join t_debour debour on debour.id_debour = facture_frais_admin.DEBOURS_ID" +
+            "         inner join t_debour_type debourType on debourType.id_debour_type = debour.id_debour_type" +
+            "         inner join t_mesure_type mesureType on mesureType.id_mesure_type = debour.id_mesure_type" +
+            " where facture.id_facture = ?1")
+    List<Object[]> findAllByInvoiceIdDossierId(Long invoiceId);
 }

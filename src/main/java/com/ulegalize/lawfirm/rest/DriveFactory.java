@@ -17,6 +17,9 @@ public class DriveFactory {
     @Autowired
     @Qualifier("driveDropbox")
     private DriveApi driveDropbox;
+    @Autowired
+    @Qualifier("driveOnedrive")
+    private DriveApi driveOnedrive;
 
     @Autowired
     @Qualifier("driveProducer")
@@ -25,33 +28,27 @@ public class DriveFactory {
     @Autowired
     @Qualifier("driveProducerDropBox")
     private IDriveProducer driveProducerDropBox;
+    @Autowired
+    @Qualifier("driveProducerOnedrive")
+    private IDriveProducer driveProducerOnedrive;
 
     public DriveApi getDriveImpl(DriveType driveType) {
         log.debug("Drive choice {}", driveType);
-        switch (driveType) {
-
-            case openstack:
-                return driveOpenStack;
-            case dropbox:
-                return driveDropbox;
-            case onedrive:
-                break;
-            default:
-                return driveOpenStack;
-        }
-        return driveOpenStack;
+        return switch (driveType) {
+            case openstack -> driveOpenStack;
+            case dropbox -> driveDropbox;
+            case onedrive -> driveOnedrive;
+            default -> driveOpenStack;
+        };
     }
 
     public IDriveProducer getDriveProducer(DriveType driveType) {
         log.debug("Drive producer choice {}", driveType);
-        switch (driveType) {
-
-            case openstack:
-                return driveProducer;
-            case dropbox:
-                return driveProducerDropBox;
-            default:
-                return driveProducer;
-        }
+        return switch (driveType) {
+            case openstack -> driveProducer;
+            case dropbox -> driveProducerDropBox;
+            case onedrive -> driveProducerOnedrive;
+            default -> driveProducer;
+        };
     }
 }

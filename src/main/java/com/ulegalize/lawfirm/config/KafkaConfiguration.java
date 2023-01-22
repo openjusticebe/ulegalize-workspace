@@ -40,6 +40,8 @@ public class KafkaConfiguration {
     private String topicShareUserDossier;
     @Value("${tpd.attachAffaire-topic-name}")
     private String topicAttachAffaire;
+    @Value("${tpd.updateAffaire-topic-name}")
+    private String updateAffaireTopic;
     @Value("${tpd.sendMail-topic-name}")
     private String sendMailTopic;
     @Value("${tpd.sendEvent-topic-name}")
@@ -52,6 +54,16 @@ public class KafkaConfiguration {
     private String updateNotificationLawfirmTopic;
     @Value("${tpd.createInvoiceRecord-topic-name}")
     private String createInvoiceRecordTopic;
+    @Value("${tpd.sendReportTopic-topic-name}")
+    private String sendReportTopic;
+    @Value("${tpd.updateLawfirmDrive-topic-name}")
+    private String topicUpdateLawfirmDrive;
+
+    @Value("${tpd.updateClient-topic-name}")
+    private String topicUpdateClient;
+
+    @Value("${tpd.createContainer-topic-name}")
+    private String topicCreateContainer;
 
     @Bean
     public KafkaAdmin kafkaAdmin() {
@@ -71,6 +83,10 @@ public class KafkaConfiguration {
                 StringSerializer.class);
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
                 JsonSerializer.class);
+
+        props.put(ProducerConfig.BUFFER_MEMORY_CONFIG, "20971520");
+        props.put(ProducerConfig.MAX_REQUEST_SIZE_CONFIG, "20971520");
+
         return props;
     }
 
@@ -125,9 +141,17 @@ public class KafkaConfiguration {
     }
 
     @Bean
+    public NewTopic updateAffaireTopic() {
+        return TopicBuilder.name(updateAffaireTopic)
+                .partitions(1)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
     public NewTopic sendMailTopic() {
         return TopicBuilder.name(sendMailTopic)
-                .partitions(1)
+                .partitions(2)
                 .replicas(1)
                 .build();
     }
@@ -143,7 +167,7 @@ public class KafkaConfiguration {
     @Bean
     public NewTopic createUpdateLawfirmTopic() {
         return TopicBuilder.name(topicUpdateLawfirm)
-                .partitions(1)
+                .partitions(3)
                 .replicas(1)
                 .build();
     }
@@ -151,7 +175,7 @@ public class KafkaConfiguration {
     @Bean
     public NewTopic createSwitchLawfirmTopic() {
         return TopicBuilder.name(topicSwitchLawfirm)
-                .partitions(1)
+                .partitions(2)
                 .replicas(1)
                 .build();
     }
@@ -171,5 +195,38 @@ public class KafkaConfiguration {
                 .replicas(1)
                 .build();
     }
+
+    @Bean
+    public NewTopic sendReportTopic() {
+        return TopicBuilder.name(sendReportTopic)
+                .partitions(1)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    public NewTopic updateLawfirmDriveTopic() {
+        return TopicBuilder.name(topicUpdateLawfirmDrive)
+                .partitions(1)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    public NewTopic updateUpdateClientTopic() {
+        return TopicBuilder.name(topicUpdateClient)
+                .partitions(1)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    public NewTopic createContainerTopic() {
+        return TopicBuilder.name(topicCreateContainer)
+                .partitions(1)
+                .replicas(1)
+                .build();
+    }
+
 
 }

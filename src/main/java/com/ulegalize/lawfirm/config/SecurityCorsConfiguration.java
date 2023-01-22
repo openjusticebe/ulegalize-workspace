@@ -8,7 +8,7 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
-public class SecurityConfiguration {
+public class SecurityCorsConfiguration {
     @Value("${app.cors.origin}")
     public String corsOrigin;
 

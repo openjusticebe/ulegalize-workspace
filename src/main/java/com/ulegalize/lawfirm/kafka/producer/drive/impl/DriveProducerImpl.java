@@ -33,7 +33,7 @@ public class DriveProducerImpl implements IDriveProducer {
     public void createFolders(UlegalizeToken ulegalizeToken, String vcKey, List<String> paths) {
         log.debug("Entering createFolders vcKey {} and path {}", vcKey, paths);
         if (!activeProfile.equalsIgnoreCase("integrationtest")
-//                && !activeProfile.equalsIgnoreCase("dev")
+                && !activeProfile.equalsIgnoreCase("dev")
                 && !activeProfile.equalsIgnoreCase("devDocker")) {
             try {
                 JSONObject jsonObject = new JSONObject();

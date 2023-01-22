@@ -5,7 +5,7 @@ import com.ulegalize.dto.BankAccountDTO;
 import java.util.List;
 
 public interface RefCompteService {
-    public List<BankAccountDTO> getAllBankAccount(String vcKey, Long userId);
+    List<BankAccountDTO> getAllBankAccount(String vcKey, Long userId, String language);
 
     BankAccountDTO updateBankAccount(String vcKey, Long userId, Integer compteId, BankAccountDTO bankAccountDTO);
 
@@ -13,5 +13,5 @@ public interface RefCompteService {
 
     Integer createBankAccount(String vcKey, Long userId, BankAccountDTO bankAccountDTO);
 
-    BankAccountDTO getBankAccountById(String vcKey, Long userId, Integer compteId);
+    BankAccountDTO getBankAccountById(String vcKey, Long userId, Integer compteId, String language);
 }

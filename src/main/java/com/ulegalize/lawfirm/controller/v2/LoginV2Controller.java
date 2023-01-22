@@ -7,56 +7,54 @@ import com.ulegalize.lawfirm.kafka.producer.transparency.ICaseProducer;
 import com.ulegalize.lawfirm.model.DefaultLawfirmDTO;
 import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.enumeration.EnumSlackUrl;
+import com.ulegalize.lawfirm.rest.AuthApi;
 import com.ulegalize.lawfirm.rest.DriveFactory;
 import com.ulegalize.lawfirm.rest.v2.SlackApi;
 import com.ulegalize.lawfirm.service.EmailService;
 import com.ulegalize.lawfirm.service.SecurityGroupService;
 import com.ulegalize.lawfirm.service.v2.LawfirmV2Service;
 import com.ulegalize.lawfirm.service.v2.UserV2Service;
+import com.ulegalize.lawfirm.service.v2.cache.CacheService;
+import com.ulegalize.lawfirm.service.v2.cache.CacheUtils;
 import com.ulegalize.lawfirm.utils.DriveUtils;
-import com.ulegalize.security.EnumRights;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import springfox.documentation.annotations.ApiIgnore;
 
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/v2/login")
 @Slf4j
+@AllArgsConstructor
 public class LoginV2Controller {
-    @Autowired
-    private DriveFactory driveFactory;
-    @Autowired
-    private LawfirmV2Service lawfirmV2Service;
-    @Autowired
-    private SecurityGroupService securityGroupService;
-    @Autowired
-    private SlackApi slackApi;
-    @Autowired
-    private ICaseProducer caseProducer;
-    @Autowired
-    private UserV2Service userV2Service;
-    @Autowired
-    private EmailService emailService;
+    private final DriveFactory driveFactory;
+    private final LawfirmV2Service lawfirmV2Service;
+    private final SecurityGroupService securityGroupService;
+    private final SlackApi slackApi;
+    private final ICaseProducer caseProducer;
+    private final UserV2Service userV2Service;
+    private final EmailService emailService;
+    private final AuthApi authApi;
+    private final CacheService cacheService;
+
 
     @PostMapping(value = "/user")
-    @ApiIgnore
     public String registerUser() {
         log.debug("registerUser()");
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-
+        String tempVcKey = null;
         log.info("Lawfirm connected user {}", lawfirmToken.getUsername());
         try {
-            LawfirmToken userProfile = securityGroupService.getSimpleUserProfile(lawfirmToken.getUserEmail(), lawfirmToken.getToken(), lawfirmToken.isVerified());
+            ProfileDTO userProfile = securityGroupService.getProfileForRegistry(lawfirmToken.getUserEmail(), lawfirmToken.isVerified());
 
+            tempVcKey = userProfile.getVcKeySelected();
             log.debug("registerUser with KNOWN user profile({})", userProfile);
 
             // this means the user is known
@@ -64,26 +62,28 @@ public class LoginV2Controller {
         } catch (ResponseStatusException rse) {
             log.debug("registerUser with UNKNOWN user profile({})", lawfirmToken.getUserEmail());
 
-            return lawfirmV2Service.registerUser(lawfirmToken.getUserEmail(), lawfirmToken.getClientFrom());
-        } finally {
+            tempVcKey = lawfirmV2Service.registerUser(lawfirmToken.getUserEmail(), lawfirmToken.getClientFrom(), lawfirmToken.isVerified());
+
             slackApi.sendSensitiveNotification("A new user '" + lawfirmToken.getClientFrom() + "' create his lawfirm. :ok_hand: ", lawfirmToken.getUserEmail(), EnumSlackUrl.NEW_ARRIVAL);
+
+            return EnumValid.UNVERIFIED.name();
+        } finally {
+            cacheService.evictCaches(CacheUtils.CACHE_USER_PROFILE);
+
+            authApi.updateAppMetaData(lawfirmToken.getAuth0UserId(), tempVcKey);
         }
     }
 
     @GetMapping(value = "/user")
-    public ResponseEntity<ProfileDTO> getUser() {
+    public ResponseEntity<ProfileDTO> getUser() throws ExecutionException, InterruptedException {
         log.debug("getUser()");
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        ProfileDTO userProfile = securityGroupService.getUserProfile(lawfirmToken.getClientFrom(), lawfirmToken.getUserEmail(), true, lawfirmToken.isVerified());
 
-        LawfirmToken userProfile = securityGroupService.getUserProfile(lawfirmToken.getClientFrom(), lawfirmToken.getUserEmail(), lawfirmToken.getToken(), true, lawfirmToken.isVerified());
         log.info("Lawfirm connected {}", userProfile);
 
         return ResponseEntity.ok()
-                .body(new ProfileDTO(userProfile.getUserId(), userProfile.getFullname(), userProfile.getUserEmail(), null, userProfile.getVcKey(),
-                        userProfile.getTemporary(), lawfirmToken.getLanguage(), userProfile.getSymbolCurrency(),
-                        userProfile.getUserId(),
-                        userProfile.getEnumRights().stream().map(EnumRights::getId).collect(Collectors.toList()),
-                        userProfile.getDriveType(), userProfile.getDropboxToken(), userProfile.isVerified()));
+                .body(userProfile);
 
     }
 
@@ -92,17 +92,13 @@ public class LoginV2Controller {
         log.debug("getUser()");
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        LawfirmToken userProfile = securityGroupService.getUserProfile(lawfirmToken.getClientFrom(), lawfirmToken.getUserEmail(), lawfirmToken.getToken(), true, lawfirmToken.isVerified());
+        ProfileDTO userProfile = securityGroupService.getUserProfile(lawfirmToken.getClientFrom(), lawfirmToken.getUserEmail(), true, lawfirmToken.isVerified());
         log.info("Lawfirm connected {}", userProfile);
 
         return ResponseEntity
                 .ok()
                 .cacheControl(CacheControl.maxAge(30, TimeUnit.SECONDS))
-                .body(new ProfileDTO(userProfile.getUserId(), userProfile.getFullname(), userProfile.getUserEmail(), null, userProfile.getVcKey(),
-                        userProfile.getTemporary(), lawfirmToken.getLanguage(), userProfile.getSymbolCurrency(),
-                        userProfile.getUserId(),
-                        userProfile.getEnumRights().stream().map(EnumRights::getId).collect(Collectors.toList()),
-                        userProfile.getDriveType(), userProfile.getDropboxToken(), userProfile.isVerified()));
+                .body(userProfile);
 
     }
 
@@ -111,14 +107,10 @@ public class LoginV2Controller {
         log.debug("getSimpleUser()");
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        LawfirmToken userProfile = securityGroupService.getSimpleUserProfile(lawfirmToken.getUserEmail(), lawfirmToken.getToken(), lawfirmToken.isVerified());
+        ProfileDTO userProfile = securityGroupService.getSimpleUserProfile(lawfirmToken.getUserEmail(), lawfirmToken.isVerified());
         log.info("Lawfirm connected {}", userProfile);
 
-        return new ProfileDTO(userProfile.getUserId(), userProfile.getFullname(), userProfile.getUserEmail(), null, userProfile.getVcKey(),
-                userProfile.getTemporary(), lawfirmToken.getLanguage(), userProfile.getSymbolCurrency(),
-                userProfile.getUserId(),
-                userProfile.getEnumRights().stream().map(EnumRights::getId).collect(Collectors.toList()),
-                userProfile.getDriveType(), userProfile.getDropboxToken(), userProfile.isVerified());
+        return userProfile;
     }
 
     @PostMapping(value = "/validate/user")
@@ -126,7 +118,7 @@ public class LoginV2Controller {
         log.debug("validateSignup({})", defaultLawfirmDTO);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        LawfirmToken userProfile = securityGroupService.getUserProfile(lawfirmToken.getClientFrom(), lawfirmToken.getUserEmail(), lawfirmToken.getToken(), true, lawfirmToken.isVerified());
+        ProfileDTO userProfile = securityGroupService.getUserProfile(lawfirmToken.getClientFrom(), lawfirmToken.getUserEmail(), true, lawfirmToken.isVerified());
         log.info("Lawfirm connected {}", userProfile);
 
         // check if the new cab is different than the old
@@ -154,6 +146,8 @@ public class LoginV2Controller {
         } catch (RuntimeException e) {
             log.error("Error while calling emails {}", defaultLawfirmDTO.getVcKey(), e);
             slackApi.sendSensitiveNotification("ResponseStatusException:LoginV2Controller->validateSignup  registeredUser email issue", defaultLawfirmDTO.getVcKey(), EnumSlackUrl.SENSITIVE);
+        } finally {
+            authApi.updateAppMetaData(lawfirmToken.getAuth0UserId(), defaultLawfirmDTO.getVcKey());
         }
 
         return profileDTO;

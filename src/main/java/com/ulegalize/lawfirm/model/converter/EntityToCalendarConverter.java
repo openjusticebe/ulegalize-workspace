@@ -4,12 +4,16 @@ import com.ulegalize.dto.*;
 import com.ulegalize.enumeration.EnumLanguage;
 import com.ulegalize.lawfirm.model.entity.TCalendarEvent;
 import com.ulegalize.lawfirm.model.entity.TCalendarParticipants;
+import com.ulegalize.lawfirm.utils.CalendarEventsUtil;
 import com.ulegalize.lawfirm.utils.SuperTriConverter;
 import com.ulegalize.utils.Utils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.stream.Collectors;
+
+import static java.time.temporal.ChronoUnit.DAYS;
 
 @Component
 public class EntityToCalendarConverter implements SuperTriConverter<TCalendarEvent, String, LawfirmCalendarEventDTO> {
@@ -38,15 +42,18 @@ public class EntityToCalendarConverter implements SuperTriConverter<TCalendarEve
         event.setMicroText(entity.getMicroText());
         event.setAudioText(entity.getAudioText());
         event.setSpeechToTextActivated(entity.isSpeechToTextActivated());
+        LocalDateTime startLocal = CalendarEventsUtil.convertToLocalDateTimeViaInstant(entity.getStart());
+        LocalDateTime endLocal = CalendarEventsUtil.convertToLocalDateTimeViaInstant(entity.getEnd());
+        if (DAYS.between(startLocal, endLocal) > 0) {
+            event.setAllDay(true);
+        }
 
         if (entity.getEventType() != null) {
             EnumLanguage enumLanguage = EnumLanguage.fromshortCode(language);
             ItemEventDto itemStringDto = new ItemEventDto(entity.getEventType().getCode(),
                     Utils.getLabel(enumLanguage,
-                            entity.getEventType().getLabelFr(),
-                            entity.getEventType().getLabelEn(),
-                            entity.getEventType().getLabelNl(),
-                            entity.getEventType().getLabelNl()), entity.getEventType().getColor());
+                            entity.getEventType().name(), null),
+                    entity.getEventType().getColor());
             event.setEventTypeItem(itemStringDto);
         }
         event.setApproved(entity.isApproved());

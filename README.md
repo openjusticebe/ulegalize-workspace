@@ -1,5 +1,3 @@
-[![Workspace CI](https://github.com/openjusticebe/ulegalize-workspace/actions/workflows/runOnGitHub.yml/badge.svg?branch=master)](https://github.com/openjusticebe/ulegalize-workspace/actions/workflows/runOnGitHub.yml)
-
 ## Getting started
 
 First you can read the accessible documentation
@@ -27,8 +25,8 @@ change `gradle.properties` version
 commit your change add a new tag and push all
 
 ```
-git tag 2.23.0  
-git push origin 2.23.0
+git tag 3.6.3  
+git push origin 3.6.3
 
 ```
 
@@ -72,19 +70,19 @@ docker-compose up -d
 
 https://stackoverflow.com/questions/31324981/how-to-access-host-port-from-docker-container/61424570#61424570   
 `
-docker run --name ulegalize-lawfirm --network="host" --restart always -p 127.0.0.1:8989:8989 -it finauxa/ulegalize-lawfirm:2.23.0 --spring.profiles.active=test --server.use-forward-headers=true  
+docker run --name ulegalize-lawfirm --network="host" --restart always -p 127.0.0.1:8989:8989 -it finauxa/ulegalize-lawfirm:3.6.3 --spring.profiles.active=test --server.use-forward-headers=true  
 `
 
 ###### dev
 
 `
-docker run --name ulegalize-lawfirm --restart always -p 127.0.0.1:8989:8989 -it finauxa/ulegalize-lawfirm:2.23.0 --spring.profiles.active=devDocker --server.use-forward-headers=true
+docker run --name ulegalize-lawfirm --restart always -p 127.0.0.1:8989:8989 -it finauxa/ulegalize-lawfirm:3.6.3 --spring.profiles.active=devDocker --server.use-forward-headers=true
 `
 
 ###### prod
 
 `
-docker run --name ulegalize-lawfirm --restart always -p 127.0.0.1:8989:8989 -it finauxa/ulegalize-lawfirm:2.23.0 --spring.profiles.active=prod --server.use-forward-headers=true
+docker run --name ulegalize-lawfirm --restart always -p 127.0.0.1:8989:8989 -it finauxa/ulegalize-lawfirm:3.6.3 --spring.profiles.active=prod --server.use-forward-headers=true
 `
 
 ## more info
@@ -96,30 +94,27 @@ https://ulegalize.atlassian.net/l/c/AY0FkzHX
 build the app
 
 ```
-docker build -t finauxa/ulegalize-lawfirm:2.23.0 .  
-docker push finauxa/ulegalize-lawfirm:2.23.0  
+docker build -t finauxa/ulegalize-lawfirm:3.6.3 .  
+docker push finauxa/ulegalize-lawfirm:3.6.3  
 ```
 
 ```
 docker stop ulegalize-lawfirm   
 docker rm ulegalize-lawfirm  
 docker rmi $(docker images finauxa/ulegalize-lawfirm -q)  
-docker pull finauxa/ulegalize-lawfirm:2.23.0  
+docker pull finauxa/ulegalize-lawfirm:3.6.3  
 ```
 
-## mysql 5.6
+## Database
 
-### docker
+### add user
 
-install the docker from kibana project  
-https://github.com/openjusticebe/ulegalize-deploy
-
-### brew
-
-cd /Applications/MAMP/bin/ ./stopMysql.sh  
-brew install mysql@5.6  
-brew services stop mysql@5.6  
-brew services start mysql@5.6
+REVOKE `cloudsqlsuperuser`@`%` FROM `user`@`%`;
+REVOKE SELECT, UPDATE, DELETE, INSERT, USAGE ON *.* FROM `user`@'%';
+REVOKE ALL PRIVILEGES ON avogest.* FROM 'user'@'%';
+GRANT SELECT ON avogest.* TO 'user';
+FLUSH PRIVILEGES;
+SHOW GRANTS FOR 'user';
 
 ## dpa
 

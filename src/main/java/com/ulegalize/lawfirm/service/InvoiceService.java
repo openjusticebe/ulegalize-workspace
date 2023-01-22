@@ -10,11 +10,11 @@ import java.time.ZonedDateTime;
 import java.util.List;
 
 public interface InvoiceService {
-    public Page<InvoiceDTO> getAllInvoices(int limit, int offset, String vcKey, Integer searchEcheance, ZonedDateTime searchDate, String searchYearDossier, Long searchNumberDossier, String searchClient);
+    Page<InvoiceDTO> getAllInvoices(int limit, int offset, String vcKey, Integer searchEcheance, ZonedDateTime searchDate, String searchNomenclature, String searchClient, Boolean sortFacture);
 
     Page<InvoiceDTO> getAllInvoicesByDossierId(int limit, int offset, Long dossierId, String vcKey);
 
-    List<ItemLongDto> getInvoicesBySearchCriteria(String vcKey, String searchCriteria);
+    List<ItemLongDto> getInvoicesBySearchCriteria(String vcKey, String searchCriteria, Long dossierId);
 
     InvoiceDTO getDefaultInvoice(Long userId, String vcKey, String language);
 
@@ -41,4 +41,6 @@ public interface InvoiceService {
     List<ComptaDTO> getDeboursByDossierId(Long invoiceId, Long dossierId, Long userId, String vcKey, Boolean filterInvoicePrestation);
 
     List<ComptaDTO> getFraisCollabByDossierId(Long invoiceId, Long dossierId, Long userId, String vcKey, Boolean filterInvoicePrestation);
+
+    Long countAllActiveByVcKey(String vckey);
 }

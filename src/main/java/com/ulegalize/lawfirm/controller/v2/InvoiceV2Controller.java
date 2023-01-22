@@ -13,7 +13,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import springfox.documentation.annotations.ApiIgnore;
 
 import java.math.BigDecimal;
 import java.time.ZonedDateTime;
@@ -27,7 +26,6 @@ public class InvoiceV2Controller {
     private InvoiceService invoiceService;
 
     @GetMapping("/{invoiceId}")
-    @ApiIgnore
     public ResponseEntity<InvoiceDTO> getInvoiceById(@PathVariable Long invoiceId,
                                                      @RequestParam(required = false) String vcKey) {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -43,10 +41,11 @@ public class InvoiceV2Controller {
                                                         @RequestParam(required = false) Long dossierId,
                                                         @RequestParam(required = false) Integer searchEcheance,
                                                         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) ZonedDateTime searchDate,
-                                                        @RequestParam(required = false) String searchYearDossier,
-                                                        @RequestParam(required = false) Long searchNumberDossier,
+                                                        @RequestParam(required = false) String searchNomenclature,
                                                         @RequestParam(required = false) String searchClient,
-                                                        @RequestParam(required = false) String vcKey
+                                                        @RequestParam(required = false) String vcKey,
+                                                        @RequestParam(required = false) Boolean sortFacture
+
     ) {
         log.debug("getInvoices(offset: {} , limit {} and dossierId {}", offset, limit, dossierId);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -58,7 +57,7 @@ public class InvoiceV2Controller {
             allInvoices = invoiceService.getAllInvoicesByDossierId(limit, offset, dossierId, lawfirmToken.getVcKey());
         } else {
             ZonedDateTime zonedDateTimeSearch = searchDate != null ? CalendarEventsUtil.convertToZoneDateTimeViaInstant(searchDate) : null;
-            allInvoices = invoiceService.getAllInvoices(limit, offset, lawfirmToken.getVcKey(), searchEcheance, zonedDateTimeSearch, searchYearDossier, searchNumberDossier, searchClient);
+            allInvoices = invoiceService.getAllInvoices(limit, offset, lawfirmToken.getVcKey(), searchEcheance, zonedDateTimeSearch, searchNomenclature, searchClient, sortFacture);
         }
 
         ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.ok();
@@ -82,18 +81,17 @@ public class InvoiceV2Controller {
     }
 
     @GetMapping
-    @ApiIgnore
-    public List<ItemLongDto> getInvoicesBySearchCriteria(@RequestParam(required = false) String searchCriteria) {
+    public List<ItemLongDto> getInvoicesBySearchCriteria(@RequestParam(required = false) String searchCriteria, @RequestParam(required = false) Long dossierId) {
 
-        log.debug("Entering getInvoicesBySearchCriteria");
+        log.debug("Entering getInvoicesBySearchCriteria searchCriteria {} and id dossier {}", searchCriteria, dossierId);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
         log.debug("getContacts(vckey: {}, user id: {})", lawfirmToken.getVcKey(), lawfirmToken.getUserId());
 
-        return invoiceService.getInvoicesBySearchCriteria(lawfirmToken.getVcKey(), searchCriteria);
+        return invoiceService.getInvoicesBySearchCriteria(lawfirmToken.getVcKey(), searchCriteria, dossierId);
     }
 
     @DeleteMapping("/{invoiceId}")
-    @ApiIgnore
     public Long deleteInvoice(@PathVariable Long invoiceId) {
 
         log.debug("Entering deleteInvoice( invoiceId {})", invoiceId);
@@ -105,7 +103,6 @@ public class InvoiceV2Controller {
     }
 
     @GetMapping("/default")
-    @ApiIgnore
     public InvoiceDTO getDefaultInvoice() {
         log.debug("getDefaultInvoice()");
 
@@ -119,7 +116,6 @@ public class InvoiceV2Controller {
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasAnyAuthority(T(com.ulegalize.security.EnumRights).ADMINISTRATEUR.name(), T(com.ulegalize.security.EnumRights).FACTURE_ECRITURE.name())")
-    @ApiIgnore
     public Long createInvoice(@RequestBody InvoiceDTO invoiceDTO) {
         log.debug("createInvoice({})", invoiceDTO);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -131,7 +127,6 @@ public class InvoiceV2Controller {
 
     @PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasAnyAuthority(T(com.ulegalize.security.EnumRights).ADMINISTRATEUR.name(), T(com.ulegalize.security.EnumRights).FACTURE_ECRITURE.name())")
-    @ApiIgnore
     public InvoiceDTO updateInvoice(@RequestBody InvoiceDTO invoiceDTO) {
         log.debug("updateInvoice({})", invoiceDTO);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -144,7 +139,6 @@ public class InvoiceV2Controller {
 
     @PutMapping(value = "/validate/{invoiceId}")
     @PreAuthorize("hasAnyAuthority(T(com.ulegalize.security.EnumRights).ADMINISTRATEUR.name(), T(com.ulegalize.security.EnumRights).FACTURE_VALIDATION.name())")
-    @ApiIgnore
     public InvoiceDTO validateInvoice(@PathVariable Long invoiceId) {
         log.debug("Entering validateInvoice controller with invoiceId = ({})", invoiceId);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -156,7 +150,6 @@ public class InvoiceV2Controller {
     }
 
     @GetMapping("/{invoiceId}/prestations/{dossierId}")
-    @ApiIgnore
     public List<PrestationSummary> getPrestationByDossierId(@PathVariable Long invoiceId,
                                                             @PathVariable Long dossierId,
                                                             @RequestParam(required = false) Boolean filterInvoicePrestation) {
@@ -170,7 +163,6 @@ public class InvoiceV2Controller {
     }
 
     @GetMapping("/{invoiceId}/fraisAdmin/{dossierId}")
-    @ApiIgnore
     public List<FraisAdminDTO> getFraisAdminByDossierId(@PathVariable Long invoiceId, @PathVariable Long dossierId, Boolean filterInvoiceFraisAdmin) {
         log.debug("getFraisAdminByDossierId(invoiceId {}, dossier id {})", invoiceId, dossierId);
 
@@ -182,7 +174,6 @@ public class InvoiceV2Controller {
     }
 
     @GetMapping("/{invoiceId}/debours/{dossierId}")
-    @ApiIgnore
     public List<ComptaDTO> getDeboursByDossierId(@PathVariable Long invoiceId, @PathVariable Long dossierId, Boolean filterInvoiceDebours) {
         log.debug("getDeboursByDossierId(invoiceId {}, dossier id {})", invoiceId, dossierId);
 
@@ -194,7 +185,6 @@ public class InvoiceV2Controller {
     }
 
     @GetMapping("/{invoiceId}/fraisCollaborat/{dossierId}")
-    @ApiIgnore
     public List<ComptaDTO> getFraisCollabByDossierId(@PathVariable Long invoiceId, @PathVariable Long dossierId, Boolean filterInvoiceFraisCollab) {
         log.debug("getFraisCollabByDossierId(invoiceId {}, dossier id {})", invoiceId, dossierId);
 
@@ -206,7 +196,6 @@ public class InvoiceV2Controller {
     }
 
     @GetMapping("/vat/{vat}")
-    @ApiIgnore
     public Long countInvoiceDetailsByVat(@PathVariable BigDecimal vat) {
         log.debug("countInvoiceDetailsByVat( vat id {})", vat);
 
@@ -216,4 +205,17 @@ public class InvoiceV2Controller {
 
         return invoiceService.countInvoiceDetailsByVat(vat);
     }
+
+    @GetMapping("/count/active")
+    public Long countAllActiveInvoiceByVcKey() {
+        log.debug("countInvoiceDetailsByVat()");
+
+        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
+
+        return invoiceService.countAllActiveByVcKey(lawfirmToken.getVcKey());
+    }
+
+
 }

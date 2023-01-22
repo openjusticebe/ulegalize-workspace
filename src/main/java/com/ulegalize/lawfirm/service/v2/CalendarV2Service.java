@@ -12,9 +12,9 @@ import java.util.Date;
 import java.util.List;
 
 public interface CalendarV2Service {
-    public List<LawfirmCalendarEventDTO> findAllByUserId(Long userId, Long dossierId, Date start, Date end, List<String> eventTypesSelected) throws LawfirmBusinessException;
+    List<LawfirmCalendarEventDTO> findAllByUserId(Long userId, Long dossierId, Date start, Date end, List<String> eventTypesSelected) throws LawfirmBusinessException;
 
-    public LawfirmCalendarEventDTO approveLawfirmCalendarEvent(Long eventId) throws ResponseStatusException;
+    LawfirmCalendarEventDTO approveLawfirmCalendarEvent(Long eventId) throws ResponseStatusException;
 
     void createLawfirmCalendarEvent(LawfirmCalendarEventDTO calendarEvent);
 
@@ -32,5 +32,5 @@ public interface CalendarV2Service {
      * @return
      * @throws LawfirmBusinessException
      */
-    public LawyerDuty newLawyerAppointment(String lawyerAlias, LawyerDutyRequest appointment) throws LawfirmBusinessException;
+    LawyerDuty newLawyerAppointment(String lawyerAlias, LawyerDutyRequest appointment) throws LawfirmBusinessException;
 }

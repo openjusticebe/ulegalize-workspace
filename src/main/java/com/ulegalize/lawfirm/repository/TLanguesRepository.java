@@ -10,5 +10,5 @@ import java.util.List;
 
 public interface TLanguesRepository extends JpaRepository<TLangues, String>, JpaSpecificationExecutor<TLangues> {
     @Query("select new com.ulegalize.dto.ItemStringDto(l.idLg, l.lgDesc) from TLangues l order by l.lgDesc")
-    public List<ItemStringDto> findAllOrderByLgDesc();
+    List<ItemStringDto> findAllOrderByLgDesc();
 }

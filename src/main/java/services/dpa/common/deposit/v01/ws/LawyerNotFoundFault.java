@@ -16,7 +16,7 @@ public class LawyerNotFoundFault
     /**
      * Java type that goes as soapenv:Fault detail element.
      */
-    private services.dpa.common.addressbook.external.consult.lawyer.v01.messages.LawyerNotFoundFault faultInfo;
+    private final services.dpa.common.addressbook.external.consult.lawyer.v01.messages.LawyerNotFoundFault faultInfo;
 
     /**
      * @param faultInfo

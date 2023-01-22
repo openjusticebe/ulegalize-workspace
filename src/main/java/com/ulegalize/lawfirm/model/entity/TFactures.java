@@ -25,17 +25,17 @@ public class TFactures implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_facture", insertable = true, nullable = false)
+    @Column(columnDefinition = "BIGINT", name = "id_facture", insertable = true, nullable = false)
     @Getter
     @Setter
     private Long idFacture;
 
-    @Column(name = "year_facture", nullable = false)
+    @Column(columnDefinition = "SMALLINT", name = "year_facture", nullable = false)
     @Getter
     @Setter
     private Integer yearFacture;
 
-    @Column(name = "num_facture", nullable = false)
+    @Column(columnDefinition = "SMALLINT", name = "num_facture", nullable = false)
     @Getter
     @Setter
     private Integer numFacture;
@@ -50,12 +50,12 @@ public class TFactures implements Serializable {
     @Setter
     private String vcKey;
 
-    @Column(name = "id_tiers", nullable = false)
+    @Column(columnDefinition = "BIGINT", name = "id_tiers", nullable = false)
     @Getter
     @Setter
     private Long idTiers;
 
-    @Column(name = "id_doss")
+    @Column(columnDefinition = "BIGINT", name = "id_doss")
     @Getter
     @Setter
     private Long idDoss;
@@ -66,7 +66,7 @@ public class TFactures implements Serializable {
     @Setter
     private EnumFactureType idFactureType;
 
-    @Column(name = "id_poste", nullable = false)
+    @Column(columnDefinition = "SMALLINT", name = "id_poste", nullable = false)
     @Getter
     @Setter
     private Integer idPoste;
@@ -126,6 +126,10 @@ public class TFactures implements Serializable {
     @Getter
     @Setter
     private BigDecimal secondTax;
+    @Column(name = "communication_struct")
+    @Getter
+    @Setter
+    private String communicationStruct;
 
     //bi-directional many-to-one association to TDossiers
     @ManyToOne
@@ -245,4 +249,5 @@ public class TFactures implements Serializable {
                 ", secondTax=" + secondTax +
                 '}';
     }
+
 }

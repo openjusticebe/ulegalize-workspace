@@ -37,7 +37,7 @@ public class DriveDropBoxImpl implements DriveApi {
     @Value("${spring.profiles.active}")
     private String activeProfile;
 
-    private RestTemplate restTemplate;
+    private final RestTemplate restTemplate;
 
     public DriveDropBoxImpl(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
@@ -51,14 +51,14 @@ public class DriveDropBoxImpl implements DriveApi {
     }
 
     @Override
-    public void createFolders(LawfirmToken lawfirmToken, String dropbox_token, List<String> paths) {
+    public void createFolders(LawfirmToken lawfirmToken, String dropbox_token, List<String> paths, String parentId) {
         log.info("Entering createFolder with container : {} and paths {}", dropbox_token, paths);
         if (!activeProfile.equalsIgnoreCase("integrationtest")
 //                && !activeProfile.equalsIgnoreCase("dev")
                 && !activeProfile.equalsIgnoreCase("devDocker")) {
 
             HttpHeaders headers = new HttpHeaders();
-            headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.add("Authorization", "Bearer " + lawfirmToken.getToken());
 
@@ -112,7 +112,7 @@ public class DriveDropBoxImpl implements DriveApi {
         if (!activeProfile.equalsIgnoreCase("integrationtest")
                 && !activeProfile.equalsIgnoreCase("devDocker")) {
             HttpHeaders headers = new HttpHeaders();
-            headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.add("Authorization", "Bearer " + lawfirmToken.getToken());
 
@@ -127,7 +127,7 @@ public class DriveDropBoxImpl implements DriveApi {
             if (result.getBody() != null) {
                 log.info("Leaving getDossierList with success");
                 return Arrays.stream(result.getBody()).map(folder -> {
-                    ObjectResponseDTO response = (ObjectResponseDTO) folder;
+                            ObjectResponseDTO response = folder;
 
                     return response.getSize() == null ? response : null;
                 }).filter(Objects::nonNull)
@@ -149,7 +149,7 @@ public class DriveDropBoxImpl implements DriveApi {
         if (!activeProfile.equalsIgnoreCase("integrationtest")
                 && !activeProfile.equalsIgnoreCase("devDocker")) {
             HttpHeaders headers = new HttpHeaders();
-            headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.add("Authorization", "Bearer " + lawfirmToken.getToken());
 
@@ -179,7 +179,7 @@ public class DriveDropBoxImpl implements DriveApi {
         if (!activeProfile.equalsIgnoreCase("integrationtest")
                 && !activeProfile.equalsIgnoreCase("devDocker")) {
             HttpHeaders headers = new HttpHeaders();
-            headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.add("Authorization", "Bearer " + lawfirmToken.getToken());
 
@@ -210,7 +210,7 @@ public class DriveDropBoxImpl implements DriveApi {
         if (!activeProfile.equalsIgnoreCase("integrationtest")
                 && !activeProfile.equalsIgnoreCase("devDocker")) {
             HttpHeaders headers = new HttpHeaders();
-            headers.setAccept(Arrays.asList(MediaType.TEXT_PLAIN));
+            headers.setAccept(List.of(MediaType.TEXT_PLAIN));
             headers.setContentType(MediaType.TEXT_PLAIN);
             headers.add("Authorization", "Bearer " + lawfirmToken.getToken());
 
@@ -236,7 +236,7 @@ public class DriveDropBoxImpl implements DriveApi {
         if (!activeProfile.equalsIgnoreCase("integrationtest")
                 && !activeProfile.equalsIgnoreCase("devDocker")) {
             HttpHeaders headers = new HttpHeaders();
-            headers.setAccept(Arrays.asList(MediaType.TEXT_PLAIN));
+            headers.setAccept(List.of(MediaType.TEXT_PLAIN));
             headers.setContentType(MediaType.TEXT_PLAIN);
             headers.add("Authorization", "Bearer " + lawfirmToken.getToken());
 
@@ -262,7 +262,7 @@ public class DriveDropBoxImpl implements DriveApi {
         if (!activeProfile.equalsIgnoreCase("integrationtest")
                 && !activeProfile.equalsIgnoreCase("devDocker")) {
             HttpHeaders headers = new HttpHeaders();
-            headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.add("Authorization", "Bearer " + lawfirmToken.getToken());
 
@@ -291,7 +291,7 @@ public class DriveDropBoxImpl implements DriveApi {
         if (!activeProfile.equalsIgnoreCase("integrationtest")
                 && !activeProfile.equalsIgnoreCase("devDocker")) {
             HttpHeaders headers = new HttpHeaders();
-            headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.add("Authorization", "Bearer " + lawfirmToken.getToken());
 
@@ -322,7 +322,7 @@ public class DriveDropBoxImpl implements DriveApi {
         if (!activeProfile.equalsIgnoreCase("integrationtest")
                 && !activeProfile.equalsIgnoreCase("devDocker")) {
             HttpHeaders headers = new HttpHeaders();
-            headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.add("Authorization", "Bearer " + lawfirmToken.getToken());
 
@@ -345,12 +345,43 @@ public class DriveDropBoxImpl implements DriveApi {
     }
 
     @Override
+    public Integer getSizeContainer(LawfirmToken lawfirmToken, String vcKey) {
+        log.info("Entering getSizeContainer with container : {}", lawfirmToken.getVcKey());
+        if (!activeProfile.equalsIgnoreCase("integrationtest")
+                && !activeProfile.equalsIgnoreCase("devDocker")) {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.add("Authorization", "Bearer " + lawfirmToken.getToken());
+
+            LinkedMultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+
+            HttpEntity<LinkedMultiValueMap<String, Object>> requestEntity
+                    = new HttpEntity<>(body, headers);
+
+
+            ResponseEntity<Integer> result = restTemplate.exchange(DRIVE_DROPBOX_URL + "v2/dropbox/containers/" + URLEncoder.encode(lawfirmToken.getVcKey()).replace("+", "%20") + "/size", HttpMethod.GET, requestEntity, Integer.class);
+
+            if (result.getBody() != null) {
+                log.info("Leaving getSizeContainer with success");
+                return result.getBody();
+            } else {
+                log.info("Leaving getSizeContainer EMPTY NO RESULT");
+
+                return 0;
+            }
+        }
+        log.info("Leaving getSizeContainer EMPTY");
+        return 0;
+    }
+
+    @Override
     public String moveFile(LawfirmToken lawfirmToken, String filename, String fromPath, String pathTo) {
         log.info("Entering moveFile with container : {} and fromPath {}, pathTo {}", lawfirmToken.getVcKey(), fromPath, pathTo);
         if (!activeProfile.equalsIgnoreCase("integrationtest")
                 && !activeProfile.equalsIgnoreCase("devDocker")) {
             HttpHeaders headers = new HttpHeaders();
-            headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.add("Authorization", "Bearer " + lawfirmToken.getToken());
             RequestDropbox requestDropbox = new RequestDropbox();
@@ -373,14 +404,14 @@ public class DriveDropBoxImpl implements DriveApi {
     }
 
     @Override
-    public String moveFolders(LawfirmToken lawfirmToken, String fromPath, String pathTo) {
-        log.info("Entering moveFolders with container : {} and fromPath {}, pathTo {}", lawfirmToken.getVcKey(), fromPath, pathTo);
+    public String moveFolders(String token, String vcKey, String fromPath, String pathTo) {
+        log.info("Entering moveFolders with container : {} and fromPath {}, pathTo {}", vcKey, fromPath, pathTo);
         if (!activeProfile.equalsIgnoreCase("integrationtest")
                 && !activeProfile.equalsIgnoreCase("devDocker")) {
             HttpHeaders headers = new HttpHeaders();
-            headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.add("Authorization", "Bearer " + lawfirmToken.getToken());
+            headers.add("Authorization", "Bearer " + token);
             RequestDropbox requestDropbox = new RequestDropbox();
             requestDropbox.setPath(URLEncoder.encode(fromPath).replace("+", "%20"));
             requestDropbox.setNewPath(URLEncoder.encode(pathTo).replace("+", "%20"));

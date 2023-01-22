@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Arrays;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -21,7 +21,7 @@ public class LawfirmTransparencyImpl implements LawfirmTransparencyApi {
     @Value("${app.lawfirm-transparency.url}")
     String URL_TRANSPARENCY_API;
 
-    private RestTemplate restTemplate;
+    private final RestTemplate restTemplate;
 
     public LawfirmTransparencyImpl(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
@@ -33,7 +33,7 @@ public class LawfirmTransparencyImpl implements LawfirmTransparencyApi {
         log.debug("Entering createCasLawfirm with payload : {}", lawfirmCalendarEventDTO);
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.add("x-access-token", token);
 
@@ -48,7 +48,7 @@ public class LawfirmTransparencyImpl implements LawfirmTransparencyApi {
         log.debug("Entering createShareCases with payload : {}", updateShareRequest);
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.add("x-access-token", internalToken);
 

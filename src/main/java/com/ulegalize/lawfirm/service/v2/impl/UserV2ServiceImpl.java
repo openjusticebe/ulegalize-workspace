@@ -7,11 +7,16 @@ import com.ulegalize.enumeration.EnumValid;
 import com.ulegalize.lawfirm.model.converter.EntityToLawfirmUserDTOConverter;
 import com.ulegalize.lawfirm.model.converter.EntityToUserConverter;
 import com.ulegalize.lawfirm.model.entity.LawfirmUsers;
+import com.ulegalize.lawfirm.model.entity.TMessageUser;
 import com.ulegalize.lawfirm.model.entity.TUsers;
 import com.ulegalize.lawfirm.repository.LawfirmUserRepository;
+import com.ulegalize.lawfirm.repository.TMessageUserRepository;
 import com.ulegalize.lawfirm.repository.TUsersRepository;
 import com.ulegalize.lawfirm.repository.VirtualRepository;
+import com.ulegalize.lawfirm.rest.AuthApi;
 import com.ulegalize.lawfirm.service.v2.UserV2Service;
+import com.ulegalize.lawfirm.service.v2.cache.CacheService;
+import com.ulegalize.lawfirm.service.v2.cache.CacheUtils;
 import com.ulegalize.lawfirm.utils.Utils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -22,10 +27,9 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
+import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -37,17 +41,24 @@ public class UserV2ServiceImpl implements UserV2Service {
     private final LawfirmUserRepository lawfirmUserRepository;
     private final EntityToUserConverter entityToUserConverter;
     private final EntityToLawfirmUserDTOConverter entityToLawfirmUserDTOConverter;
+    private final AuthApi authApi;
+
+    private final TMessageUserRepository tMessageUserRepository;
 
     private final TUsersRepository tUsersRepository;
+    private final CacheService cacheService;
     @Value("${spring.profiles.active}")
     private String activeProfile;
 
-    public UserV2ServiceImpl(TUsersRepository tUsersRepository, VirtualRepository virtualRepository, EntityToUserConverter entityToUserConverter, LawfirmUserRepository lawfirmUserRepository, EntityToLawfirmUserDTOConverter entityToLawfirmUserDTOConverter) {
+    public UserV2ServiceImpl(TUsersRepository tUsersRepository, VirtualRepository virtualRepository, EntityToUserConverter entityToUserConverter, LawfirmUserRepository lawfirmUserRepository, EntityToLawfirmUserDTOConverter entityToLawfirmUserDTOConverter, AuthApi authApi, TMessageUserRepository tMessageUserRepository, CacheService cacheService) {
         this.tUsersRepository = tUsersRepository;
         this.virtualRepository = virtualRepository;
         this.entityToUserConverter = entityToUserConverter;
         this.lawfirmUserRepository = lawfirmUserRepository;
         this.entityToLawfirmUserDTOConverter = entityToLawfirmUserDTOConverter;
+        this.authApi = authApi;
+        this.tMessageUserRepository = tMessageUserRepository;
+        this.cacheService = cacheService;
     }
 
     @Override
@@ -64,7 +75,16 @@ public class UserV2ServiceImpl implements UserV2Service {
         usersOptional.ifPresent(user -> {
             user.setLanguage(language);
             tUsersRepository.save(user);
+
+            cacheService.evictCaches(CacheUtils.CACHE_USER_PROFILE);
+
         });
+    }
+
+    @Override
+    public void changePwd(String userId, String newPwd) {
+        log.debug("changePwd new Password for user {}", userId);
+        authApi.changePassword(userId, newPwd);
     }
 
     @Override
@@ -81,6 +101,7 @@ public class UserV2ServiceImpl implements UserV2Service {
         user.setHashkey(Utils.generateHashkey());
         // sometimes verified or not
         if (emailVerified) {
+            user.setHashkey("");
             user.setIdValid(EnumValid.VERIFIED);
         } else {
             user.setIdValid(EnumValid.UNVERIFIED);
@@ -98,6 +119,17 @@ public class UserV2ServiceImpl implements UserV2Service {
         user.setIdUser("#ul" + save.getId());
 
         tUsersRepository.save(user);
+
+        ZonedDateTime now = ZonedDateTime.now();
+
+        TMessageUser tMessageUser = new TMessageUser();
+        tMessageUser.setUserId(user.getId());
+        tMessageUser.setTMessage(null);
+        tMessageUser.setValid(false);
+        tMessageUser.setDateTo(now);
+        tMessageUser.setCreUser(user.getIdUser());
+
+        tMessageUserRepository.save(tMessageUser);
 
         log.debug("User {} created", user.getId());
 
@@ -132,8 +164,10 @@ public class UserV2ServiceImpl implements UserV2Service {
         log.info("Result hashkey {}, hashkey is : {} and your hashkey is : {}", resultHashkey, tUsers.getHashkey(), hashkey);
 
         if (resultHashkey) {
+            tUsers.setHashkey("");
             tUsers.setIdValid(EnumValid.VERIFIED);
             tUsersRepository.save(tUsers);
+            cacheService.evictCaches(CacheUtils.CACHE_USER_PROFILE);
         }
 
         return resultHashkey;
@@ -179,4 +213,36 @@ public class UserV2ServiceImpl implements UserV2Service {
 
         return entityToLawfirmUserDTOConverter.convertToList(lawfirmUsersList);
     }
+
+    @Override
+    public LawyerDTO getLawfirmUserById(Long id) {
+        log.info("Entering getLawfirmUserById id {}", id);
+
+        TUsers user = findById(id);
+        log.info("Leaving getLawfirmUserById");
+        return entityToUserConverter.apply(user, false);
+    }
+
+    @Override
+    public long findTotalUser() {
+        log.info("Entering findTotalUser");
+        return tUsersRepository.count();
+    }
+
+    @Override
+    public Map<String, Long> findTotalUserBy() {
+        log.info("Entering findTotalUser");
+        List<TUsers> allUsers = tUsersRepository.findAll();
+
+        return allUsers.stream().collect(Collectors.groupingBy(TUsers::getClientFrom, Collectors.counting()));
+    }
+
+    @Override
+    public Long getNewTotalUserWeek() {
+        LocalDateTime now = LocalDateTime.now();
+        log.info("Entering getNewTotalUserWeek {}", now);
+
+        return tUsersRepository.countAllByWeek(now.minusWeeks(1), now);
+    }
+
 }

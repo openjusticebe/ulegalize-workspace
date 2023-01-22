@@ -50,6 +50,8 @@ public class EntityToLawfirmPublicConverter implements SuperTriConverter<Lawfirm
       }
     });
 
+    lawfirmDTO.setClientFrom(entity.getClientFrom());
+
     return lawfirmDTO;
   }
 

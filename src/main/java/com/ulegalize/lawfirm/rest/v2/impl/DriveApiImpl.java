@@ -55,7 +55,7 @@ public class DriveApiImpl implements DriveApi {
 //                        && !activeProfile.equalsIgnoreCase("dev")
                         && !activeProfile.equalsIgnoreCase("devDocker")) {
             HttpHeaders headers = new HttpHeaders();
-            headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.add("Authorization", "Bearer " + lawfirmToken.getToken());
             headers.add(authHeader, authToken);
@@ -72,14 +72,14 @@ public class DriveApiImpl implements DriveApi {
     }
 
     @Override
-    public void createFolders(LawfirmToken lawfirmToken, String vcKey, List<String> paths) {
+    public void createFolders(LawfirmToken lawfirmToken, String vcKey, List<String> paths, String parentId) {
         log.info("Entering createFolder with container : {} and paths {}", vcKey, paths);
         if (!activeProfile.equalsIgnoreCase("integrationtest")
 //                && !activeProfile.equalsIgnoreCase("dev")
                 && !activeProfile.equalsIgnoreCase("devDocker")) {
 
             HttpHeaders headers = new HttpHeaders();
-            headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.add("Authorization", "Bearer " + lawfirmToken.getToken());
             headers.add(authHeader, authToken);
@@ -100,6 +100,7 @@ public class DriveApiImpl implements DriveApi {
         MultipartFile multipartFile;
         InputStreamResource resource;
         if (!activeProfile.equalsIgnoreCase("integrationtest")
+//                && !activeProfile.equalsIgnoreCase("dev")
                 && !activeProfile.equalsIgnoreCase("devDocker")) {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
@@ -138,7 +139,7 @@ public class DriveApiImpl implements DriveApi {
         if (!activeProfile.equalsIgnoreCase("integrationtest")
                 && !activeProfile.equalsIgnoreCase("devDocker")) {
             HttpHeaders headers = new HttpHeaders();
-            headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.add("Authorization", "Bearer " + lawfirmToken.getToken());
             headers.add(authHeader, authToken);
@@ -172,7 +173,7 @@ public class DriveApiImpl implements DriveApi {
         if (!activeProfile.equalsIgnoreCase("integrationtest")
                 && !activeProfile.equalsIgnoreCase("devDocker")) {
             HttpHeaders headers = new HttpHeaders();
-            headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.add("Authorization", "Bearer " + lawfirmToken.getToken());
             headers.add(authHeader, authToken);
@@ -204,7 +205,7 @@ public class DriveApiImpl implements DriveApi {
         if (!activeProfile.equalsIgnoreCase("integrationtest")
                 && !activeProfile.equalsIgnoreCase("devDocker")) {
             HttpHeaders headers = new HttpHeaders();
-            headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.add("Authorization", "Bearer " + lawfirmToken.getToken());
             headers.add(authHeader, authToken);
@@ -238,7 +239,7 @@ public class DriveApiImpl implements DriveApi {
         if (!activeProfile.equalsIgnoreCase("integrationtest")
                 && !activeProfile.equalsIgnoreCase("devDocker")) {
             HttpHeaders headers = new HttpHeaders();
-            headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.add("Authorization", "Bearer " + lawfirmToken.getToken());
             headers.add(authHeader, authToken);
@@ -269,7 +270,7 @@ public class DriveApiImpl implements DriveApi {
         if (!activeProfile.equalsIgnoreCase("integrationtest")
                 && !activeProfile.equalsIgnoreCase("devDocker")) {
             HttpHeaders headers = new HttpHeaders();
-            headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.add("Authorization", "Bearer " + lawfirmToken.getToken());
             headers.add(authHeader, authToken);
@@ -300,7 +301,7 @@ public class DriveApiImpl implements DriveApi {
         if (!activeProfile.equalsIgnoreCase("integrationtest")
                 && !activeProfile.equalsIgnoreCase("devDocker")) {
             HttpHeaders headers = new HttpHeaders();
-            headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.add("Authorization", "Bearer " + lawfirmToken.getToken());
             headers.add(authHeader, authToken);
@@ -330,7 +331,7 @@ public class DriveApiImpl implements DriveApi {
         if (!activeProfile.equalsIgnoreCase("integrationtest")
                 && !activeProfile.equalsIgnoreCase("devDocker")) {
             HttpHeaders headers = new HttpHeaders();
-            headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.add("Authorization", "Bearer " + lawfirmToken.getToken());
             headers.add(authHeader, authToken);
@@ -361,12 +362,43 @@ public class DriveApiImpl implements DriveApi {
     }
 
     @Override
+    public Integer getSizeContainer(LawfirmToken lawfirmToken, String vcKey) {
+        log.info("Entering getSizeContainer with container : {} ", lawfirmToken.getVcKey());
+        if (!activeProfile.equalsIgnoreCase("integrationtest")
+                && !activeProfile.equalsIgnoreCase("devDocker")) {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.add("Authorization", "Bearer " + lawfirmToken.getToken());
+            headers.add(authHeader, authToken);
+
+            LinkedMultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+
+            HttpEntity<LinkedMultiValueMap<String, Object>> requestEntity
+                    = new HttpEntity<>(body, headers);
+
+            ResponseEntity<Integer> result = restTemplate.exchange(DRIVE_URL + "local/openstack/containers/" + URLEncoder.encode(lawfirmToken.getVcKey()).replace("+", "%20") + "/size", HttpMethod.GET, requestEntity, Integer.class);
+
+            if (result.getBody() != null) {
+                log.info("Leaving getSizeContainer with success");
+                return result.getBody();
+            } else {
+                log.info("Leaving getSizeContainer EMPTY NO RESULT");
+
+                return 0;
+            }
+        }
+        log.info("Leaving getSizeContainer EMPTY");
+        return 0;
+    }
+
+    @Override
     public String moveFile(LawfirmToken lawfirmToken, String filename, String fromPath, String pathTo) {
         log.info("Entering moveFile with container : {} and fromPath {}, pathTo {}", lawfirmToken.getVcKey(), fromPath, pathTo);
         if (!activeProfile.equalsIgnoreCase("integrationtest")
                 && !activeProfile.equalsIgnoreCase("devDocker")) {
             HttpHeaders headers = new HttpHeaders();
-            headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.add("Authorization", "Bearer " + lawfirmToken.getToken());
             headers.add(authHeader, authToken);
@@ -395,18 +427,20 @@ public class DriveApiImpl implements DriveApi {
     }
 
     @Override
-    public String moveFolders(LawfirmToken lawfirmToken, String fromPath, String pathTo) {
-        log.info("Entering moveFolders with container : {} and fromPath {}, pathTo {}", lawfirmToken.getVcKey(), fromPath, pathTo);
+    public String moveFolders(String token, String vcKey, String fromPath, String pathTo) {
+        log.info("Entering moveFolders with container : {} and fromPath {}, pathTo {}", vcKey, fromPath, pathTo);
         if (!activeProfile.equalsIgnoreCase("integrationtest")
                 && !activeProfile.equalsIgnoreCase("devDocker")) {
             HttpHeaders headers = new HttpHeaders();
-            headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.add("Authorization", "Bearer " + lawfirmToken.getToken());
+            if (token != null && !token.isEmpty()) {
+                headers.add("Authorization", "Bearer " + token);
+            }
             headers.add(authHeader, authToken);
 
             LinkedMultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-            body.add("container", lawfirmToken.getVcKey());
+            body.add("container", vcKey);
             body.add("path", URLEncoder.encode(fromPath).replace("+", "%20"));
             body.add("newObjPath", URLEncoder.encode(pathTo).replace("+", "%20"));
 

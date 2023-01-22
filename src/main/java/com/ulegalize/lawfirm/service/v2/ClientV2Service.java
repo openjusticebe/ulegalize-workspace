@@ -6,11 +6,11 @@ import com.ulegalize.lawfirm.exception.LawfirmBusinessException;
 import java.util.List;
 
 public interface ClientV2Service {
-    public List<ContactSummary> getAllCientByVcKey(String searchCriteria) throws LawfirmBusinessException;
+    List<ContactSummary> getAllCientByVcKey(String searchCriteria, Long dossierId, Boolean withEmail) throws LawfirmBusinessException;
 
     List<ContactSummary> getAllContactsByIds(List<Long> clientIds);
 
-    public ContactSummary getAllCientByVcKeyAndEmail(String email) throws LawfirmBusinessException;
+    ContactSummary getAllCientByVcKeyAndEmail(String email) throws LawfirmBusinessException;
 
     ContactSummary getCientById(Long clientId);
 
@@ -26,4 +26,7 @@ public interface ClientV2Service {
 
     Long deleteClient(Long clientId);
 
+    List<ContactSummary> getContactByDossierId(Long dossierId);
+
+    List<ContactSummary> findTClientsByIdDoss(Long dossierId, String dossierType);
 }

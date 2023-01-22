@@ -6,7 +6,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 
 public interface FraisAdminService {
-    public FraisAdminDTO createFraisAdmin(FraisAdminDTO fraisAdminDTO, Long userId) throws ResponseStatusException;
+    FraisAdminDTO createFraisAdmin(FraisAdminDTO fraisAdminDTO, Long userId) throws ResponseStatusException;
 
     List<FraisAdminDTO> getAllFraisByDossierId(int limit, int offset, Long dossierId, Long userId, String vcKey);
 

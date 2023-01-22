@@ -3,17 +3,20 @@ package com.ulegalize.lawfirm.model.converter;
 import com.ulegalize.dto.ComptaDTO;
 import com.ulegalize.dto.ItemDto;
 import com.ulegalize.dto.ItemLongDto;
+import com.ulegalize.enumeration.EnumLanguage;
+import com.ulegalize.enumeration.EnumRefTransaction;
 import com.ulegalize.lawfirm.model.entity.TFrais;
-import com.ulegalize.lawfirm.utils.SuperConverter;
+import com.ulegalize.lawfirm.utils.SuperTriConverter;
 import com.ulegalize.utils.ClientsUtils;
 import com.ulegalize.utils.DossiersUtils;
+import com.ulegalize.utils.Utils;
 import org.springframework.stereotype.Component;
 
 @Component
-public class EntityToComptaDTOConverter implements SuperConverter<TFrais, ComptaDTO> {
+public class EntityToComptaDTOConverter implements SuperTriConverter<TFrais, EnumLanguage, ComptaDTO> {
 
     @Override
-    public ComptaDTO apply(TFrais entityTFrais) {
+    public ComptaDTO apply(TFrais entityTFrais, EnumLanguage enumLanguage) {
         ComptaDTO compta = new ComptaDTO();
         compta.setId(entityTFrais.getIdFrais());
         compta.setVcKey(entityTFrais.getVcKey());
@@ -25,8 +28,7 @@ public class EntityToComptaDTOConverter implements SuperConverter<TFrais, Compta
         compta.setIdDoss(entityTFrais.getIdDoss());
         if (entityTFrais.getTDossiers() != null) {
             compta.setIdDossierItem(new ItemLongDto(entityTFrais.getIdDoss(),
-                    DossiersUtils.getDossierLabelItem(entityTFrais.getTDossiers().getYear_doss(),
-                            entityTFrais.getTDossiers().getNum_doss())));
+                    DossiersUtils.getDossierLabelItem(entityTFrais.getTDossiers().getNomenclature())));
         }
         compta.setIdFacture(entityTFrais.getIdFacture());
         if (entityTFrais.getTFactures() != null) {
@@ -44,13 +46,22 @@ public class EntityToComptaDTOConverter implements SuperConverter<TFrais, Compta
         compta.setIdPost(entityTFrais.getIdPoste());
         compta.setIdTransaction(entityTFrais.getIdTransaction().getId());
         compta.setIdType(entityTFrais.getIdType().getIdType());
-        compta.setIdTypeItem(new ItemDto(entityTFrais.getIdType().getIdType(), entityTFrais.getIdType().getDescriptionFr()));
+        String label = Utils.getLabel(enumLanguage, entityTFrais.getIdType().name(), null);
+        compta.setIdTypeItem(new ItemDto(entityTFrais.getIdType().getIdType(), label));
         compta.setMontantHt(entityTFrais.getMontantht());
         compta.setRatio(entityTFrais.getRatio());
         compta.setDateValue(entityTFrais.getDateValue());
         if (entityTFrais.getRefPoste() != null) {
             compta.setPoste(new ItemDto(entityTFrais.getRefPoste().getIdPoste(), entityTFrais.getRefPoste().getRefPoste()));
         }
+
+
+        EnumRefTransaction enumRefTransaction = EnumRefTransaction.fromId(entityTFrais.getIdTransaction().getId());
+
+        if (entityTFrais.getIdTransaction() != null) {
+            compta.setTransactionTypeItem(new ItemDto(entityTFrais.getIdTransaction().getId(), Utils.getLabel(EnumLanguage.fromshortCode(enumLanguage.getShortCode()), enumRefTransaction.name(), null)));
+        }
+
         return compta;
     }
 }

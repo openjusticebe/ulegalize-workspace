@@ -2,23 +2,27 @@ package com.ulegalize.lawfirm.controller.v2;
 
 import com.ulegalize.dto.*;
 import com.ulegalize.enumeration.EnumLanguage;
+import com.ulegalize.enumeration.EnumValid;
 import com.ulegalize.lawfirm.kafka.producer.drive.IDriveProducer;
 import com.ulegalize.lawfirm.kafka.producer.transparency.ICaseProducer;
 import com.ulegalize.lawfirm.model.LawfirmToken;
+import com.ulegalize.lawfirm.model.entity.TUsers;
 import com.ulegalize.lawfirm.model.enumeration.EnumSlackUrl;
 import com.ulegalize.lawfirm.rest.DriveFactory;
 import com.ulegalize.lawfirm.rest.v2.SlackApi;
 import com.ulegalize.lawfirm.service.LawfirmUserService;
 import com.ulegalize.lawfirm.service.LawfirmWebsiteService;
 import com.ulegalize.lawfirm.service.v2.LawfirmV2Service;
+import com.ulegalize.lawfirm.service.v2.UserV2Service;
 import com.ulegalize.lawfirm.utils.DriveUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.CacheControl;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import springfox.documentation.annotations.ApiIgnore;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -35,6 +39,8 @@ public class LawfirmV2Controller {
 
     @Autowired
     private LawfirmV2Service lawfirmV2Service;
+    @Autowired
+    private UserV2Service userV2Service;
 
     @Autowired
     private DriveFactory driveFactory;
@@ -55,7 +61,6 @@ public class LawfirmV2Controller {
     }
 
     @GetMapping(value = "/users")
-    @ApiIgnore
     public List<LawfirmUserDTO> getLawfirmUsers() {
         log.debug("getLawfirmUsers()");
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -66,7 +71,6 @@ public class LawfirmV2Controller {
     }
 
     @PutMapping(value = "/user/{userId}/public")
-    @ApiIgnore
     public LawfirmUserDTO updateIsPublicLawfirmUser(@PathVariable Long userId, @RequestBody String isPublic) {
         log.debug("updateIsActiveLawfirmUser with id {}", userId);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -93,7 +97,6 @@ public class LawfirmV2Controller {
     }
 
     @PutMapping(value = "/users/role")
-    @ApiIgnore
     public LawyerDTO updateRoleLawfirmUser(@RequestBody LawyerDTO lawyerDTO) {
         log.debug("updateRoleLawfirmUser({})", lawyerDTO);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -104,7 +107,6 @@ public class LawfirmV2Controller {
     }
 
     @GetMapping(value = "/users/{userId}")
-    @ApiIgnore
     public SecurityGroupUserDTO getLawfirmUserByUserId(@PathVariable Long userId) {
         log.debug("getLawfirmUserByUserId({})", userId);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -115,7 +117,6 @@ public class LawfirmV2Controller {
     }
 
     @GetMapping
-    @ApiIgnore
     public LawfirmDTO getLawfirmByName(@RequestParam String name) {
         log.debug("getLawfirmByName({})", name);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -126,7 +127,6 @@ public class LawfirmV2Controller {
     }
 
     @GetMapping(value = "/search")
-    @ApiIgnore
     public List<LawfirmDTO> searchLawfirmByName(@RequestParam String name) {
         log.debug("searchLawfirmByName({})", name);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -137,7 +137,6 @@ public class LawfirmV2Controller {
     }
 
     @GetMapping(value = "/searchbystatus")
-    @ApiIgnore
     public List<LawfirmDTO> searchLawfirmByNameAndStatus(@RequestParam String name) {
         log.debug("searchLawfirmByName({})", name);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -149,12 +148,18 @@ public class LawfirmV2Controller {
 
 
     @PostMapping
-    @ApiIgnore
-    public ProfileDTO validateLawfirm(@RequestBody String newVcKey, @RequestParam String countryCode) {
-        log.debug("validateLawfirm({})", newVcKey);
+    public ProfileDTO createNewWorkspaceLawfirm(@RequestBody String newVcKey, @RequestParam String countryCode) {
+        log.debug("createNewWorkspaceLawfirm({}, country {})", newVcKey, countryCode);
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         log.info("Lawfirm connected vc{} user {}", lawfirmToken.getVcKey(), lawfirmToken.getUsername());
         EnumLanguage enumLanguage = EnumLanguage.fromshortCode(lawfirmToken.getLanguage());
+
+        // verified user
+        TUsers users = userV2Service.findById(lawfirmToken.getUserId());
+
+        if (!users.getIdValid().equals(EnumValid.VERIFIED)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not verified");
+        }
 
         lawfirmV2Service.createSingleVcKey(lawfirmToken.getUserEmail(), newVcKey, lawfirmToken.getClientFrom(), true, enumLanguage, countryCode, lawfirmToken.isVerified());
 
@@ -182,7 +187,6 @@ public class LawfirmV2Controller {
     }
 
     @RequestMapping(method = RequestMethod.GET, path = "/website")
-    @ApiIgnore
     public LawfirmWebsiteDTO getLawfirmWebsites() {
         log.debug("getLawfirmWebsite()");
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -192,7 +196,6 @@ public class LawfirmV2Controller {
     }
 
     @PutMapping(value = "/website")
-    @ApiIgnore
     public LawfirmWebsiteDTO updateLawfirmWebsite(@RequestBody LawfirmWebsiteDTO lawfirmWebsiteDTO) {
         log.debug("updateLawfirmWebsite()");
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -203,7 +206,6 @@ public class LawfirmV2Controller {
 
 
     @PutMapping(value = "/updateToken")
-    @ApiIgnore
     public LawfirmDriveDTO updateToken(@RequestBody LawfirmDriveDTO lawfirmDriveDTO) {
         log.debug("Entering updateToken {}", lawfirmDriveDTO);
         return lawfirmV2Service.updateToken(lawfirmDriveDTO);

@@ -61,9 +61,9 @@ public interface DepositPort {
      */
     @WebMethod(action = "deposit")
     @WebResult(name = "DepositResponse", targetNamespace = "http://common.dpa.services/deposit/v01/messages", partName = "part1")
-    public DepositResponse deposit(
+    DepositResponse deposit(
             @WebParam(name = "DepositRequest", targetNamespace = "http://common.dpa.services/deposit/v01/messages", partName = "part1")
-                    DepositRequest part1)
+            DepositRequest part1)
             throws Deposit1Fault
     ;
 
@@ -74,9 +74,9 @@ public interface DepositPort {
      */
     @WebMethod(action = "fileUpload")
     @WebResult(name = "FileUploadResponse", targetNamespace = "http://common.dpa.services/deposit/file/v01/messages", partName = "part1")
-    public FileUploadResponse fileUpload(
+    FileUploadResponse fileUpload(
             @WebParam(name = "FileUploadRequest", targetNamespace = "http://common.dpa.services/deposit/file/v01/messages", partName = "part1")
-                    FileUploadRequest part1)
+            FileUploadRequest part1)
             throws FileUpload1Fault
     ;
 
@@ -87,9 +87,9 @@ public interface DepositPort {
      */
     @WebMethod(action = "fileDelete")
     @WebResult(name = "FileDeleteResponse", targetNamespace = "http://common.dpa.services/deposit/file/v01/messages", partName = "part1")
-    public FileDeleteResponse fileDelete(
+    FileDeleteResponse fileDelete(
             @WebParam(name = "FileDeleteRequest", targetNamespace = "http://common.dpa.services/deposit/file/v01/messages", partName = "part1")
-                    FileDeleteRequest part1)
+            FileDeleteRequest part1)
             throws FileDelete1Fault
     ;
 
@@ -99,9 +99,9 @@ public interface DepositPort {
      */
     @WebMethod(action = "getDocTypes")
     @WebResult(name = "getDocTypesResponse", targetNamespace = "http://common.dpa.services/deposit/v01/messages", partName = "part1")
-    public GetDocTypesResponse getDocTypes(
+    GetDocTypesResponse getDocTypes(
             @WebParam(name = "getDocTypesRequest", targetNamespace = "http://common.dpa.services/deposit/v01/messages", partName = "part1")
-                    GetDocTypesRequest part1);
+            GetDocTypesRequest part1);
 
     /**
      * @param part1
@@ -110,9 +110,9 @@ public interface DepositPort {
      */
     @WebMethod(action = "calculatePrice")
     @WebResult(name = "PriceResponse", targetNamespace = "http://common.dpa.services/deposit/price/v01/messages", partName = "part1")
-    public PriceResponse calculatePrice(
+    PriceResponse calculatePrice(
             @WebParam(name = "PriceRequest", targetNamespace = "http://common.dpa.services/deposit/price/v01/messages", partName = "part1")
-                    PriceRequest part1)
+            PriceRequest part1)
             throws Price1Fault
     ;
 
@@ -123,9 +123,9 @@ public interface DepositPort {
      */
     @WebMethod(action = "getLawyerChannelInfo")
     @WebResult(name = "getLawyerChannelInfoResponse", targetNamespace = "http://common.dpa.services/deposit/consult/v01/messages", partName = "part1")
-    public GetLawyerChannelInfoResponse getLawyerChannelInfo(
+    GetLawyerChannelInfoResponse getLawyerChannelInfo(
             @WebParam(name = "getLawyerChannelInfoRequest", targetNamespace = "http://common.dpa.services/deposit/consult/v01/messages", partName = "part1")
-                    GetLawyerChannelInfoRequest part1)
+            GetLawyerChannelInfoRequest part1)
             throws LawyerNotFoundFault
     ;
 
@@ -137,9 +137,9 @@ public interface DepositPort {
      */
     @WebMethod(action = "getCourtChannelInfo")
     @WebResult(name = "getCourtChannelInfoResponse", targetNamespace = "http://common.dpa.services/deposit/consult/v01/messages", partName = "part1")
-    public GetCourtChannelInfoResponse getCourtChannelInfo(
+    GetCourtChannelInfoResponse getCourtChannelInfo(
             @WebParam(name = "getCourtChannelInfoRequest", targetNamespace = "http://common.dpa.services/deposit/consult/v01/messages", partName = "part1")
-                    GetCourtChannelInfoRequest part1)
+            GetCourtChannelInfoRequest part1)
             throws CourtNotFoundFault, LanguageNotFoundFault
     ;
 
@@ -149,9 +149,9 @@ public interface DepositPort {
      */
     @WebMethod(action = "getThirdPartyChannelInfo")
     @WebResult(name = "getThirdPartyChannelInfoResponse", targetNamespace = "http://common.dpa.services/deposit/consult/v01/messages", partName = "part1")
-    public GetThirdPartyChannelInfoResponse getThirdPartyChannelInfo(
+    GetThirdPartyChannelInfoResponse getThirdPartyChannelInfo(
             @WebParam(name = "getThirdPartyChannelInfoRequest", targetNamespace = "http://common.dpa.services/deposit/consult/v01/messages", partName = "part1")
-                    GetThirdPartyChannelInfoRequest part1);
+            GetThirdPartyChannelInfoRequest part1);
 
     /**
      * @param part1
@@ -159,9 +159,9 @@ public interface DepositPort {
      */
     @WebMethod(action = "isUserAllowedToDeposit")
     @WebResult(name = "isUserAllowedToDepositResponse", targetNamespace = "http://common.dpa.services/deposit/consult/v01/messages", partName = "part1")
-    public IsUserAllowedToDepositResponse isUserAllowedToDeposit(
+    IsUserAllowedToDepositResponse isUserAllowedToDeposit(
             @WebParam(name = "isUserAllowedToDepositRequest", targetNamespace = "http://common.dpa.services/deposit/consult/v01/messages", partName = "part1")
-                    IsUserAllowedToDepositRequest part1);
+            IsUserAllowedToDepositRequest part1);
 
     /**
      * @param part1
@@ -170,9 +170,9 @@ public interface DepositPort {
      */
     @WebMethod(action = "ping")
     @WebResult(name = "Pong", targetNamespace = "http://common.dpa.services/global/v01/messages", partName = "part1")
-    public Pong ping(
+    Pong ping(
             @WebParam(name = "Ping", targetNamespace = "http://common.dpa.services/global/v01/messages", partName = "part1")
-                    Ping part1)
+            Ping part1)
             throws PingFault
     ;
 

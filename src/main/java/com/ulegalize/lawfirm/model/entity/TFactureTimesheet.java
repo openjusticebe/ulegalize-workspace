@@ -22,7 +22,7 @@ public class TFactureTimesheet implements Serializable {
     @Setter
     private Long ID;
 
-    @Column(name = "TS_ID", nullable = false)
+    @Column(columnDefinition = "BIGINT", name = "TS_ID", nullable = false)
     @Getter
     @Setter
     private Long tsId;

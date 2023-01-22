@@ -12,7 +12,7 @@ public interface AffaireService {
 
     UpdateShareResponse updateShare(LawfirmToken lawfirmToken, UpdateShareRequestDTO updateShareRequest) throws RestException, ResponseStatusException;
 
-    public boolean hasRightAffaire(String vckey, Long affaireId);
+    boolean hasRightAffaire(String vckey, Long affaireId);
 
     void switchDossierDigital(DossierDTO dossierSummary, Long userId, String vcKey);
 }

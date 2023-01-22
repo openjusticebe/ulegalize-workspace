@@ -2,12 +2,12 @@ package com.ulegalize.lawfirm.service.v2.impl;
 
 import com.ulegalize.dto.BankAccountDTO;
 import com.ulegalize.enumeration.EnumAccountType;
+import com.ulegalize.enumeration.EnumLanguage;
 import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.entity.LawfirmUsers;
 import com.ulegalize.lawfirm.model.entity.RefCompte;
 import com.ulegalize.lawfirm.repository.LawfirmUserRepository;
 import com.ulegalize.lawfirm.repository.RefCompteRepository;
-import com.ulegalize.lawfirm.repository.TAccountTypeRepository;
 import com.ulegalize.lawfirm.service.v2.RefCompteService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -27,20 +27,19 @@ import java.util.Optional;
 public class RefCompteServiceImpl implements RefCompteService {
     private final RefCompteRepository refCompteRepository;
     private final LawfirmUserRepository lawfirmUserRepository;
-    private final TAccountTypeRepository tAccountTypeRepository;
 
-    public RefCompteServiceImpl(RefCompteRepository refCompteRepository, LawfirmUserRepository lawfirmUserRepository, TAccountTypeRepository tAccountTypeRepository) {
+    public RefCompteServiceImpl(RefCompteRepository refCompteRepository, LawfirmUserRepository lawfirmUserRepository) {
         this.refCompteRepository = refCompteRepository;
         this.lawfirmUserRepository = lawfirmUserRepository;
-        this.tAccountTypeRepository = tAccountTypeRepository;
     }
 
     @Override
-    public List<BankAccountDTO> getAllBankAccount(String vcKey, Long userId) {
+    public List<BankAccountDTO> getAllBankAccount(String vcKey, Long userId, String language) {
         log.debug("Get all presations type with vcKey {}", vcKey);
         Optional<LawfirmUsers> lawfirmUsers = lawfirmUserRepository.findLawfirmUsersByVcKeyAndUserId(vcKey, userId);
         if (lawfirmUsers.isPresent()) {
-            return refCompteRepository.findAllItemByVcKey(vcKey);
+            EnumLanguage enumLanguage = EnumLanguage.fromshortCode(language);
+            return refCompteRepository.findAllItemByVcKey(vcKey, enumLanguage.getShortCode());
         }
 
         return new ArrayList<>();
@@ -126,12 +125,13 @@ public class RefCompteServiceImpl implements RefCompteService {
     }
 
     @Override
-    public BankAccountDTO getBankAccountById(String vcKey, Long userId, Integer compteId) {
+    public BankAccountDTO getBankAccountById(String vcKey, Long userId, Integer compteId, String language) {
         log.debug("Get all presations type with vcKey {}", vcKey);
         Optional<LawfirmUsers> lawfirmUsers = lawfirmUserRepository.findLawfirmUsersByVcKeyAndUserId(vcKey, userId);
         if (lawfirmUsers.isPresent()) {
+            EnumLanguage enumLanguage = EnumLanguage.fromshortCode(language);
 
-            return refCompteRepository.findDTOById(vcKey, compteId);
+            return refCompteRepository.findDTOById(vcKey, compteId, enumLanguage.getShortCode());
         }
 
         return null;

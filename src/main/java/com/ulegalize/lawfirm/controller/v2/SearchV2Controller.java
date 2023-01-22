@@ -11,7 +11,6 @@ import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import springfox.documentation.annotations.ApiIgnore;
 
 import java.util.Arrays;
 import java.util.List;
@@ -19,7 +18,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @RestController
-@ApiIgnore
 @RequestMapping("/v2/search")
 @Slf4j
 public class SearchV2Controller {
@@ -142,7 +140,6 @@ public class SearchV2Controller {
 
         return ResponseEntity
                 .ok()
-                .cacheControl(CacheControl.maxAge(120, TimeUnit.SECONDS))
                 .body(itemDtos);
     }
 
@@ -160,10 +157,7 @@ public class SearchV2Controller {
                 .body(Arrays.stream(EnumTType.values()).map(enumTType -> {
                             return new ItemDto(enumTType.getIdType(),
                                     Utils.getLabel(enumLanguage,
-                                            enumTType.getDescriptionFr(),
-                                            enumTType.getDescriptionEn(),
-                                            enumTType.getDescriptionNl(),
-                                            enumTType.getDescriptionNl()));
+                                            enumTType.name(), null));
                         })
                         .collect(Collectors.toList()));
     }
@@ -314,10 +308,7 @@ public class SearchV2Controller {
                 .body(Arrays.stream(EnumAccountType.values()).map(enumAccountType -> {
                             return new ItemDto(enumAccountType.getId(),
                                     Utils.getLabel(enumLanguage,
-                                            enumAccountType.getLabelFr(),
-                                            enumAccountType.getLabelEn(),
-                                            enumAccountType.getLabelNl(),
-                                            enumAccountType.getLabelNl()));
+                                            enumAccountType.name(), null));
                         })
                         .collect(Collectors.toList()));
     }
@@ -336,10 +327,7 @@ public class SearchV2Controller {
                 .body(Arrays.stream(EnumRole.values()).map(enumRole -> {
                             return new ItemDto(enumRole.getIdRole(),
                                     Utils.getLabel(enumLanguage,
-                                            enumRole.getLabelFr(),
-                                            enumRole.getLabelEn(),
-                                            enumRole.getLabelNl(),
-                                            enumRole.getLabelNl()));
+                                            enumRole.name(), null));
                         })
                         .collect(Collectors.toList()));
     }
@@ -364,7 +352,7 @@ public class SearchV2Controller {
     public ResponseEntity<List<ItemStringDto>> getTemplateModel() {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        log.debug("contextModel() for language {}", lawfirmToken.getLanguage());
+        log.debug("getTemplateModel() for language {}", lawfirmToken.getLanguage());
 
         return ResponseEntity
                 .ok()
@@ -376,11 +364,45 @@ public class SearchV2Controller {
     public ResponseEntity<List<ItemStringDto>> getDossierType() {
         LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        log.debug("contextModel() for language {}", lawfirmToken.getLanguage());
+        log.debug("getDossierType() for language {}", lawfirmToken.getLanguage());
 
         return ResponseEntity
                 .ok()
                 .cacheControl(CacheControl.maxAge(120, TimeUnit.SECONDS))
                 .body(searchService.getDossierType());
+    }
+
+    @GetMapping(path = "/dossierContactType")
+    public ResponseEntity<List<ItemDto>> getDossierContactType(@RequestParam String typeDossierValue) {
+        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        log.debug("getDossierContactType() for language {}", lawfirmToken.getLanguage());
+
+        return ResponseEntity
+                .ok()
+                .body(searchService.getEnumDossierContactType(typeDossierValue));
+    }
+
+    @GetMapping(path = "/titleClient")
+    public ResponseEntity<List<ItemStringDto>> getTitleClient() {
+        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        log.debug("getTitleClient() for language {}", lawfirmToken.getLanguage());
+
+        return ResponseEntity
+                .ok()
+                .cacheControl(CacheControl.maxAge(120, TimeUnit.SECONDS))
+                .body(searchService.getTitleClient());
+    }
+
+    @GetMapping(path = "/refTransaction")
+    public ResponseEntity<List<ItemDto>> getRefTransaction() {
+        LawfirmToken lawfirmToken = (LawfirmToken) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        log.debug("getRefTransaction() language {}", lawfirmToken.getLanguage());
+
+        return ResponseEntity
+                .ok()
+                .cacheControl(CacheControl.maxAge(120, TimeUnit.SECONDS))
+                .body(searchService.getRefTransaction(lawfirmToken.getLanguage()));
     }
 }
