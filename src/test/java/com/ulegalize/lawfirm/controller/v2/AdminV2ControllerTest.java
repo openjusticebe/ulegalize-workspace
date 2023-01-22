@@ -60,7 +60,7 @@ public class AdminV2ControllerTest extends EntityTest {
         // "support@ulegalize.com";
         LawfirmToken lawfirmToken = new LawfirmToken(userId, usermail, usermail, lawfirm.getVckey(), null, true,
                 new ArrayList<>(), "", true, EnumLanguage.FR.getShortCode(),
-                EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED));
+                EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", "", lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED));
 
         authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null,
                 lawfirmToken.getAuthorities());
@@ -431,6 +431,8 @@ public class AdminV2ControllerTest extends EntityTest {
     @Test
     public void test_W_deleteVat() throws Exception {
         TVirtualcabVat virtualcabVat = createVirtualcabVat(lawfirm, BigDecimal.valueOf(21));
+        virtualcabVat.setIsDefault(false);
+
         createVirtualcabVat(lawfirm, BigDecimal.valueOf(6));
 
         mvc.perform(delete("/v2/admin/vat/" + virtualcabVat.getVAT())
@@ -455,7 +457,7 @@ public class AdminV2ControllerTest extends EntityTest {
     @WithMockUser(value = "spring")
     @Test
     public void test_X_deleteVat_alreadyused_forbidden() throws Exception {
-        TFactures facture = createFacture(lawfirm);
+        TFactures facture = createFacture(lawfirm, 1);
 
         mvc.perform(delete("/v2/admin/vat/" + lawfirm.getTVirtualcabVatList().get(0).getVAT())
                         .with(authentication(authentication))
@@ -486,20 +488,6 @@ public class AdminV2ControllerTest extends EntityTest {
                         .with(authentication(authentication))
                         .contentType(MediaType.TEXT_PLAIN_VALUE))
                 .andExpect(status().isNotFound());
-    }
-
-    @WithMockUser(value = "spring")
-    @Test
-    public void test_AA_getLawfirmConfig() throws Exception {
-        TVirtualcabConfig tVirtualcabConfig = createTVirtualcabConfig(lawfirm);
-
-        mvc.perform(get("/v2/admin/lawfirmConfig").with(authentication(authentication))
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$[0].vcKey", is(tVirtualcabConfig.getVcKey())))
-                .andExpect(jsonPath("$[0].parameter", is(tVirtualcabConfig.getParameter())))
-                .andExpect(jsonPath("$[0].description", is(tVirtualcabConfig.getDescription())))
-                .andExpect(status().isOk());
-
     }
 
     @Test

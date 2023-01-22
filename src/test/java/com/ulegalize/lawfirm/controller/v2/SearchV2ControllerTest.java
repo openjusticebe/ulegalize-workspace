@@ -51,7 +51,7 @@ public class SearchV2ControllerTest extends EntityTest {
         String usermail = lawfirm.getLawfirmUsers().get(0).getUser().getEmail();
         boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
 //        "support@ulegalize.com";
-        lawfirmToken = new LawfirmToken(userId, usermail, usermail, lawfirm.getVckey(), null, true, new ArrayList<>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", verifyUser);
+        lawfirmToken = new LawfirmToken(userId, usermail, usermail, lawfirm.getVckey(), null, true, new ArrayList<>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", "", verifyUser);
 
         lawfirmToken.getEnumRights().add(EnumRights.ADMINISTRATEUR);
         authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
@@ -114,7 +114,8 @@ public class SearchV2ControllerTest extends EntityTest {
                         .with(authentication(authentication))
                         .contentType(MediaType.APPLICATION_JSON)
                         .param("isCreated", Boolean.TRUE.toString()))
-                .andExpect(jsonPath("$", hasSize(EnumFactureType.values().length - 1)))
+                // temporary not accepted
+                .andExpect(jsonPath("$", hasSize(EnumFactureType.values().length - 2)))
                 .andExpect(status().isOk());
 
     }
@@ -122,7 +123,7 @@ public class SearchV2ControllerTest extends EntityTest {
     @Test
     public void test_E_getFactureEcheances() throws Exception {
 
-        TFactureEcheance tFactureEcheance = createFactureEcheance();
+        TFactureEcheance tFactureEcheance = createFactureEcheance(1);
 
         mvc.perform(get("/v2/search/factureEcheances")
                         .with(authentication(authentication))
@@ -186,12 +187,32 @@ public class SearchV2ControllerTest extends EntityTest {
 
     @Test
     void test_J_getMatieres() throws Exception {
-        TDossiersType tDossiersType = createTDossierType(EnumDossierType.MD.getDossType(), EnumDossierType.MD.getLabelEn());
+        TDossiersType tDossiersType = createTDossierType(EnumDossierType.MD.getDossType(), EnumDossierType.MD.name());
 
         mvc.perform(get("/v2/search/matieres")
                         .with(authentication(authentication))
                         .param("tDossiersType", tDossiersType.getDossType())
                         .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void test_K_refTransaction() throws Exception {
+
+        mvc.perform(get("/v2/search/refTransaction")
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void test_L_getDossierContactType() throws Exception {
+
+        mvc.perform(get("/v2/search/dossierContactType")
+                        .with(authentication(authentication))
+                        .param("typeDossierValue", "DC")
+                        .contentType(MediaType.APPLICATION_JSON))
+
                 .andExpect(status().isOk());
     }
 

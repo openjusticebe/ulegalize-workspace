@@ -10,6 +10,7 @@ import com.ulegalize.lawfirm.EntityTest;
 import com.ulegalize.lawfirm.model.DefaultLawfirmDTO;
 import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.entity.LawfirmEntity;
+import com.ulegalize.lawfirm.model.entity.TSecurityGroups;
 import com.ulegalize.lawfirm.model.entity.TUsers;
 import com.ulegalize.lawfirm.repository.LawfirmRepository;
 import com.ulegalize.lawfirm.service.v2.LawfirmV2Service;
@@ -85,7 +86,7 @@ public class LoginV2ControllerTest extends EntityTest {
         String usermail = user.getEmail();
         boolean verifyUser = user.getIdValid().equals(EnumValid.VERIFIED);
 //        "support@ulegalize.com";
-        LawfirmToken lawfirmToken = new LawfirmToken(userId, usermail, usermail, lawfirm.getVckey(), null, true, new ArrayList<>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", verifyUser);
+        LawfirmToken lawfirmToken = new LawfirmToken(userId, usermail, usermail, lawfirm.getVckey(), null, true, new ArrayList<>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", "", verifyUser);
 
         authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
 
@@ -127,7 +128,7 @@ public class LoginV2ControllerTest extends EntityTest {
         String clientFrom = user.getClientFrom();
         boolean verifyUser = user.getIdValid().equals(EnumValid.VERIFIED);
 //        "support@ulegalize.com";
-        LawfirmToken lawfirmToken = new LawfirmToken(userId, usermail, usermail, lawfirm.getVckey(), null, true, new ArrayList<>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", verifyUser);
+        LawfirmToken lawfirmToken = new LawfirmToken(userId, usermail, usermail, lawfirm.getVckey(), null, true, new ArrayList<>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", "", verifyUser);
         lawfirmToken.setClientFrom(clientFrom);
 
         authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
@@ -169,7 +170,7 @@ public class LoginV2ControllerTest extends EntityTest {
         String usermail = user.getEmail();
         boolean verifyUser = user.getIdValid().equals(EnumValid.VERIFIED);
 //        "support@ulegalize.com";
-        LawfirmToken lawfirmToken = new LawfirmToken(userId, usermail, usermail, lawfirm.getVckey(), null, true, new ArrayList<>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", verifyUser);
+        LawfirmToken lawfirmToken = new LawfirmToken(userId, usermail, usermail, lawfirm.getVckey(), null, true, new ArrayList<>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", "", verifyUser);
 
         authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
 
@@ -206,7 +207,7 @@ public class LoginV2ControllerTest extends EntityTest {
         String usermail = lawfirm.getLawfirmUsers().get(0).getUser().getEmail();
         boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
 //        "support@ulegalize.com";
-        LawfirmToken lawfirmToken = new LawfirmToken(userId, usermail, usermail, lawfirm.getVckey(), null, true, new ArrayList<>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", verifyUser);
+        LawfirmToken lawfirmToken = new LawfirmToken(userId, usermail, usermail, lawfirm.getVckey(), null, true, new ArrayList<>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", "", verifyUser);
 
         authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
 
@@ -272,7 +273,7 @@ public class LoginV2ControllerTest extends EntityTest {
 
         LawfirmToken lawfirmToken = new LawfirmToken(0L, newEmail, newEmail, "NO", "", true, Collections.singletonList(EnumRights.ADMINISTRATEUR), "", true,
                 EnumLanguage.FR.getShortCode(),
-                EnumRefCurrency.EUR.getSymbol(), newEmail, DriveType.openstack, "", false);
+                EnumRefCurrency.EUR.getSymbol(), newEmail, DriveType.openstack, "", "", false);
 
         authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -282,6 +283,33 @@ public class LoginV2ControllerTest extends EntityTest {
                         .with(authentication(authentication))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$", is(EnumValid.UNVERIFIED.name()))
+                );
+    }
+
+    @Test
+    public void test_I_getUser() throws Exception {
+        lawfirm = createLawfirm("MYLAW");
+        Long userId = lawfirm.getLawfirmUsers().get(0).getUser().getId();
+        String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
+        String usermail = lawfirm.getLawfirmUsers().get(0).getUser().getEmail();
+        boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
+//        "support@ulegalize.com";
+        TSecurityGroups tSecurityGroups = createTSecurityGroups(lawfirm, true);
+        LawfirmToken lawfirmToken = new LawfirmToken(userId, usermail, usermail, lawfirm.getVckey(), null, true, new ArrayList<>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", "", verifyUser);
+
+        lawfirmToken.getEnumRights().add(EnumRights.ADMINISTRATEUR);
+        authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
+
+        createTSequences();
+        String newEmail = "test@test.com";
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+
+        mvc.perform(get("/v2/login/user")
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.email", is(lawfirm.getLawfirmUsers().get(0).getUser().getEmail()))
                 );
     }
 }

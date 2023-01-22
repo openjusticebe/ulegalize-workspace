@@ -1,6 +1,7 @@
 package com.ulegalize.lawfirm.service.v2.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ulegalize.dto.LawyerDTO;
 import com.ulegalize.enumeration.EnumValid;
 import com.ulegalize.lawfirm.EntityTest;
 import com.ulegalize.lawfirm.model.entity.TUsers;
@@ -82,5 +83,18 @@ class UserV2ServiceImplTest extends EntityTest {
             userV2Service.verifyUser("", "test");
 
         });
+    }
+
+    @Test
+    void getLawfirmUserById() {
+        TUsers user = createUser("e@cgn.com");
+        user.setIdValid(EnumValid.VERIFIED);
+        user.setHashkey("fhdgh");
+        testEntityManager.persist(user);
+
+        LawyerDTO lawyerDTO = userV2Service.getLawfirmUserById(user.getId());
+
+        assertNotNull(lawyerDTO);
+        assertEquals(lawyerDTO.getId(), user.getId());
     }
 }

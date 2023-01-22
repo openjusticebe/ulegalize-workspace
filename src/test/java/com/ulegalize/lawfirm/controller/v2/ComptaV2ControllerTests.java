@@ -56,7 +56,7 @@ public class ComptaV2ControllerTests extends EntityTest {
         // "support@ulegalize.com";
         lawfirmToken = new LawfirmToken(userId, usermail, usermail, lawfirm.getVckey(), null, true, new ArrayList<>(),
                 "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname,
-                DriveType.openstack, "", verifyUser);
+                DriveType.openstack, "", "", verifyUser);
 
         lawfirmToken.getEnumRights().add(EnumRights.ADMINISTRATEUR);
         authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());

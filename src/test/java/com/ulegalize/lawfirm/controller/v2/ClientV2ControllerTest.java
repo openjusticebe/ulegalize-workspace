@@ -57,7 +57,7 @@ public class ClientV2ControllerTest extends EntityTest {
         String usermail = lawfirm.getLawfirmUsers().get(0).getUser().getEmail();
         boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
 //        "support@ulegalize.com";
-        LawfirmToken lawfirmToken = new LawfirmToken(userId, usermail, usermail, lawfirm.getVckey(), null, true, new ArrayList<>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", verifyUser);
+        LawfirmToken lawfirmToken = new LawfirmToken(userId, usermail, usermail, lawfirm.getVckey(), null, true, new ArrayList<>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", "", verifyUser);
 
         authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
 
@@ -201,6 +201,19 @@ public class ClientV2ControllerTest extends EntityTest {
 
     @WithMockUser(value = "spring")
     @Test
+    public void test_J1_getContactByDossierId_oneResult() throws Exception {
+        TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
+
+        // workaround to avoid [] into the String
+        mvc.perform(get("/v2/clients/dossier/" + dossier.getIdDoss())
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(status().isOk());
+    }
+
+    @WithMockUser(value = "spring")
+    @Test
     public void test_K_getAllContactsByIds_twoResult() throws Exception {
         TClients tClients = createClient(lawfirm);
         TClients tClients2 = createClient(lawfirm);
@@ -213,6 +226,19 @@ public class ClientV2ControllerTest extends EntityTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .param("clientIds", clientIds))
                 .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void test_L_getClientsByDossierId() throws Exception {
+        TDossiers tDossiers = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
+
+        mvc.perform(get("/v2/clients/dossier/all")
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .param("dossierId", String.valueOf(tDossiers.getIdDoss()))
+                        .param("dossierType", EnumDossierType.DC.name())
+                )
                 .andExpect(status().isOk());
     }
 }

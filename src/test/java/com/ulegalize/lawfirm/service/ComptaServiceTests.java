@@ -1,6 +1,8 @@
 package com.ulegalize.lawfirm.service;
 
 import com.ulegalize.dto.ComptaDTO;
+import com.ulegalize.dto.ItemDto;
+import com.ulegalize.enumeration.EnumLanguage;
 import com.ulegalize.enumeration.EnumRefTransaction;
 import com.ulegalize.enumeration.EnumTType;
 import com.ulegalize.enumeration.EnumVCOwner;
@@ -43,7 +45,7 @@ public class ComptaServiceTests extends EntityTest {
 
         TFrais tFrais = createTFrais(lawfirm, dossier);
 
-        ComptaDTO compta = comptaService.getComptaById(tFrais.getIdFrais(), lawfirm.getVckey());
+        ComptaDTO compta = comptaService.getComptaById(tFrais.getIdFrais(), lawfirm.getVckey(), EnumLanguage.FR.getShortCode());
 
         assertNotNull(compta);
         assertEquals(compta.getId(), tFrais.getIdFrais());
@@ -54,7 +56,7 @@ public class ComptaServiceTests extends EntityTest {
 
         TFrais tFrais = createTFrais(lawfirm, dossier);
 
-        ComptaDTO compta = comptaService.getComptaById(tFrais.getIdFrais(), lawfirm.getVckey());
+        ComptaDTO compta = comptaService.getComptaById(tFrais.getIdFrais(), lawfirm.getVckey(), EnumLanguage.FR.getShortCode());
 
         compta.setDateValue(LocalDate.now().minusDays(1));
 
@@ -86,6 +88,7 @@ public class ComptaServiceTests extends EntityTest {
         compta.setRatio(BigDecimal.valueOf(100));
         compta.setDateValue(LocalDate.now());
         compta.setDateValue(LocalDate.now());
+        compta.setTransactionTypeItem(new ItemDto(EnumRefTransaction.VIREMENT.getId(), EnumRefTransaction.VIREMENT.name()));
 
         compta.setDateValue(LocalDate.now().minusDays(1));
 
@@ -104,7 +107,7 @@ public class ComptaServiceTests extends EntityTest {
 
         testEntityManager.persist(tFrais.getRefPoste());
 
-        Page<ComptaDTO> compta = comptaService.getAllComptaByDossierId(5, 0, tFrais.getIdDoss(), lawfirm.getVckey(), true, null, null, null);
+        Page<ComptaDTO> compta = comptaService.getAllComptaByDossierId(5, 0, tFrais.getIdDoss(), lawfirm.getVckey(), true, null, null, null, EnumLanguage.FR.getShortCode());
 
         assertNotNull(compta);
         assertTrue(compta.getTotalElements() > 0);
@@ -119,7 +122,7 @@ public class ComptaServiceTests extends EntityTest {
 
         testEntityManager.persist(tFrais.getRefPoste());
 
-        Page<ComptaDTO> compta = comptaService.getAllComptaByDossierId(5, 0, tFrais.getIdDoss(), lawfirm.getVckey(), true, null, null, null);
+        Page<ComptaDTO> compta = comptaService.getAllComptaByDossierId(5, 0, tFrais.getIdDoss(), lawfirm.getVckey(), true, null, null, null, EnumLanguage.FR.getShortCode());
 
         assertNotNull(compta);
         assertEquals(0, compta.getTotalElements());
@@ -134,7 +137,7 @@ public class ComptaServiceTests extends EntityTest {
 
         testEntityManager.persist(tFrais.getRefPoste());
 
-        Page<ComptaDTO> compta = comptaService.getAllComptaByDossierId(5, 0, tFrais.getIdDoss(), lawfirm.getVckey(), null, true, null, null);
+        Page<ComptaDTO> compta = comptaService.getAllComptaByDossierId(5, 0, tFrais.getIdDoss(), lawfirm.getVckey(), null, true, null, null, EnumLanguage.FR.getShortCode());
 
         assertNotNull(compta);
         assertTrue(compta.getTotalElements() > 0);
@@ -149,7 +152,7 @@ public class ComptaServiceTests extends EntityTest {
 
         testEntityManager.persist(tFrais.getRefPoste());
 
-        Page<ComptaDTO> compta = comptaService.getAllComptaByDossierId(5, 0, tFrais.getIdDoss(), lawfirm.getVckey(), null, true, null, null);
+        Page<ComptaDTO> compta = comptaService.getAllComptaByDossierId(5, 0, tFrais.getIdDoss(), lawfirm.getVckey(), null, true, null, null, EnumLanguage.FR.getShortCode());
 
         assertNotNull(compta);
         assertEquals(0, compta.getTotalElements());

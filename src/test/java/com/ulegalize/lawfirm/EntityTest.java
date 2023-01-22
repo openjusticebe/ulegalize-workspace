@@ -1,12 +1,18 @@
 package com.ulegalize.lawfirm;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ulegalize.dto.ItemIntegerDto;
+import com.ulegalize.dto.ItemPartieDTO;
+import com.ulegalize.dto.NomenclatureConfigDTO;
 import com.ulegalize.enumeration.*;
+import com.ulegalize.lawfirm.model.dto.CaseDTO;
+import com.ulegalize.lawfirm.model.dto.VirtualcabNomenclatureDTO;
 import com.ulegalize.lawfirm.model.entity.*;
 import com.ulegalize.lawfirm.model.enumeration.EnumMatiereRubrique;
 import com.ulegalize.lawfirm.model.enumeration.EnumSequenceType;
 import com.ulegalize.lawfirm.model.enumeration.EnumStatusAssociation;
 import com.ulegalize.lawfirm.utils.Utils;
+import com.ulegalize.lawfirm.utils.VirtualcabNomenclatureUtils;
 import com.ulegalize.security.EnumRights;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateUtils;
@@ -114,10 +120,14 @@ public abstract class EntityTest extends ConfigureTest {
     }
 
     protected TDossiers createDossier(LawfirmEntity lawfirmEntity, EnumVCOwner enumVCOwner) {
+        TVirtualcabNomenclature nomenclatureTest = createVirtualcabNomenclature(lawfirmEntity, "NomenclatureTest");
         TDossiers tDossiers = new TDossiers();
         tDossiers.setYear_doss(String.valueOf(LocalDate.now().getYear()));
         tDossiers.setNum_doss(6789L);
+        tDossiers.setDossierNumber(4L);
+        tDossiers.setNomenclature(nomenclatureTest.getName() + "-" + tDossiers.getDossierNumber());
         tDossiers.setDoss_type(EnumDossierType.DC.getDossType());
+        tDossiers.setDrivePath(tDossiers.getYear_doss() + '/' + tDossiers.getNomenclature());
 //        tDossiers.setClient_adv();
 //        tDossiers.setClient_cab(createClient(lawfirmEntity));
         tDossiers.setVc_key(lawfirmEntity.getVckey());
@@ -181,6 +191,7 @@ public abstract class EntityTest extends ConfigureTest {
         return tDossierRights;
 
     }
+
     protected TMatiereRubriques createTMatiereRubriques() {
         TMatiereRubriques matiereRubriques = new TMatiereRubriques();
         matiereRubriques.setMatiereRubriqueDesc("matiere desc");
@@ -227,7 +238,6 @@ public abstract class EntityTest extends ConfigureTest {
 
     protected TMessage createMessage() {
         TMessage tMessage = new TMessage();
-        tMessage.setId(Long.valueOf("1"));
         tMessage.setMessageNl("Message NL");
         tMessage.setMessageFr("Message FR");
         tMessage.setMessageDe("Message DE");
@@ -243,7 +253,7 @@ public abstract class EntityTest extends ConfigureTest {
         tMessageUser.setUserId(tUsers.getId());
         tMessageUser.setValid(valid);
         tMessageUser.setCreUser(USER);
-        LocalDateTime now = LocalDateTime.now();
+        ZonedDateTime now = ZonedDateTime.now();
         tMessageUser.setCreDate(now);
         tMessageUser.setDateTo(now.plusHours(1));
 
@@ -588,7 +598,7 @@ public abstract class EntityTest extends ConfigureTest {
         return tTimesheet;
     }
 
-    protected TFactures createFacture(LawfirmEntity lawfirm) {
+    protected TFactures createFacture(LawfirmEntity lawfirm, Integer facturesEcheancesID) {
         TVirtualcabVat virtualcabVat = createVirtualcabVat(lawfirm, VAT);
 
         TFactures tFactures = new TFactures();
@@ -614,7 +624,7 @@ public abstract class EntityTest extends ConfigureTest {
         tFactures.setIdPoste(refPoste.getIdPoste());
         tFactures.setUserUpd(lawfirm.getUserUpd());
 
-        TFactureEcheance tFactureEcheance = createFactureEcheance();
+        TFactureEcheance tFactureEcheance = createFactureEcheance(facturesEcheancesID);
         tFactures.setIdEcheance(tFactureEcheance.getID());
 
         TDossiers tDossiers = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
@@ -630,6 +640,7 @@ public abstract class EntityTest extends ConfigureTest {
         tFactureTimesheet.setTsId(tTimesheet.getIdTs());
         tFactureTimesheet.setCreUser(USER);
         tFactures.addTFactureTimesheet(tFactureTimesheet);
+        tFactureTimesheet.setTTimesheet(tTimesheet);
         tFactureTimesheet.setTFactures(tFactures);
 
         // frais admin
@@ -660,6 +671,50 @@ public abstract class EntityTest extends ConfigureTest {
 
         testEntityManager.persist(tFactures);
 
+        testEntityManager.persist(tFactureTimesheet);
+
+        return tFactures;
+    }
+
+    protected TFactures createOnlyFacture(LawfirmEntity lawfirm, Integer facturesEcheancesID, Integer numFacture, EnumFactureType enumFactureType, ZonedDateTime year, Boolean validity) {
+        TVirtualcabVat virtualcabVat = createVirtualcabVat(lawfirm, VAT);
+
+        TFactures tFactures = new TFactures();
+        tFactures.setYearFacture(year.getYear());
+        tFactures.setNumFacture(numFacture);
+        tFactures.setFactureRef(enumFactureType.getCode() + "-" + year.getYear() + "-" + "00" + tFactures.getNumFacture());
+        tFactures.setVcKey(lawfirm.getVckey());
+        tFactures.setDateValue(year);
+        tFactures.setMemo("memo test");
+        tFactures.setMontant(new BigDecimal(500));
+        tFactures.setIdFactureType(enumFactureType);
+        tFactures.setRef("ref test");
+        tFactures.setDateEcheance(year.plusDays(20));
+        tFactures.setDateUpd(LocalDateTime.now());
+        TClients client = createClient(lawfirm);
+        tFactures.setIdTiers(client.getId_client());
+        tFactures.setTClients(client);
+        tFactures.setValid(validity);
+
+        RefPoste refPoste = createRefPoste(lawfirm);
+        refPoste.setRefPoste("Honoraires");
+        refPoste.setFacturable(true);
+
+        tFactures.setIdPoste(refPoste.getIdPoste());
+        tFactures.setUserUpd(lawfirm.getUserUpd());
+
+        TFactureEcheance tFactureEcheance = createFactureEcheance(facturesEcheancesID);
+        tFactures.setIdEcheance(tFactureEcheance.getID());
+
+        TDossiers tDossiers = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
+        testEntityManager.persist(tDossiers);
+        tFactures.setIdDoss(tDossiers.getIdDoss());
+        tFactures.setTDossiers(tDossiers);
+
+        createTFactureDetails(tFactures, virtualcabVat);
+
+        testEntityManager.persist(tFactures);
+
         return tFactures;
     }
 
@@ -678,9 +733,9 @@ public abstract class EntityTest extends ConfigureTest {
 
     }
 
-    protected TFactureEcheance createFactureEcheance() {
+    protected TFactureEcheance createFactureEcheance(Integer facturesEcheancesID) {
         TFactureEcheance tFactureEcheance = new TFactureEcheance();
-        tFactureEcheance.setID(1);
+        tFactureEcheance.setID(facturesEcheancesID);
         tFactureEcheance.setDESCRIPTION("Comptant");
         testEntityManager.persist(tFactureEcheance);
         return tFactureEcheance;
@@ -726,18 +781,6 @@ public abstract class EntityTest extends ConfigureTest {
         return entity;
     }
 
-    protected TVirtualcabConfig createTVirtualcabConfig(LawfirmEntity lawfirm) {
-        TVirtualcabConfig entity = new TVirtualcabConfig();
-
-
-        entity.setVcKey(lawfirm.getVckey());
-        entity.setParameter("CASEFOLDER");
-        entity.setDescription("description");
-        testEntityManager.persist(entity);
-
-        return entity;
-    }
-
     protected VatCountry createVatCountry() {
         VatCountry entity = new VatCountry();
 
@@ -770,5 +813,103 @@ public abstract class EntityTest extends ConfigureTest {
 
         testEntityManager.persist(tWorkspaceAssociated);
         return tWorkspaceAssociated;
+    }
+
+    protected TVirtualcabNomenclature createVirtualcabNomenclature(LawfirmEntity lawfirmEntity, String label) {
+        TVirtualcabNomenclature tVirtualcabNomenclature = new TVirtualcabNomenclature();
+
+        tVirtualcabNomenclature.setLawfirmEntity(lawfirmEntity);
+        tVirtualcabNomenclature.setName(label);
+        tVirtualcabNomenclature.setDrivePath(ZonedDateTime.now().getYear() + "/" + tVirtualcabNomenclature.getName());
+        tVirtualcabNomenclature.setCreUser("ULEGAL");
+        tVirtualcabNomenclature.setNomenclatureConfigs(new ArrayList<>());
+
+        testEntityManager.persist(tVirtualcabNomenclature);
+        return tVirtualcabNomenclature;
+    }
+
+    protected VirtualcabNomenclatureDTO createVirtualcabNomenclatureDTO() {
+        VirtualcabNomenclatureDTO virtualcabNomenclatureDTO = new VirtualcabNomenclatureDTO();
+
+        virtualcabNomenclatureDTO.setName("Nomenclature_Name");
+        virtualcabNomenclatureDTO.setDrivePath(VirtualcabNomenclatureUtils.VIRTUALNOMENCLATUREYEAR + "/doss/" + VirtualcabNomenclatureUtils.VIRTUALNOMENCLATURENUM + "/" + VirtualcabNomenclatureUtils.VIRTUALNOMENCLATURENOMENCLATURE);
+
+        return virtualcabNomenclatureDTO;
+    }
+
+    protected TNomenclatureConfig createNomenclatureConfig(TVirtualcabNomenclature virtualcabNomenclature, String label) {
+        TNomenclatureConfig nomenclatureConfig = new TNomenclatureConfig();
+        nomenclatureConfig.setVcNomenclature(virtualcabNomenclature);
+        nomenclatureConfig.setParameter("CASEFOLDER");
+        nomenclatureConfig.setLabel(label);
+        nomenclatureConfig.setCreUser("ULEGAL");
+
+        testEntityManager.persist(nomenclatureConfig);
+        return nomenclatureConfig;
+    }
+
+    protected NomenclatureConfigDTO createNomenclatureConfigDto(TVirtualcabNomenclature virtualcabNomenclature) {
+        NomenclatureConfigDTO nomenclatureConfigDTO = new NomenclatureConfigDTO();
+        nomenclatureConfigDTO.setVcNomenclature(virtualcabNomenclature.getId());
+        nomenclatureConfigDTO.setDescription("Description");
+        nomenclatureConfigDTO.setParameter("CASEFOLDER");
+        nomenclatureConfigDTO.setVcKey(virtualcabNomenclature.getLawfirmEntity().getVckey());
+
+        return nomenclatureConfigDTO;
+    }
+
+    protected CaseDTO createCaseDTO(TClients tClients) {
+        CaseDTO caseDTO = new CaseDTO();
+        caseDTO.setId("60DFE45JKL");
+
+        ItemPartieDTO itemPartieDTO = new ItemPartieDTO();
+        itemPartieDTO.setId("60DFE45JKL01");
+
+        ItemIntegerDto itemIntegerDto = new ItemIntegerDto();
+        itemIntegerDto.setLabel("Avocat client");
+        itemIntegerDto.setValue(10);
+
+        itemPartieDTO.setFunctionItem(itemIntegerDto);
+        itemPartieDTO.setFunction(itemIntegerDto.getLabel());
+        itemPartieDTO.setLabel(tClients.getF_nom());
+        itemPartieDTO.setEmailItem(null);
+        itemPartieDTO.setEmail(tClients.getF_email());
+        itemPartieDTO.setType(EnumPartieType.other);
+        itemPartieDTO.setLitigant(false);
+        itemPartieDTO.setVcKey(null);
+        itemPartieDTO.setContactId(null);
+
+        List<ItemPartieDTO> itemPartieDTOS = new ArrayList<>();
+        itemPartieDTOS.add(itemPartieDTO);
+
+        caseDTO.setPartieEmail(itemPartieDTOS);
+
+        caseDTO.setCreateDate(LocalDateTime.now());
+        caseDTO.setCreateUser("ULEGAL");
+        caseDTO.setUpdateDate(LocalDateTime.now());
+        caseDTO.setUpdateUser("ULEGAL");
+
+        return caseDTO;
+    }
+
+    protected TVirtualCabTags createTags(LawfirmEntity lawfirm) {
+        TVirtualCabTags tVirtualCabTags = new TVirtualCabTags();
+
+        tVirtualCabTags.setLawfirmEntity(lawfirm);
+        tVirtualCabTags.setLabel("Tag1");
+
+        testEntityManager.persist(tVirtualCabTags);
+
+        return tVirtualCabTags;
+    }
+
+    protected TDossiersVcTags createTDossierVcTags(TDossiers tDossiers, TVirtualCabTags tVirtualCabTags) {
+        TDossiersVcTags tDossiersVcTags = new TDossiersVcTags();
+        tDossiersVcTags.setTDossiers(tDossiers);
+        tDossiersVcTags.setTVirtualCabTags(tVirtualCabTags);
+
+        testEntityManager.persist(tDossiersVcTags);
+
+        return tDossiersVcTags;
     }
 }

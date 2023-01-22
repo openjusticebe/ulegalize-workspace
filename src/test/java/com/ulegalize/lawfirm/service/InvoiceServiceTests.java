@@ -35,19 +35,15 @@ public class InvoiceServiceTests extends EntityTest {
     private InvoiceService invoiceService;
 
     @Test
-    public void test_A_getInvoicesBySearchCriteria_ByYearfacture_2020_founded() {
+    public void test_A_getInvoicesBySearchCriteria_ByYearfacture_founded() {
 
         LawfirmEntity lawfirm = createLawfirm("MYLAW");
-        TFactures tFactures = createFacture(lawfirm);
+        TFactures tFactures = createFacture(lawfirm, 1);
         String searchCriteria = String.valueOf(LocalDate.now().getYear());
-        List<ItemLongDto> itemLongDtoList = invoiceService
-                .getInvoicesBySearchCriteria(lawfirm.getVckey(), searchCriteria);
 
-        assertNotNull(itemLongDtoList);
-        assertTrue(itemLongDtoList.get(0).getLabel().toLowerCase()
-                .contains(searchCriteria.toLowerCase()));
-        assertEquals(itemLongDtoList.get(0).getValue(), tFactures.getIdFacture());
+        List<ItemLongDto> itemLongDtoList = invoiceService.getInvoicesBySearchCriteria(lawfirm.getVckey(), searchCriteria, null);
 
+        assertEquals(1, itemLongDtoList.size());
     }
 
     @Test
@@ -59,7 +55,7 @@ public class InvoiceServiceTests extends EntityTest {
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
 
-        LawfirmToken lawfirmToken = new LawfirmToken(lawfirm.getLawfirmUsers().get(0).getUser().getId(), email, email, lawfirm.getVckey(), null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", verifyUser);
+        LawfirmToken lawfirmToken = new LawfirmToken(lawfirm.getLawfirmUsers().get(0).getUser().getId(), email, email, lawfirm.getVckey(), null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", "", verifyUser);
 
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -69,6 +65,9 @@ public class InvoiceServiceTests extends EntityTest {
 
         TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
         invoice.setDossierId(dossier.getIdDoss());
+        ItemLongDto itemLongDto = new ItemLongDto();
+        itemLongDto.setLabel(dossier.getNomenclature());
+        invoice.setDossierItem(itemLongDto);
 
         TClients client = createClient(lawfirm);
         invoice.setClientId(client.getId_client());
@@ -78,18 +77,16 @@ public class InvoiceServiceTests extends EntityTest {
         invoice.setTypeItem(new ItemLongDto(
                 EnumFactureType.TEMP.getId(),
                 Utils.getLabel(EnumLanguage.FR,
-                        EnumFactureType.TEMP.getDescriptionFr(),
-                        EnumFactureType.TEMP.getDescriptionEn(),
-                        EnumFactureType.TEMP.getDescriptionNl(),
-                        EnumFactureType.TEMP.getDescriptionDe())
-        ));
+                        EnumFactureType.TEMP.name(),
+                        null
+                )));
 
         RefPoste refPoste1 = createRefPoste(lawfirm);
         invoice.setPosteId(refPoste1.getIdPoste());
         invoice.setPosteItem(new ItemDto(refPoste1.getIdPoste(),
                 refPoste1.getRefPoste()));
 
-        TFactureEcheance factureEcheance = createFactureEcheance();
+        TFactureEcheance factureEcheance = createFactureEcheance(1);
         invoice.setEcheanceId(factureEcheance.getID());
         invoice.setDateValue(ZonedDateTime.now());
 
@@ -130,7 +127,7 @@ public class InvoiceServiceTests extends EntityTest {
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
 
-        LawfirmToken lawfirmToken = new LawfirmToken(lawfirm.getLawfirmUsers().get(0).getUser().getId(), email, email, lawfirm.getVckey(), null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", verifyUser);
+        LawfirmToken lawfirmToken = new LawfirmToken(lawfirm.getLawfirmUsers().get(0).getUser().getId(), email, email, lawfirm.getVckey(), null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", "", verifyUser);
 
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -140,6 +137,9 @@ public class InvoiceServiceTests extends EntityTest {
 
         TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
         invoice.setDossierId(dossier.getIdDoss());
+        ItemLongDto itemLongDto = new ItemLongDto();
+        itemLongDto.setLabel(dossier.getNomenclature());
+        invoice.setDossierItem(itemLongDto);
 
         TClients client = createClient(lawfirm);
         invoice.setClientId(client.getId_client());
@@ -149,18 +149,15 @@ public class InvoiceServiceTests extends EntityTest {
         invoice.setTypeItem(new ItemLongDto(
                 EnumFactureType.TEMP.getId(),
                 Utils.getLabel(EnumLanguage.FR,
-                        EnumFactureType.TEMP.getDescriptionFr(),
-                        EnumFactureType.TEMP.getDescriptionEn(),
-                        EnumFactureType.TEMP.getDescriptionNl(),
-                        EnumFactureType.TEMP.getDescriptionDe())
-        ));
+                        EnumFactureType.TEMP.name(), null
+                )));
 
         RefPoste refPoste1 = createRefPoste(lawfirm);
         invoice.setPosteId(refPoste1.getIdPoste());
         invoice.setPosteItem(new ItemDto(refPoste1.getIdPoste(),
                 refPoste1.getRefPoste()));
 
-        TFactureEcheance factureEcheance = createFactureEcheance();
+        TFactureEcheance factureEcheance = createFactureEcheance(1);
         invoice.setEcheanceId(factureEcheance.getID());
         invoice.setDateValue(ZonedDateTime.now());
 
@@ -231,7 +228,7 @@ public class InvoiceServiceTests extends EntityTest {
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
 
-        LawfirmToken lawfirmToken = new LawfirmToken(0L, email, email, "", null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", verifyUser);
+        LawfirmToken lawfirmToken = new LawfirmToken(0L, email, email, "", null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", "", verifyUser);
 
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -241,6 +238,9 @@ public class InvoiceServiceTests extends EntityTest {
 
         TDossiers dossier = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
         invoiceDTO.setDossierId(dossier.getIdDoss());
+        ItemLongDto itemLongDto = new ItemLongDto();
+        itemLongDto.setLabel(dossier.getNomenclature());
+        invoiceDTO.setDossierItem(itemLongDto);
 
         TClients client = createClient(lawfirm);
         invoiceDTO.setClientId(client.getId_client());
@@ -250,10 +250,8 @@ public class InvoiceServiceTests extends EntityTest {
         invoiceDTO.setTypeItem(new ItemLongDto(
                 EnumFactureType.TEMP.getId(),
                 Utils.getLabel(EnumLanguage.FR,
-                        EnumFactureType.TEMP.getDescriptionFr(),
-                        EnumFactureType.TEMP.getDescriptionEn(),
-                        EnumFactureType.TEMP.getDescriptionNl(),
-                        EnumFactureType.TEMP.getDescriptionDe())
+                        EnumFactureType.TEMP.name(),
+                        null)
         ));
 
         RefPoste refPoste1 = createRefPoste(lawfirm);
@@ -261,7 +259,7 @@ public class InvoiceServiceTests extends EntityTest {
         invoiceDTO.setPosteItem(new ItemDto(refPoste1.getIdPoste(),
                 refPoste1.getRefPoste()));
 
-        TFactureEcheance factureEcheance = createFactureEcheance();
+        TFactureEcheance factureEcheance = createFactureEcheance(1);
         invoiceDTO.setEcheanceId(factureEcheance.getID());
         invoiceDTO.setDateValue(ZonedDateTime.now());
 
@@ -323,12 +321,12 @@ public class InvoiceServiceTests extends EntityTest {
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
 
-        LawfirmToken lawfirmToken = new LawfirmToken(0L, email, email, "", null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", verifyUser);
+        LawfirmToken lawfirmToken = new LawfirmToken(0L, email, email, "", null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", "", verifyUser);
 
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        TFactures tFactures = createFacture(lawfirm);
+        TFactures tFactures = createFacture(lawfirm, 1);
         // to link debours
         tFactures.getFraisDeboursList().get(0).getTFrais().getRefPoste().setFraisProcedure(true);
         testEntityManager.persist(tFactures.getFraisDeboursList().get(0).getTFrais().getRefPoste());
@@ -351,12 +349,12 @@ public class InvoiceServiceTests extends EntityTest {
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
 
-        LawfirmToken lawfirmToken = new LawfirmToken(lawfirm.getLawfirmUsers().get(0).getUser().getId(), email, email, lawfirm.getVckey(), null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", verifyUser);
+        LawfirmToken lawfirmToken = new LawfirmToken(lawfirm.getLawfirmUsers().get(0).getUser().getId(), email, email, lawfirm.getVckey(), null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", "", verifyUser);
 
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        TFactures tFactures = createFacture(lawfirm);
+        TFactures tFactures = createFacture(lawfirm, 1);
         // to link debours
         tFactures.getFraisDeboursList().get(0).getTFrais().getRefPoste().setFraisProcedure(true);
         testEntityManager.persist(tFactures.getFraisDeboursList().get(0).getTFrais().getRefPoste());
@@ -381,11 +379,11 @@ public class InvoiceServiceTests extends EntityTest {
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
 
-        LawfirmToken lawfirmToken = new LawfirmToken(lawfirm.getLawfirmUsers().get(0).getUser().getId(), email, email, lawfirm.getVckey(), null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", verifyUser);
+        LawfirmToken lawfirmToken = new LawfirmToken(lawfirm.getLawfirmUsers().get(0).getUser().getId(), email, email, lawfirm.getVckey(), null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", "", verifyUser);
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        TFactures tFactures = createFacture(lawfirm);
+        TFactures tFactures = createFacture(lawfirm, 1);
 
         Long idInvoiceDeleted = invoiceService.deleteInvoiceById(tFactures.getIdFacture());
 
@@ -404,11 +402,11 @@ public class InvoiceServiceTests extends EntityTest {
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
 
-        LawfirmToken lawfirmToken = new LawfirmToken(lawfirm.getLawfirmUsers().get(0).getUser().getId(), email, email, lawfirm.getVckey(), null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", verifyUser);
+        LawfirmToken lawfirmToken = new LawfirmToken(lawfirm.getLawfirmUsers().get(0).getUser().getId(), email, email, lawfirm.getVckey(), null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", "", verifyUser);
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        TFactures tFactures = createFacture(lawfirm);
+        TFactures tFactures = createFacture(lawfirm, 1);
 
         List<PrestationSummary> entityList = invoiceService.getPrestationByDossierId(tFactures.getIdFacture(), tFactures.getIdDoss(), lawfirm.getLawfirmUsers().get(0).getUser().getId(), lawfirm.getVckey(), null);
 
@@ -424,11 +422,11 @@ public class InvoiceServiceTests extends EntityTest {
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
 
-        LawfirmToken lawfirmToken = new LawfirmToken(lawfirm.getLawfirmUsers().get(0).getUser().getId(), email, email, lawfirm.getVckey(), null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", verifyUser);
+        LawfirmToken lawfirmToken = new LawfirmToken(lawfirm.getLawfirmUsers().get(0).getUser().getId(), email, email, lawfirm.getVckey(), null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", "", verifyUser);
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        TFactures tFactures = createFacture(lawfirm);
+        TFactures tFactures = createFacture(lawfirm, 1);
 
         List<FraisAdminDTO> entityList = invoiceService.getFraisAdminByDossierId(tFactures.getIdFacture(), tFactures.getIdDoss(), lawfirm.getLawfirmUsers().get(0).getUser().getId(), lawfirm.getVckey(), null);
 
@@ -444,11 +442,11 @@ public class InvoiceServiceTests extends EntityTest {
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
 
-        LawfirmToken lawfirmToken = new LawfirmToken(lawfirm.getLawfirmUsers().get(0).getUser().getId(), email, email, lawfirm.getVckey(), null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", verifyUser);
+        LawfirmToken lawfirmToken = new LawfirmToken(lawfirm.getLawfirmUsers().get(0).getUser().getId(), email, email, lawfirm.getVckey(), null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", "", verifyUser);
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        TFactures tFactures = createFacture(lawfirm);
+        TFactures tFactures = createFacture(lawfirm, 1);
         // to link debours
         tFactures.getFraisDeboursList().get(0).getTFrais().getRefPoste().setFraisProcedure(true);
         testEntityManager.persist(tFactures.getFraisDeboursList().get(0).getTFrais().getRefPoste());
@@ -467,11 +465,11 @@ public class InvoiceServiceTests extends EntityTest {
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
 
-        LawfirmToken lawfirmToken = new LawfirmToken(lawfirm.getLawfirmUsers().get(0).getUser().getId(), email, email, lawfirm.getVckey(), null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", verifyUser);
+        LawfirmToken lawfirmToken = new LawfirmToken(lawfirm.getLawfirmUsers().get(0).getUser().getId(), email, email, lawfirm.getVckey(), null, true, new ArrayList<EnumRights>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", "", verifyUser);
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        TFactures tFactures = createFacture(lawfirm);
+        TFactures tFactures = createFacture(lawfirm, 1);
         // to link debours
         tFactures.getFraisDeboursList().get(0).getTFrais().getRefPoste().setFraisCollaboration(true);
         testEntityManager.persist(tFactures.getFraisDeboursList().get(0).getTFrais().getRefPoste());

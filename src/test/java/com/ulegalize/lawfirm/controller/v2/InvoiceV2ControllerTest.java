@@ -1,13 +1,11 @@
 package com.ulegalize.lawfirm.controller.v2;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ulegalize.enumeration.DriveType;
-import com.ulegalize.enumeration.EnumLanguage;
-import com.ulegalize.enumeration.EnumRefCurrency;
-import com.ulegalize.enumeration.EnumValid;
+import com.ulegalize.enumeration.*;
 import com.ulegalize.lawfirm.EntityTest;
 import com.ulegalize.lawfirm.model.LawfirmToken;
 import com.ulegalize.lawfirm.model.entity.LawfirmEntity;
+import com.ulegalize.lawfirm.model.entity.TDossiers;
 import com.ulegalize.lawfirm.model.entity.TFactures;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
@@ -21,6 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 
 import static org.hamcrest.Matchers.containsStringIgnoringCase;
@@ -58,7 +57,7 @@ public class InvoiceV2ControllerTest extends EntityTest {
         String usermail = lawfirm.getLawfirmUsers().get(0).getUser().getEmail();
         boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
 //        "support@ulegalize.com";
-        lawfirmToken = new LawfirmToken(userId, usermail, usermail, lawfirm.getVckey(), null, true, new ArrayList<>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", verifyUser);
+        lawfirmToken = new LawfirmToken(userId, usermail, usermail, lawfirm.getVckey(), null, true, new ArrayList<>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", "", verifyUser);
 
         authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
 
@@ -68,7 +67,7 @@ public class InvoiceV2ControllerTest extends EntityTest {
     @Test
     public void test_A_getInvoicesBySearchCriteria_noParam() throws Exception{
 
-        TFactures tFactures = createFacture(lawfirm);
+        TFactures tFactures = createFacture(lawfirm, 1);
 
         mockMvc.perform(get("/v2/invoices")
                 .with(authentication(authentication))
@@ -81,7 +80,7 @@ public class InvoiceV2ControllerTest extends EntityTest {
     @Test
     public void test_B_getInvoicesBySearchCriteria_withParma_founded() throws Exception {
 
-        TFactures tFactures = createFacture(lawfirm);
+        TFactures tFactures = createFacture(lawfirm, 1);
 
         mockMvc.perform(get("/v2/invoices")
                         .with(authentication(authentication))
@@ -107,7 +106,7 @@ public class InvoiceV2ControllerTest extends EntityTest {
     @Test
     public void test_D_getDefaultInvoice() throws Exception {
 
-        TFactures tFactures = createFacture(lawfirm);
+        TFactures tFactures = createFacture(lawfirm, 1);
 
         mockMvc.perform(get("/v2/invoices/default")
                         .with(authentication(authentication))
@@ -119,7 +118,7 @@ public class InvoiceV2ControllerTest extends EntityTest {
     @WithMockUser(value = "spring")
     @Test
     public void test_E_getInvoiceById() throws Exception {
-        TFactures tFactures = createFacture(lawfirm);
+        TFactures tFactures = createFacture(lawfirm, 1);
 
         mockMvc.perform(get("/v2/invoices/" + tFactures.getIdFacture())
                         .with(authentication(authentication))
@@ -132,7 +131,7 @@ public class InvoiceV2ControllerTest extends EntityTest {
     @WithMockUser(value = "spring")
     @Test
     public void test_F_totalByDossier() throws Exception {
-        TFactures tFactures = createFacture(lawfirm);
+        TFactures tFactures = createFacture(lawfirm, 1);
 
         mockMvc.perform(get("/v2/invoices/dossier/" + tFactures.getIdDoss() + "/total")
                         .with(authentication(authentication))
@@ -144,7 +143,7 @@ public class InvoiceV2ControllerTest extends EntityTest {
     @WithMockUser(value = "spring")
     @Test
     public void test_H_getPrestationByDossierId() throws Exception {
-        TFactures tFactures = createFacture(lawfirm);
+        TFactures tFactures = createFacture(lawfirm, 1);
 
         mockMvc.perform(get("/v2/invoices/" + tFactures.getIdFacture() + "/prestations/" + tFactures.getIdDoss())
                         .with(authentication(authentication))
@@ -156,7 +155,7 @@ public class InvoiceV2ControllerTest extends EntityTest {
     @WithMockUser(value = "spring")
     @Test
     public void test_I_getFraisAdminByDossierId() throws Exception {
-        TFactures tFactures = createFacture(lawfirm);
+        TFactures tFactures = createFacture(lawfirm, 1);
 
         mockMvc.perform(get("/v2/invoices/" + tFactures.getIdFacture() + "/fraisAdmin/" + tFactures.getIdDoss())
                         .with(authentication(authentication))
@@ -168,7 +167,7 @@ public class InvoiceV2ControllerTest extends EntityTest {
     @WithMockUser(value = "spring")
     @Test
     public void test_J_getDeboursByDossierId() throws Exception {
-        TFactures tFactures = createFacture(lawfirm);
+        TFactures tFactures = createFacture(lawfirm, 1);
         // to link debours
         tFactures.getFraisDeboursList().get(0).getTFrais().getRefPoste().setFraisProcedure(true);
         testEntityManager.persist(tFactures.getFraisDeboursList().get(0).getTFrais().getRefPoste());
@@ -184,7 +183,7 @@ public class InvoiceV2ControllerTest extends EntityTest {
     @WithMockUser(value = "spring")
     @Test
     public void test_K_getFraisCollabByDossierId() throws Exception {
-        TFactures tFactures = createFacture(lawfirm);
+        TFactures tFactures = createFacture(lawfirm, 1);
         // to link debours
         tFactures.getFraisDeboursList().get(0).getTFrais().getRefPoste().setFraisCollaboration(true);
         testEntityManager.persist(tFactures.getFraisDeboursList().get(0).getTFrais().getRefPoste());
@@ -197,4 +196,33 @@ public class InvoiceV2ControllerTest extends EntityTest {
                 .andExpect(status().isOk());
     }
 
+    @WithMockUser(value = "spring")
+    @Test
+    void test_L_countAllActiveInvoiceByVcKey() throws Exception {
+        mockMvc.perform(get("/v2/invoices/count/active")
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+    }
+
+    @WithMockUser(value = "spring")
+    @Test
+    void test_M_getInvoicesBySearchCriteria_withParam_DossierID() throws Exception {
+
+        TDossiers tDossiers = createDossier(lawfirm, EnumVCOwner.OWNER_VC);
+
+        TFactures tFactures = createOnlyFacture(lawfirm, 1, 1, EnumFactureType.SELL, ZonedDateTime.now(), true);
+        tFactures.setIdDoss(tDossiers.getIdDoss());
+
+        TFactures tFactures2 = createOnlyFacture(lawfirm, 2, 2, EnumFactureType.SELL, ZonedDateTime.now(), true);
+        tFactures2.setIdDoss(tDossiers.getIdDoss());
+
+        mockMvc.perform(get("/v2/invoices")
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .param("searchCriteria", "%")
+                        .param("dossierId", String.valueOf(tDossiers.getIdDoss())))
+                .andExpect(jsonPath("$[0].value", equalTo(tFactures.getIdFacture().intValue())))
+                .andExpect(status().isOk());
+    }
 }

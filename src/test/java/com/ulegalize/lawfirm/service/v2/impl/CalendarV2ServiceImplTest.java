@@ -51,7 +51,7 @@ public class CalendarV2ServiceImplTest extends EntityTest {
         String fullname = lawfirm.getLawfirmUsers().get(0).getUser().getFullname();
         String usermail = lawfirm.getLawfirmUsers().get(0).getUser().getEmail();
         boolean verifyUser = lawfirm.getLawfirmUsers().get(0).getUser().getIdValid().equals(EnumValid.VERIFIED);
-        LawfirmToken lawfirmToken = new LawfirmToken(userId, usermail, usermail, lawfirm.getVckey(), null, true, new ArrayList<>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", verifyUser);
+        LawfirmToken lawfirmToken = new LawfirmToken(userId, usermail, usermail, lawfirm.getVckey(), null, true, new ArrayList<>(), "", true, EnumLanguage.FR.getShortCode(), EnumRefCurrency.EUR.getSymbol(), fullname, DriveType.openstack, "", "", verifyUser);
 
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(lawfirmToken, null, lawfirmToken.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -88,7 +88,7 @@ public class CalendarV2ServiceImplTest extends EntityTest {
         TCalendarEvent tCalendarEventUpdated = testEntityManager.find(TCalendarEvent.class, tCalendarEvent.getId());
 
         assertEquals(tCalendarEventUpdated.getEventType(), EnumCalendarEventType.RDV);
-        assertFalse(tCalendarEventUpdated.isApproved());
+        assertTrue(tCalendarEventUpdated.isApproved());
     }
 
     @Test
